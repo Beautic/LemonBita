@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="dress">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>dress</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+
+  <!-- Firebase SDKs: Flutter 플러그인이 자체 번들하므로 수동 로드 불필요 -->
+</head>
+<body>
+  <!-- 로딩 상태 및 에러 메시지 출력용 UI -->
+  <div id="status-display" style="
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: sans-serif;
+    color: #8B5CF6;
+    text-align: center;
+    z-index: 1000;
+  ">
+    <div id="loader-msg">Loading Digital Closet...</div>
+    <div id="error-msg" style="color: #ff4444; margin-top: 10px; font-size: 14px; display: none;"></div>
+  </div>
+
+  <script>
+    // 전역 에러 핸들러 (화이트 스크린 시 에러 내용을 화면에 표시)
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.getElementById('error-msg');
+      const statusDiv = document.getElementById('status-display');
+      statusDiv.style.background = 'rgba(0,0,0,0.8)';
+      statusDiv.style.padding = '20px';
+      statusDiv.style.borderRadius = '10px';
+      statusDiv.style.width = '80%';
+      errorDiv.style.display = 'block';
+      errorDiv.innerText = "Error: " + message + " (" + source.split('/').pop() + ":" + lineno + ")";
+      return false;
+    };
+
+    window.addEventListener('load', function(ev) {
+      const loaderMsg = document.getElementById('loader-msg');
+
+      try {
+        loaderMsg.innerText = "Starting Engine...";
+
+        // Download main.dart.js
+        _flutter.loader.loadEntrypoint({
+          serviceWorker: {
+            serviceWorkerVersion: serviceWorkerVersion,
+          },
+          onEntrypointLoaded: function(engineInitializer) {
+            loaderMsg.innerText = "Initializing UI Engine...";
+            engineInitializer.initializeEngine({
+              renderer: "html"
+            }).then(function(appRunner) {
+              loaderMsg.innerText = "Mounting App...";
+              appRunner.runApp();
+              // 앱 로딩 완료 시 메시지 숨김
+              setTimeout(() => {
+                document.getElementById('status-display').style.display = 'none';
+              }, 1000);
+            });
+          }
+        });
+      } catch (err) {
+        window.onerror(err.message, "initialization", 0, 0, err);
+      }
+    });
+  </script>
+</body>
+</html>

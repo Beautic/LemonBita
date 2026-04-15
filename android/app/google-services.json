@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "891078999530",
+    "project_id": "digital-closet-32c43",
+    "storage_bucket": "digital-closet-32c43.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:891078999530:android:ecbdef9bb696f9bcf24693",
+        "android_client_info": {
+          "package_name": "com.antigravity.dress"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1dXoFoxJyOq8VVrch6_v6Io0VNwax7Dg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
