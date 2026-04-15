@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import 'upload_screen.dart';
+import 'clothing_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -193,86 +194,135 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 2. 옷 그리드 뷰 (카테고리 선택 시)
   Widget _buildClothesGrid(List<QueryDocumentSnapshot> clothes) {
-    if (clothes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white.withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text('이 카테고리에는\n등록된 옷이 없습니다.', 
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.5)),
-            ),
-          ],
+    return Column(
+      children: [
+        // 상단 내비게이션 바 (카테고리명 & 돌아가기 버튼)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Category', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    _selectedCategory!,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() => _selectedCategory = null),
+                icon: const Icon(Icons.grid_view_rounded, size: 18),
+                label: const Text('전체 옷장'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ],
+          ),
         ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GridView.builder(
-        physics: const BouncingScrollPhysics(),
-        itemCount: clothes.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
+        
+        Expanded(
+          child: clothes.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white.withOpacity(0.2)),
+                      const SizedBox(height: 16),
+                      Text('이 카테고리에는\n등록된 옷이 없습니다.', 
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      ),
+                    ],
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: clothes.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemBuilder: (context, index) {
+                      final doc = clothes[index];
+                      final item = doc.data() as Map<String, dynamic>;
+                      return _buildClothingCard(doc.id, item);
+                    },
+                  ),
+                ),
         ),
-        itemBuilder: (context, index) {
-          final item = clothes[index].data() as Map<String, dynamic>;
-          return _buildClothingCard(item);
-        },
-      ),
+      ],
     );
   }
 
-  Widget _buildClothingCard(Map<String, dynamic> item) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+  Widget _buildClothingCard(String docId, Map<String, dynamic> item) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ClothingDetailScreen(docId: docId, item: item),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              item['imageUrl']!,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 50),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
-                  ),
-                ),
-                child: Text(
-                  item['tags'] ?? '',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Hero(
+                tag: docId,
+                child: Image.network(
+                  item['imageUrl']!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 50),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                    ),
+                  ),
+                  child: Text(
+                    item['tags'] ?? '',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

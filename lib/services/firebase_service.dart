@@ -250,4 +250,19 @@ class FirebaseService {
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
+
+  // 4. 옷 정보 업데이트
+  Future<void> updateClothingData({
+    required String docId,
+    required Map<String, dynamic> updatedData,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('clothes').doc(docId).update(updatedData);
+  }
+
+  // 5. 옷 삭제
+  Future<void> deleteClothingData(String docId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('clothes').doc(docId).delete();
+  }
 }
