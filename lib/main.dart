@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'services/firebase_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -31,18 +33,20 @@ class DigitalClosetApp extends StatelessWidget {
       title: 'My Digital Closet',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF101014),
-        primaryColor: const Color(0xFF8B5CF6),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF8B5CF6),
-          secondary: Color(0xFF10B981),
-          surface: Color(0xFF1F1F28),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.white,
+        primaryColor: Colors.black,
+        colorScheme: const ColorScheme.light(
+          primary: Colors.black,
+          secondary: Colors.grey,
+          surface: Colors.white,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
           elevation: 0,
           centerTitle: true,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
         ),
         fontFamily: 'Roboto',
       ),
@@ -64,7 +68,7 @@ class AuthWrapper extends StatelessWidget {
       initialData: firebaseService.currentUser,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return const MainScreen();
         } else {
           return const LoginScreen();
         }

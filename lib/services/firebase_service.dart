@@ -265,4 +265,40 @@ class FirebaseService {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     await _firestore.collection('clothes').doc(docId).delete();
   }
+
+  // ==== OOTD 관련 로직 ====
+
+  // 6. OOTD 저장 (태그된 옷 정보 포함)
+  Future<void> saveOOTDData({
+    required String imageUrl,
+    required String description,
+    required List<Map<String, dynamic>> taggedClothes,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    await _firestore.collection('ootds').add({
+      'userId': currentUserId,
+      'imageUrl': imageUrl,
+      'description': description,
+      'taggedClothes': taggedClothes, // [{ id, imageUrl, title }, ...]
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // 7. 실시간 OOTD 피드 스트림
+  Stream<QuerySnapshot> getOOTDStream() {
+    if (currentUserId == null) {
+      return const Stream.empty();
+    }
+    return _firestore
+        .collection('ootds')
+        .where('userId', isEqualTo: currentUserId)
+        .snapshots();
+  }
+
+  // 8. OOTD 삭제
+  Future<void> deleteOOTDData(String docId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('ootds').doc(docId).delete();
+  }
 }

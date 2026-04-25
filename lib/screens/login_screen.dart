@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 '어디서든 내 옷을 관리하세요',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.6)),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 48),
               TextField(
@@ -82,7 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: '이메일',
                   prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -92,7 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: '비밀번호',
                   prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -101,12 +105,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   : FilledButton(
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
+                        backgroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Text(
                         _isLoginMode ? '로그인' : '회원가입',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
               const SizedBox(height: 16),
@@ -116,8 +121,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     _isLoginMode = !_isLoginMode;
                   });
                 },
+                style: TextButton.styleFrom(foregroundColor: Colors.grey[800]),
                 child: Text(
                   _isLoginMode ? '계정이 없으신가요? 새로 가입하기' : '이미 계정이 있으신가요? 로그인하기',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],

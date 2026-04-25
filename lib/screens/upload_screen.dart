@@ -139,6 +139,8 @@ class _UploadScreenState extends State<UploadScreen> {
                 return ChoiceChip(
                   label: Text(category),
                   selected: isSelected,
+                  selectedColor: Colors.black,
+                  labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                   onSelected: (selected) {
                     if (selected) setState(() => _selectedCategory = category);
                   },
@@ -184,8 +186,11 @@ class _UploadScreenState extends State<UploadScreen> {
                         setState(() => _isLoading = false);
                       }
                     },
-                    style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-                    child: const Text('옷장에 넣기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 18)
+                    ),
+                    child: const Text('옷장에 넣기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
           ],
         ),

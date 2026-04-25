@@ -21,6 +21,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   late TextEditingController _sizeController;
   late TextEditingController _tagsController;
   late TextEditingController _memoController;
+  late TextEditingController _colorController;
+  late TextEditingController _patternController;
+  late TextEditingController _materialController;
+  late TextEditingController _fitController;
+  late TextEditingController _lengthController;
   late String _selectedCategory;
   bool _isLoading = false;
 
@@ -33,6 +38,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     _sizeController = TextEditingController(text: widget.item['size'] ?? '');
     _tagsController = TextEditingController(text: widget.item['tags'] ?? '');
     _memoController = TextEditingController(text: widget.item['memo'] ?? '');
+    _colorController = TextEditingController(text: widget.item['color'] ?? '');
+    _patternController = TextEditingController(text: widget.item['pattern'] ?? '');
+    _materialController = TextEditingController(text: widget.item['material'] ?? '');
+    _fitController = TextEditingController(text: widget.item['fit'] ?? '');
+    _lengthController = TextEditingController(text: widget.item['length'] ?? '');
     _selectedCategory = widget.item['category'] ?? '상의';
   }
 
@@ -42,6 +52,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     _sizeController.dispose();
     _tagsController.dispose();
     _memoController.dispose();
+    _colorController.dispose();
+    _patternController.dispose();
+    _materialController.dispose();
+    _fitController.dispose();
+    _lengthController.dispose();
     super.dispose();
   }
 
@@ -55,6 +70,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
           'size': _sizeController.text,
           'tags': _tagsController.text,
           'memo': _memoController.text,
+          'color': _colorController.text,
+          'pattern': _patternController.text,
+          'material': _materialController.text,
+          'fit': _fitController.text,
+          'length': _lengthController.text,
           'category': _selectedCategory,
         },
       );
@@ -165,6 +185,36 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   const SizedBox(height: 16),
                   
                   TextField(
+                    controller: _colorController,
+                    decoration: _inputDecoration('색상 (예: 크림 베이지)'),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
+                    controller: _patternController,
+                    decoration: _inputDecoration('패턴 (예: 케이블 니트)'),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
+                    controller: _materialController,
+                    decoration: _inputDecoration('소재 추정 (예: 울 혼방)'),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
+                    controller: _fitController,
+                    decoration: _inputDecoration('핏 (예: 오버사이즈)'),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
+                    controller: _lengthController,
+                    decoration: _inputDecoration('기장 (예: 130cm)'),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
                     controller: _brandController,
                     decoration: _inputDecoration('브랜드 (예: 나이키, 자라)'),
                   ),
@@ -196,10 +246,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   FilledButton(
                     onPressed: _updateInfo,
                     style: FilledButton.styleFrom(
+                      backgroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
-                    child: const Text('정보 저장하기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    child: const Text('정보 저장하기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                   const SizedBox(height: 60),
                 ],
@@ -219,7 +270,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.grey[100],
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
