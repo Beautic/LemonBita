@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
+import '../utils/categories.dart';
 
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
@@ -27,9 +28,8 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   late TextEditingController _fitController;
   late TextEditingController _lengthController;
   late String _selectedCategory;
+  late String _selectedSubCategory;
   bool _isLoading = false;
-
-  final List<String> _categories = ['상의', '하의', '아우터', '신발', '액세서리', '기타'];
 
   @override
   void initState() {
@@ -43,7 +43,16 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     _materialController = TextEditingController(text: widget.item['material'] ?? '');
     _fitController = TextEditingController(text: widget.item['fit'] ?? '');
     _lengthController = TextEditingController(text: widget.item['length'] ?? '');
-    _selectedCategory = widget.item['category'] ?? '상의';
+    
+    _selectedCategory = widget.item['category'] ?? CategoryData.mainCategories.first;
+    if (!CategoryData.mainCategories.contains(_selectedCategory)) {
+      _selectedCategory = CategoryData.mainCategories.first;
+    }
+    
+    _selectedSubCategory = widget.item['subCategory'] ?? '';
+    if (_selectedSubCategory.isNotEmpty && !CategoryData.getSubCategories(_selectedCategory).contains(_selectedSubCategory)) {
+      _selectedSubCategory = '';
+    }
   }
 
   @override
@@ -76,6 +85,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
           'fit': _fitController.text,
           'length': _lengthController.text,
           'category': _selectedCategory,
+          'subCategory': _selectedSubCategory,
         },
       );
       if (mounted) {
@@ -178,11 +188,41 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
-                    decoration: _inputDecoration('카테고리 선택'),
-                    items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (val) => setState(() => _selectedCategory = val!),
+                    decoration: _inputDecoration('대분류 선택'),
+                    items: CategoryData.mainCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedCategory = val!;
+                        _selectedSubCategory = ''; // 소분류 초기화
+                      });
+                    },
                   ),
                   const SizedBox(height: 16),
+                  
+                  if (CategoryData.getSubCategories(_selectedCategory).isNotEmpty) ...[
+                    DropdownButtonFormField<String>(
+                      value: _selectedSubCategory.isEmpty ? null : _selectedSubCategory,
+                      decoration: _inputDecoration('소분류 선택'),
+                      items: CategoryData.getSubCategories(_selectedCategory).map((c) => DropdownMenuItem(
+                        value: c, 
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              CategoryData.getIconPath(c),
+                              width: 24,
+                              height: 24,
+                              color: Colors.black87,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.checkroom, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(c),
+                          ],
+                        ),
+                      )).toList(),
+                      onChanged: (val) => setState(() => _selectedSubCategory = val ?? ''),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   
                   TextField(
                     controller: _colorController,

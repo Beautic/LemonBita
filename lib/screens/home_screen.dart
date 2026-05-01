@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import 'upload_screen.dart';
 import 'clothing_detail_screen.dart';
+import '../utils/categories.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,11 +19,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'ALL', 'icon': Icons.all_inclusive_rounded},
-    {'name': '아우터', 'icon': Icons.layers_rounded},
-    {'name': '상의', 'icon': Icons.checkroom_rounded},
-    {'name': '하의', 'icon': Icons.straighten_rounded},
-    {'name': '신발', 'icon': Icons.ice_skating_rounded},
-    {'name': '액세서리', 'icon': Icons.watch_rounded},
+    {'name': '상의', 'imageAsset': CategoryData.getIconPath('티셔츠')},
+    {'name': '원피스', 'imageAsset': CategoryData.getIconPath('캐주얼 원피스')},
+    {'name': '바지', 'imageAsset': CategoryData.getIconPath('청바지')},
+    {'name': '치마', 'imageAsset': CategoryData.getIconPath('미니스커트')},
+    {'name': '아우터', 'imageAsset': CategoryData.getIconPath('자켓')},
+    {'name': '신발', 'imageAsset': CategoryData.getIconPath('스니커즈')},
+    {'name': '가방', 'imageAsset': CategoryData.getIconPath('에코백')},
+    {'name': '모자', 'imageAsset': CategoryData.getIconPath('캡')},
+    {'name': '악세서리', 'icon': Icons.watch_rounded},
     {'name': '기타', 'icon': Icons.more_horiz_rounded},
   ];
 
@@ -154,11 +159,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       color: Colors.white,
                     ),
-                    child: Icon(
-                      category['icon'],
-                      color: isSelected ? Colors.black : Colors.grey[600],
-                      size: 24,
-                    ),
+                    child: category.containsKey('imageAsset')
+                        ? Center(
+                            child: Image.asset(
+                              category['imageAsset'],
+                              width: 32,
+                              height: 32,
+                              color: isSelected ? Colors.black : Colors.grey[600],
+                              errorBuilder: (context, error, stackTrace) => Icon(
+                                Icons.category_rounded,
+                                color: isSelected ? Colors.black : Colors.grey[600],
+                                size: 24,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            category['icon'],
+                            color: isSelected ? Colors.black : Colors.grey[600],
+                            size: 24,
+                          ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -188,8 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (title.isEmpty) title = item['category'] ?? '옷 정보 없음';
 
     String category = item['category'] ?? '';
-    String fit = item['fit'] ?? '';
-    String subtitle = fit.isNotEmpty ? '$category · $fit' : category;
+    String subCategory = item['subCategory'] ?? '';
+    String subtitle = subCategory.isNotEmpty ? '$category · $subCategory' : category;
 
     return GestureDetector(
       onTap: () {

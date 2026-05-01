@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
+import '../utils/categories.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -14,11 +15,10 @@ class _UploadScreenState extends State<UploadScreen> {
   XFile? _imageFile;
   final ImagePicker _picker = ImagePicker();
   String _selectedCategory = '상의';
+  String _selectedSubCategory = '';
   bool _isLoading = false;
   
   final FirebaseService _firebaseService = FirebaseService();
-  
-  final List<String> _categories = ['상의', '하의', '아우터', '신발', '액세서리', '기타'];
 
   // 카메라 앱 호출
   Future<void> _takePhoto() async {
@@ -128,13 +128,13 @@ class _UploadScreenState extends State<UploadScreen> {
 
             const SizedBox(height: 24),
 
-            // 2. 카테고리 선택
-            const Text('카테고리 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            // 2. 대분류 선택
+            const Text('대분류 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _categories.map((category) {
+              spacing: 8,
+              runSpacing: 8,
+              children: CategoryData.mainCategories.map((category) {
                 final isSelected = _selectedCategory == category;
                 return ChoiceChip(
                   label: Text(category),
@@ -142,11 +142,48 @@ class _UploadScreenState extends State<UploadScreen> {
                   selectedColor: Colors.black,
                   labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                   onSelected: (selected) {
-                    if (selected) setState(() => _selectedCategory = category);
+                    if (selected) {
+                      setState(() {
+                        _selectedCategory = category;
+                        _selectedSubCategory = ''; // 소분류 초기화
+                      });
+                    }
                   },
                 );
               }).toList(),
             ),
+
+            const SizedBox(height: 24),
+
+            // 3. 소분류 선택 (소분류가 있는 경우에만 노출)
+            if (CategoryData.getSubCategories(_selectedCategory).isNotEmpty) ...[
+              const Text('소분류 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: CategoryData.getSubCategories(_selectedCategory).map((subCategory) {
+                  final isSelected = _selectedSubCategory == subCategory;
+                  return ChoiceChip(
+                    avatar: Image.asset(
+                      CategoryData.getIconPath(subCategory),
+                      width: 24,
+                      height: 24,
+                      color: isSelected ? Colors.white : Colors.black87,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.checkroom, size: 16),
+                    ),
+                    label: Text(subCategory),
+                    selected: isSelected,
+                    selectedColor: Colors.grey[800],
+                    backgroundColor: Colors.grey[200],
+                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 13),
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedSubCategory = subCategory);
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
 
             const SizedBox(height: 48),
 
@@ -162,6 +199,13 @@ class _UploadScreenState extends State<UploadScreen> {
                         return;
                       }
 
+                      if (CategoryData.getSubCategories(_selectedCategory).isNotEmpty && _selectedSubCategory.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('소분류를 선택해주세요!')),
+                        );
+                        return;
+                      }
+
                       setState(() => _isLoading = true);
                       try {
                         final bytes = await _imageFile!.readAsBytes();
@@ -170,6 +214,7 @@ class _UploadScreenState extends State<UploadScreen> {
                         await _firebaseService.saveClothingData(
                           imageUrl: imageUrl,
                           category: _selectedCategory,
+                          subCategory: _selectedSubCategory,
                           tags: '#$_selectedCategory',
                         );
 

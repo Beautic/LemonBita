@@ -131,10 +131,16 @@ class _MainScreenState extends State<MainScreen> {
             label: 'OOTD',
           ),
           BottomNavigationBarItem(
-            icon: Icon(
-              Icons.add_circle_outline,
-              color: Colors.black,
-              size: 30,
+            icon: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+              child: const Center(
+                child: Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, height: 1.1)),
+              ),
             ),
             label: '추가',
           ),

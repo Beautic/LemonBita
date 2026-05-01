@@ -53,7 +53,12 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1080,
+      maxHeight: 1080,
+      imageQuality: 70,
+    );
     if (image != null) {
       final bytes = await image.readAsBytes();
       final ext = image.name.split('.').last;

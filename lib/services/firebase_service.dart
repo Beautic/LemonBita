@@ -226,6 +226,7 @@ class FirebaseService {
   Future<void> saveClothingData({
     required String imageUrl,
     required String category,
+    required String subCategory,
     required String tags,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
@@ -234,6 +235,7 @@ class FirebaseService {
       'userId': currentUserId,
       'imageUrl': imageUrl,
       'category': category,
+      'subCategory': subCategory,
       'tags': tags,
       'createdAt': FieldValue.serverTimestamp(),
     });
