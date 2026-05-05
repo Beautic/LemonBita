@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 유저 컬렉션
+    match /users/{userId} {
+      allow read: if request.auth != null; // 로그인한 누구나 읽기 가능 (프로필 접근)
+      allow write: if request.auth != null && request.auth.uid == userId; // 본인만 수정
+      
+      match /savedOotds/{ootdId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /following/{targetUserId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /followers/{sourceUserId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId; // 임시로 클라이언트 쓰기 허용
+      }
+    }
+    
+    // 옷 컬렉션 (외부 직접 조회 없음 — OOTD의 taggedClothes 임베드로만 노출)
+    match /clothes/{clothId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // OOTD 컬렉션
+    match /ootds/{ootdId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        ('visibility' in resource.data && resource.data.visibility == 'public')
+      );
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // 좋아요 서브컬렉션
+      match /likes/{userId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // 댓글 서브컬렉션
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      }
+    }
+    
+    // 컬렉션(보드) 컬렉션
+    match /collections/{collectionId} {
+      // 본인 보드이거나 public이면 읽기 가능
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.isPrivate == false
+      );
+      // 생성/수정/삭제는 본인만
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // 알림 컬렉션 (Functions에서만 생성)
+    match /notifications/{userId}/items/{itemId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create, delete: if false; 
+    }
+  }
+}
