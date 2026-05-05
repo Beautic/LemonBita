@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import 'upload_screen.dart';
 import 'clothing_detail_screen.dart';
+import 'search_clothes_screen.dart';
 import '../utils/categories.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,6 +47,17 @@ class _HomeScreenState extends State<HomeScreen> {
           'MY CLOSET',
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchClothesScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _clothesStream,
