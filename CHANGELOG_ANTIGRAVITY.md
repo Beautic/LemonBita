@@ -18,3 +18,16 @@
 **수정 내용**: 
 - `Firebase.apps.isEmpty`를 체크하여 초기화가 필요한 경우에만 실행하도록 보강.
 **이유**: 중복 초기화 방지 및 안정성 확보.
+
+## 2026-05-05 (v3.2)
+
+### 1. 사진 잘림 현상 수정 (UI 개선)
+**문제**: MY CLOSET을 제외한 다른 페이지(옷 상세, OOTD, 업로드 화면)에서 옷이나 코디 사진이 비율에 맞춰 잘려서(Cropped) 보이는 현상 발생.
+**수정 내용**: 
+- `lib/screens/clothing_detail_screen.dart`
+- `lib/screens/ootd_screen.dart`
+- `lib/screens/upload_screen.dart`
+- `lib/screens/upload_ootd_screen.dart`
+- 위 4개 파일에서 이미지를 표시하는 `BoxFit.cover` 속성을 모두 `BoxFit.contain`으로 변경하여 원본 사진의 비율을 유지하도록 수정.
+- `clothing_detail_screen.dart`의 이미지 컨테이너 높이를 400으로 키우고 빈 공간이 어색하지 않게 배경색(`Colors.grey[100]`) 추가.
+**이유**: 세로로 긴 옷 사진이 잘림 없이 온전히 보이도록 하기 위함.

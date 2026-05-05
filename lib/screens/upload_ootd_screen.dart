@@ -165,7 +165,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                 height: 350,
                 color: Colors.grey[100],
                 child: _imageBytes != null
-                    ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                    ? Image.memory(_imageBytes!, fit: BoxFit.contain)
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

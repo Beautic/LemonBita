@@ -84,7 +84,7 @@ class _UploadScreenState extends State<UploadScreen> {
                           future: _imageFile!.readAsBytes(),
                           builder: (context, snapshot) {
                             if (snapshot.hasData) {
-                              return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                              return Image.memory(snapshot.data!, fit: BoxFit.contain);
                             }
                             return const Center(child: CircularProgressIndicator());
                           },

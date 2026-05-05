@@ -163,8 +163,9 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   Hero(
                     tag: widget.docId,
                     child: Container(
-                      height: 300,
+                      height: 400,
                       decoration: BoxDecoration(
+                        color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
@@ -175,7 +176,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                         ],
                         image: DecorationImage(
                           image: NetworkImage(widget.item['imageUrl']),
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
