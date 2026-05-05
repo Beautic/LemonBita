@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
 
 class OotdScreen extends StatefulWidget {
-  const OotdScreen({super.key});
+  final bool isProfileTab;
+  const OotdScreen({super.key, this.isProfileTab = false});
 
   @override
   State<OotdScreen> createState() => _OotdScreenState();
@@ -22,16 +23,8 @@ class _OotdScreenState extends State<OotdScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'OOTD',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
-        ),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _ootdStream,
+    final Widget body = StreamBuilder<QuerySnapshot>(
+      stream: _ootdStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.black));
@@ -81,7 +74,21 @@ class _OotdScreenState extends State<OotdScreen> {
             },
           );
         },
+      );
+
+    if (widget.isProfileTab) {
+      return body;
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'OOTD',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
+        ),
       ),
+      body: body,
     );
   }
 

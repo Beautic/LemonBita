@@ -18,6 +18,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
   Uint8List? _imageBytes;
   String? _imageExtension;
   bool _isUploading = false;
+  String _visibility = 'private';
 
   // 태그된 옷들의 문서 ID 목록
   final Set<String> _selectedClothesIds = {};
@@ -110,6 +111,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
         imageUrl: imageUrl,
         description: _descController.text.trim(),
         taggedClothes: taggedClothes,
+        visibility: _visibility,
       );
 
       if (mounted) {
@@ -188,6 +190,30 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   border: InputBorder.none,
                 ),
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+
+            // 2-1. 공개 범위 설정
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('공개 범위', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  DropdownButton<String>(
+                    value: _visibility,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 'public', child: Text('전체 공개')),
+                      DropdownMenuItem(value: 'followers', child: Text('팔로워만')),
+                      DropdownMenuItem(value: 'private', child: Text('나만 보기')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _visibility = val);
+                    },
+                  ),
+                ],
               ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),

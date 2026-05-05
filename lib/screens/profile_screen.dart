@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
+import 'ootd_screen.dart';
+import 'collections_tab.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -8,49 +10,90 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final FirebaseService firebaseService = FirebaseService();
     final user = firebaseService.currentUser;
+    final userName = user?.email?.split('@').first ?? '사용자';
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'PROFILE',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey[200],
-              ),
-              child: const Icon(Icons.person, size: 60, color: Colors.grey),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, color: Colors.black),
+              onPressed: () {
+                // TODO: 설정 화면 열기
+              },
             ),
-            const SizedBox(height: 24),
-            Text(
-              user?.email ?? '사용자',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 48),
-            OutlinedButton.icon(
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.black),
               onPressed: () async {
                 await firebaseService.logout();
               },
-              icon: const Icon(Icons.logout_rounded, color: Colors.black),
-              label: const Text('로그아웃', style: TextStyle(color: Colors.black)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                side: const BorderSide(color: Colors.black),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // 프로필 헤더
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey[200]),
+                    child: const Icon(Icons.person, size: 40, color: Colors.grey),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatColumn('게시물', '0'),
+                        _buildStatColumn('팔로워', '0'),
+                        _buildStatColumn('팔로잉', '0'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // 탭바
+            const TabBar(
+              indicatorColor: Colors.black,
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.grey,
+              tabs: [
+                Tab(icon: Icon(Icons.grid_on)),
+                Tab(icon: Icon(Icons.bookmark_border)),
+              ],
+            ),
+            
+            // 탭바 뷰
+            const Expanded(
+              child: TabBarView(
+                children: [
+                  OotdScreen(isProfileTab: true),
+                  CollectionsTab(),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatColumn(String label, String count) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(count, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 }

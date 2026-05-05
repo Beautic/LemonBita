@@ -4,6 +4,8 @@ import 'upload_screen.dart';
 import 'profile_screen.dart';
 import 'ootd_screen.dart';
 import 'upload_ootd_screen.dart';
+import 'discover_screen.dart';
+import 'following_feed_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,9 +18,10 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
+    const DiscoverScreen(),
     const HomeScreen(),
-    const OotdScreen(),
     const SizedBox.shrink(), // Index 2 is for Upload (+)
+    const FollowingFeedScreen(),
     const ProfileScreen(),
   ];
 
@@ -105,30 +108,19 @@ class _MainScreenState extends State<MainScreen> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.grid_view_rounded,
+              Icons.search,
               color: _currentIndex == 0 ? Colors.black : Colors.grey[400],
               size: 28,
             ),
-            label: '옷장',
+            label: '발견',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              width: 26,
-              height: 30,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: _currentIndex == 1 ? Colors.black : Colors.grey[400]!,
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Icons.person,
-                color: _currentIndex == 1 ? Colors.black : Colors.grey[400],
-                size: 18,
-              ),
+            icon: Icon(
+              Icons.grid_view_rounded,
+              color: _currentIndex == 1 ? Colors.black : Colors.grey[400],
+              size: 28,
             ),
-            label: 'OOTD',
+            label: '옷장',
           ),
           BottomNavigationBarItem(
             icon: Container(
@@ -146,8 +138,16 @@ class _MainScreenState extends State<MainScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.person_outline,
+              Icons.dynamic_feed_outlined,
               color: _currentIndex == 3 ? Colors.black : Colors.grey[400],
+              size: 28,
+            ),
+            label: '피드',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.person_outline,
+              color: _currentIndex == 4 ? Colors.black : Colors.grey[400],
               size: 30,
             ),
             label: '프로필',
