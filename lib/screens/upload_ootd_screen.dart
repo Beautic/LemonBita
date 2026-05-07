@@ -18,6 +18,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
   Uint8List? _imageBytes;
   String? _imageExtension;
   bool _isUploading = false;
+  DateTime _selectedDate = DateTime.now();
 
   // 태그된 옷들의 문서 ID 목록
   final Set<String> _selectedClothesIds = {};
@@ -62,9 +63,18 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
     if (image != null) {
       final bytes = await image.readAsBytes();
       final ext = image.name.split('.').last;
+      
+      DateTime? imgDate;
+      try {
+        imgDate = await image.lastModified();
+      } catch (_) {}
+
       setState(() {
         _imageBytes = bytes;
         _imageExtension = ext;
+        if (imgDate != null) {
+          _selectedDate = imgDate;
+        }
       });
     }
   }
@@ -110,6 +120,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
         imageUrl: imageUrl,
         description: _descController.text.trim(),
         taggedClothes: taggedClothes,
+        date: _selectedDate,
       );
 
       if (mounted) {
@@ -177,7 +188,57 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
               ),
             ),
 
-            // 2. 코멘트 입력
+            // 2. 날짜 선택 영역
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 20, color: Colors.black87),
+                  const SizedBox(width: 8),
+                  const Text('날짜', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: Colors.black,
+                                onPrimary: Colors.white,
+                                onSurface: Colors.black,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDate = picked;
+                        });
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      backgroundColor: Colors.grey[100],
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text(
+                      '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
+                      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+
+            // 3. 코멘트 입력
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(

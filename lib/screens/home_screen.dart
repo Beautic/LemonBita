@@ -16,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   late final Stream<QuerySnapshot> _clothesStream;
+  late final Stream<QuerySnapshot> _ootdStream;
   String _selectedCategory = 'ALL';
 
   final List<Map<String, dynamic>> _categories = [
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _clothesStream = _firebaseService.getClothesStream();
+    _ootdStream = _firebaseService.getOOTDStream();
   }
 
   @override
@@ -60,8 +62,27 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _clothesStream,
-        builder: (context, snapshot) {
+        stream: _ootdStream,
+        builder: (context, ootdSnapshot) {
+          // 태그 횟수 계산
+          Map<String, int> tagCounts = {};
+          if (ootdSnapshot.hasData) {
+            for (var doc in ootdSnapshot.data!.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              List<dynamic> taggedIds = data['taggedClothesIds'] ?? [];
+              // 이전 데이터 호환 (taggedClothes 배열)
+              if (taggedIds.isEmpty && data['taggedClothes'] != null) {
+                taggedIds = (data['taggedClothes'] as List).map((e) => e['id']).toList();
+              }
+              for (var id in taggedIds) {
+                tagCounts[id.toString()] = (tagCounts[id.toString()] ?? 0) + 1;
+              }
+            }
+          }
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: _clothesStream,
+            builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.black));
           }
@@ -129,15 +150,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemBuilder: (context, index) {
                           final doc = filteredClothes[index];
                           final item = doc.data() as Map<String, dynamic>;
-                          return _buildClothingGridItem(doc.id, item);
+                          final count = tagCounts[doc.id] ?? 0;
+                          return _buildClothingGridItem(doc.id, item, count);
                         },
                       ),
               ),
             ],
           );
         },
-      ),
-    );
+      ); // closes inner StreamBuilder
+        }, // closes outer builder
+      ), // closes outer StreamBuilder
+    ); // closes Scaffold
   }
 
   // 상단 인스타 스토리 형태의 카테고리
@@ -210,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 피드 그리드 아이템
-  Widget _buildClothingGridItem(String docId, Map<String, dynamic> item) {
+  Widget _buildClothingGridItem(String docId, Map<String, dynamic> item, int tagCount) {
     // 색상, 패턴 조합으로 임시 타이틀 생성
     String color = item['color'] ?? '';
     String pattern = item['pattern'] ?? '';
@@ -235,20 +259,48 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Hero(
-                tag: docId,
-                child: Image.network(
-                  item['imageUrl'] ?? '',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[100],
-                    child: const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Hero(
+                    tag: docId,
+                    child: Image.network(
+                      item['imageUrl'] ?? '',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[100],
+                        child: const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (tagCount > 0)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bookmark, size: 10, color: Colors.white),
+                          const SizedBox(width: 3),
+                          Text(
+                            '$tagCount',
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 6),

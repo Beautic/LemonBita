@@ -4,9 +4,8 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthUser {
   final String uid;
@@ -24,17 +23,11 @@ class AuthUser {
 
 class FirebaseService {
   static const String _apiKey = "AIzaSyA53XksiSaTI_S7TjENSv1J_slbSOWTwPg";
-
+  
   // 인증 상태 관리
   static AuthUser? _currentUser;
   static final StreamController<AuthUser?> _authStateController =
       StreamController<AuthUser?>.broadcast();
-
-  // SharedPreferences 키
-  static const String _prefsKeyUid = 'auth_uid';
-  static const String _prefsKeyEmail = 'auth_email';
-  static const String _prefsKeyIdToken = 'auth_idToken';
-  static const String _prefsKeyRefreshToken = 'auth_refreshToken';
 
   // Firebase 초기화 (플랫폼별 분기)
   static Future<void> initialize() async {
@@ -52,52 +45,22 @@ class FirebaseService {
     } else {
       await Firebase.initializeApp();
     }
-    // 디스크에 저장된 로그인 상태 복원
-    await _restoreSession();
-    // 초기 상태 emit
-    _authStateController.add(_currentUser);
-  }
-
-  // 디스크에서 세션 복원 (앱 시작 시 호출)
-  static Future<void> _restoreSession() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final uid = prefs.getString(_prefsKeyUid);
-      final email = prefs.getString(_prefsKeyEmail);
-      final idToken = prefs.getString(_prefsKeyIdToken);
-      final refreshToken = prefs.getString(_prefsKeyRefreshToken);
-      if (uid != null &&
-          email != null &&
-          idToken != null &&
-          refreshToken != null) {
+    
+    // FirebaseAuth의 인증 상태 변화를 구독
+    auth.FirebaseAuth.instance.authStateChanges().listen((auth.User? user) {
+      if (user != null) {
         _currentUser = AuthUser(
-          uid: uid,
-          email: email,
-          idToken: idToken,
-          refreshToken: refreshToken,
+          uid: user.uid,
+          email: user.email ?? '',
+          idToken: '', // 더 이상 SDK 외부에서 사용 안함
+          refreshToken: '', // 더 이상 SDK 외부에서 사용 안함
         );
+        _authStateController.add(_currentUser);
+      } else {
+        _currentUser = null;
+        _authStateController.add(null);
       }
-    } catch (_) {
-      // 복원 실패 시 무시 (로그인 화면으로 떨어짐)
-    }
-  }
-
-  // 디스크에 세션 저장 (로그인/회원가입 성공 시 호출)
-  static Future<void> _persistSession(AuthUser user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKeyUid, user.uid);
-    await prefs.setString(_prefsKeyEmail, user.email);
-    await prefs.setString(_prefsKeyIdToken, user.idToken);
-    await prefs.setString(_prefsKeyRefreshToken, user.refreshToken);
-  }
-
-  // 디스크에서 세션 삭제 (로그아웃 시 호출)
-  static Future<void> _clearSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefsKeyUid);
-    await prefs.remove(_prefsKeyEmail);
-    await prefs.remove(_prefsKeyIdToken);
-    await prefs.remove(_prefsKeyRefreshToken);
+    });
   }
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -114,94 +77,68 @@ class FirebaseService {
   // 현재 유저 가져오기
   AuthUser? get currentUser => _currentUser;
 
-  // 이메일 회원가입 (REST API)
+  // 이메일 회원가입
   Future<AuthUser> signUpWithEmail(String email, String password) async {
-    final response = await http.post(
-      Uri.parse(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_apiKey'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      }),
-    );
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
-      throw _parseAuthError(data);
+    try {
+      final cred = await auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = AuthUser(
+        uid: cred.user!.uid,
+        email: cred.user!.email ?? '',
+        idToken: '',
+        refreshToken: '',
+      );
+      return user;
+    } on auth.FirebaseAuthException catch (e) {
+      throw _parseAuthError(e);
     }
-
-    final user = AuthUser(
-      uid: data['localId'],
-      email: data['email'],
-      idToken: data['idToken'],
-      refreshToken: data['refreshToken'],
-    );
-    _currentUser = user;
-    await _persistSession(user);
-    _authStateController.add(user);
-    return user;
   }
 
-  // 이메일 로그인 (REST API)
+  // 이메일 로그인
   Future<AuthUser> loginWithEmail(String email, String password) async {
-    final response = await http.post(
-      Uri.parse(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$_apiKey'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      }),
-    );
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
-      throw _parseAuthError(data);
+    try {
+      final cred = await auth.FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = AuthUser(
+        uid: cred.user!.uid,
+        email: cred.user!.email ?? '',
+        idToken: '',
+        refreshToken: '',
+      );
+      return user;
+    } on auth.FirebaseAuthException catch (e) {
+      throw _parseAuthError(e);
     }
-
-    final user = AuthUser(
-      uid: data['localId'],
-      email: data['email'],
-      idToken: data['idToken'],
-      refreshToken: data['refreshToken'],
-    );
-    _currentUser = user;
-    await _persistSession(user);
-    _authStateController.add(user);
-    return user;
   }
 
   // 로그아웃
   Future<void> logout() async {
-    _currentUser = null;
-    await _clearSession();
-    _authStateController.add(null);
+    await auth.FirebaseAuth.instance.signOut();
   }
 
-  // Firebase Auth REST API 에러 파싱
-  Exception _parseAuthError(Map<String, dynamic> data) {
-    final errorMessage =
-        data['error']?['message'] ?? 'Unknown error';
-    switch (errorMessage) {
-      case 'EMAIL_EXISTS':
+  // Firebase Auth SDK 에러 파싱
+  Exception _parseAuthError(auth.FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
         return Exception('이미 등록된 이메일입니다.');
-      case 'INVALID_EMAIL':
+      case 'invalid-email':
         return Exception('유효하지 않은 이메일 형식입니다.');
-      case 'WEAK_PASSWORD':
+      case 'weak-password':
         return Exception('비밀번호가 너무 약합니다. (6자 이상)');
-      case 'EMAIL_NOT_FOUND':
-      case 'INVALID_PASSWORD':
-      case 'INVALID_LOGIN_CREDENTIALS':
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
         return Exception('이메일 또는 비밀번호가 올바르지 않습니다.');
-      case 'USER_DISABLED':
+      case 'user-disabled':
         return Exception('비활성화된 계정입니다.');
-      case 'TOO_MANY_ATTEMPTS_TRY_LATER':
+      case 'too-many-requests':
         return Exception('너무 많은 시도. 잠시 후 다시 시도하세요.');
       default:
-        return Exception('인증 오류: $errorMessage');
+        return Exception('인증 오류: ${e.message}');
     }
   }
 
@@ -275,15 +212,39 @@ class FirebaseService {
     required String imageUrl,
     required String description,
     required List<Map<String, dynamic>> taggedClothes,
+    DateTime? date,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    List<String> taggedClothesIds = taggedClothes.map((cloth) => cloth['id'] as String).toList();
 
     await _firestore.collection('ootds').add({
       'userId': currentUserId,
       'imageUrl': imageUrl,
       'description': description,
       'taggedClothes': taggedClothes, // [{ id, imageUrl, title }, ...]
-      'createdAt': FieldValue.serverTimestamp(),
+      'taggedClothesIds': taggedClothesIds,
+      'createdAt': date != null ? Timestamp.fromDate(date) : FieldValue.serverTimestamp(),
+    });
+  }
+
+  // 6-1. OOTD 날짜 수정
+  Future<void> updateOOTDDate(String docId, DateTime newDate) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('ootds').doc(docId).update({
+      'createdAt': Timestamp.fromDate(newDate),
+    });
+  }
+
+  // 6-1. OOTD 태그 수정
+  Future<void> updateOOTDTags(String docId, List<Map<String, dynamic>> newTaggedClothes) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    
+    List<String> taggedClothesIds = newTaggedClothes.map((cloth) => cloth['id'] as String).toList();
+
+    await _firestore.collection('ootds').doc(docId).update({
+      'taggedClothes': newTaggedClothes,
+      'taggedClothesIds': taggedClothesIds,
     });
   }
 
@@ -302,5 +263,45 @@ class FirebaseService {
   Future<void> deleteOOTDData(String docId) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     await _firestore.collection('ootds').doc(docId).delete();
+  }
+
+  // ==== OOTD 최적화 조회 로직 (Pagination & Monthly) ====
+
+  // 9. OOTD 페이지네이션 조회 (무한 스크롤 용)
+  Future<List<QueryDocumentSnapshot>> getOOTDPage({DocumentSnapshot? lastDoc, int limit = 10}) async {
+    if (currentUserId == null) return [];
+
+    Query query = _firestore
+        .collection('ootds')
+        .where('userId', isEqualTo: currentUserId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    if (lastDoc != null) {
+      query = query.startAfterDocument(lastDoc);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs;
+  }
+
+  // 10. 특정 월의 OOTD 데이터만 조회 (달력 용)
+  Future<List<QueryDocumentSnapshot>> getOOTDsByMonth(int year, int month) async {
+    if (currentUserId == null) return [];
+
+    // 해당 월의 시작일과 다음 달의 시작일 구하기
+    final startOfMonth = DateTime.utc(year, month, 1);
+    final nextMonth = month == 12 ? 1 : month + 1;
+    final nextYear = month == 12 ? year + 1 : year;
+    final startOfNextMonth = DateTime.utc(nextYear, nextMonth, 1);
+
+    final snapshot = await _firestore
+        .collection('ootds')
+        .where('userId', isEqualTo: currentUserId)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('createdAt', isLessThan: Timestamp.fromDate(startOfNextMonth))
+        .get();
+
+    return snapshot.docs;
   }
 }

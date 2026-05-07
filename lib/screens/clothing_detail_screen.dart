@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import '../utils/categories.dart';
-
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> item;
@@ -181,7 +181,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
+
+                  // 활용 통계 섹션 추가
+                  _buildOotdUsageSection(),
+                  const SizedBox(height: 16),
 
                   // 2. 정보 수정 폼
                   _buildSectionTitle('기본 정보'),
@@ -317,6 +321,72 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
         borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    );
+  }
+
+  // 활용 통계 위젯
+  Widget _buildOotdUsageSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firebaseService.getOOTDStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        // 현재 옷이 포함된 OOTD 필터링
+        List<Map<String, dynamic>> usedOotds = [];
+        for (var doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          List<dynamic> taggedIds = data['taggedClothesIds'] ?? [];
+          if (taggedIds.isEmpty && data['taggedClothes'] != null) {
+            taggedIds = (data['taggedClothes'] as List).map((e) => e['id']).toList();
+          }
+          if (taggedIds.contains(widget.docId)) {
+            usedOotds.add(data);
+          }
+        }
+
+        if (usedOotds.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  '이 옷을 활용한 OOTD: ${usedOotds.length}번',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: usedOotds.length,
+                itemBuilder: (context, index) {
+                  final ootd = usedOotds[index];
+                  return Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[200],
+                      image: DecorationImage(
+                        image: NetworkImage(ootd['imageUrl'] ?? ''),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
     );
   }
 }

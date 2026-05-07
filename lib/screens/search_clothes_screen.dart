@@ -5,7 +5,14 @@ import '../utils/categories.dart';
 import 'clothing_detail_screen.dart';
 
 class SearchClothesScreen extends StatefulWidget {
-  const SearchClothesScreen({super.key});
+  final bool isSelectionMode;
+  final Set<String>? initialSelectedIds;
+
+  const SearchClothesScreen({
+    super.key,
+    this.isSelectionMode = false,
+    this.initialSelectedIds,
+  });
 
   @override
   State<SearchClothesScreen> createState() => _SearchClothesScreenState();
@@ -27,9 +34,14 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
     '블랙', '화이트', '그레이', '네이비', '블루', '레드', '핑크', '그린', '옐로우', '베이지', '브라운', '기타'
   ];
 
+  final Set<String> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
+    if (widget.isSelectionMode && widget.initialSelectedIds != null) {
+      _selectedIds.addAll(widget.initialSelectedIds!);
+    }
     _fetchAllClothes();
     _searchController.addListener(_applyFilters);
   }
@@ -142,6 +154,32 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
           ),
           style: const TextStyle(fontSize: 16),
         ),
+        actions: widget.isSelectionMode
+            ? [
+                TextButton(
+                  onPressed: () {
+                    List<Map<String, dynamic>> selectedItems = [];
+                    for (var doc in _allClothes) {
+                      if (_selectedIds.contains(doc.id)) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        String title = '${data['color'] ?? ''} ${data['pattern'] ?? ''}'.trim();
+                        if (title.isEmpty) title = data['brand'] ?? '';
+                        if (title.isEmpty) title = data['category'] ?? '옷 정보 없음';
+
+                        selectedItems.add({
+                          'id': doc.id,
+                          'imageUrl': data['imageUrl'] ?? '',
+                          'title': title,
+                        });
+                      }
+                    }
+                    Navigator.pop(context, selectedItems);
+                  },
+                  child: const Text('완료', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                const SizedBox(width: 8),
+              ]
+            : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(130), // 필터 영역 높이
           child: Column(
@@ -283,31 +321,69 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
     String subCategory = item['subCategory'] ?? '';
     String subtitle = subCategory.isNotEmpty ? '$category · $subCategory' : category;
 
+    final bool isSelected = _selectedIds.contains(docId);
+
     return GestureDetector(
       onTap: () {
-        // 상세화면 갔다가 돌아왔을 때 데이터가 변경되었을 수 있으므로 재로드
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ClothingDetailScreen(docId: docId, item: item),
-          ),
-        ).then((_) => _fetchAllClothes());
+        if (widget.isSelectionMode) {
+          setState(() {
+            if (isSelected) {
+              _selectedIds.remove(docId);
+            } else {
+              _selectedIds.add(docId);
+            }
+          });
+        } else {
+          // 상세화면 갔다가 돌아왔을 때 데이터가 변경되었을 수 있으므로 재로드
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ClothingDetailScreen(docId: docId, item: item),
+            ),
+          ).then((_) => _fetchAllClothes());
+        }
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                item['imageUrl'] ?? '',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[100],
-                  child: const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: widget.isSelectionMode && isSelected
+                        ? Border.all(color: Colors.black, width: 3)
+                        : null,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      item['imageUrl'] ?? '',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[100],
+                        child: const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                if (widget.isSelectionMode && isSelected)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, size: 16, color: Colors.white),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 6),

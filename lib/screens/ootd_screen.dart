@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
+import 'search_clothes_screen.dart';
+import 'ootd_calendar_screen.dart';
 
 class OotdScreen extends StatefulWidget {
   const OotdScreen({super.key});
@@ -12,12 +14,68 @@ class OotdScreen extends StatefulWidget {
 
 class _OotdScreenState extends State<OotdScreen> {
   final FirebaseService _firebaseService = FirebaseService();
-  late final Stream<QuerySnapshot> _ootdStream;
+  final ScrollController _scrollController = ScrollController();
+  
+  List<QueryDocumentSnapshot> _ootds = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
 
   @override
   void initState() {
     super.initState();
-    _ootdStream = _firebaseService.getOOTDStream();
+    _loadOotds();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadOotds({bool refresh = false}) async {
+    if (_isLoading) return;
+    if (refresh) {
+      setState(() {
+        _ootds.clear();
+        _lastDocument = null;
+        _hasMore = true;
+      });
+    }
+
+    if (!_hasMore) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final newDocs = await _firebaseService.getOOTDPage(lastDoc: _lastDocument, limit: 10);
+      
+      setState(() {
+        if (newDocs.length < 10) {
+          _hasMore = false;
+        }
+        if (newDocs.isNotEmpty) {
+          _lastDocument = newDocs.last;
+          _ootds.addAll(newDocs);
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // 혹시 복합 인덱스 에러가 날 수 있음
+      debugPrint("OOTD 로드 에러: $e");
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadOotds();
+    }
   }
 
   @override
@@ -29,59 +87,64 @@ class _OotdScreenState extends State<OotdScreen> {
           'OOTD',
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
         ),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _ootdStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.black));
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('에러가 발생했습니다: ${snapshot.error}'));
-          }
-
-          var ootds = snapshot.data?.docs.toList() ?? [];
-          
-          // 로컬 정렬 (Firestore 복합 인덱스 에러 방지)
-          ootds.sort((a, b) {
-            final aData = a.data() as Map<String, dynamic>;
-            final bData = b.data() as Map<String, dynamic>;
-            final aTime = aData['createdAt'] as Timestamp?;
-            final bTime = bData['createdAt'] as Timestamp?;
-            if (aTime == null && bTime == null) return 0;
-            if (aTime == null) return 1;
-            if (bTime == null) return -1;
-            return bTime.compareTo(aTime);
-          });
-
-          if (ootds.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.camera_alt_outlined, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text('첫 번째 OOTD를 기록해보세요!', 
-                    style: TextStyle(color: Colors.grey[500]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.separated(
-            physics: const BouncingScrollPhysics(),
-            itemCount: ootds.length,
-            separatorBuilder: (context, index) => const Divider(height: 32, thickness: 8, color: Color(0xFFF5F5F5)),
-            itemBuilder: (context, index) {
-              final doc = ootds[index];
-              final item = doc.data() as Map<String, dynamic>;
-              return _buildOotdPost(doc.id, item);
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month, color: Colors.black87),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OotdCalendarScreen(),
+                ),
+              );
             },
-          );
-        },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
+      body: RefreshIndicator(
+        onRefresh: () => _loadOotds(refresh: true),
+        color: Colors.black,
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_ootds.isEmpty && _isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Colors.black));
+    }
+
+    if (_ootds.isEmpty && !_isLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.camera_alt_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text('첫 번째 OOTD를 기록해보세요!', style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      itemCount: _ootds.length + (_hasMore ? 1 : 0),
+      separatorBuilder: (context, index) => const Divider(height: 32, thickness: 8, color: Color(0xFFF5F5F5)),
+      itemBuilder: (context, index) {
+        if (index == _ootds.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0),
+            child: Center(child: CircularProgressIndicator(color: Colors.black)),
+          );
+        }
+
+        final doc = _ootds[index];
+        final item = doc.data() as Map<String, dynamic>;
+        return _buildOotdPost(doc.id, item);
+      },
     );
   }
 
@@ -118,6 +181,68 @@ class _OotdScreenState extends State<OotdScreen> {
               Text(
                 dateStr,
                 style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+              IconButton(
+                icon: const Icon(Icons.calendar_month, size: 20, color: Colors.black54),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+                onPressed: () async {
+                  final initialDate = item['createdAt'] != null ? (item['createdAt'] as Timestamp).toDate() : DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: initialDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: Colors.black,
+                            onPrimary: Colors.white,
+                            onSurface: Colors.black,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null && !DateUtils.isSameDay(picked, initialDate)) {
+                    await _firebaseService.updateOOTDDate(docId, picked);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('날짜가 수정되었습니다.')),
+                      );
+                    }
+                    _loadOotds(refresh: true);
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20, color: Colors.black54),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+                onPressed: () async {
+                  final initialIds = taggedClothes.map((cloth) => cloth['id'] as String).toSet();
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SearchClothesScreen(
+                        isSelectionMode: true,
+                        initialSelectedIds: initialIds,
+                      ),
+                    ),
+                  );
+
+                  if (result != null && result is List<Map<String, dynamic>>) {
+                    await _firebaseService.updateOOTDTags(docId, result);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('태그가 수정되었습니다.')),
+                      );
+                    }
+                  }
+                },
               ),
             ],
           ),
@@ -204,3 +329,4 @@ class _OotdScreenState extends State<OotdScreen> {
     );
   }
 }
+
