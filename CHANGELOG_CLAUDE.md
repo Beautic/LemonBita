@@ -4,6 +4,43 @@ Gemini가 작성한 코드에서 Claude가 수정한 내용을 기록합니다.
 
 ---
 
+## 2026-05-09 — AI 누끼 따기 기능 정식 도입 + 안정화
+
+### 1. `@imgly/background-removal` 정식 도입 (`web/bg_removal.js`)
+- 정적 import → **dynamic import + Promise 캐싱** 패턴으로 변경 (`module is not loaded yet` 에러 해결)
+- `Config` import 제거 (TypeScript 타입이라 ESM에서 export 안 됨 — `SyntaxError: does not provide an export named 'Config'` 원인)
+- `window.removeImageBackground(dataUrl)` + `window.flattenImageToJpeg(dataUrl)` 두 함수 등록
+
+### 2. 상세 페이지 누끼 제거 흐름 신규 (`lib/screens/clothing_detail_screen.dart`)
+- 등록 화면뿐 아니라 **상세 페이지에서도 누끼 제거** 가능
+- 흐름: `download` → **`flatten`** → `removeBackground` → `upload`
+- `flatten` 단계: 저장된 PNG의 알파 채널을 흰배경 JPEG로 평탄화 (라이브러리는 알파 입력에서 동작 불안정)
+
+### 3. Storage 다운로드 SDK 우회 (`lib/services/firebase_service.dart`)
+- `firebase_storage` SDK의 `ref.getData()`가 web에서 minified Dart 타입(`'minified:Jp'`)으로 throw → 진단 불가
+- `dart:html`의 `HttpRequest`로 raw XHR 직접 호출하도록 변경
+- HTTP status code 명시적 추출로 진단 가능
+
+### 4. Storage 버킷 CORS 설정 (`cors.json` 신규)
+- 디테일 다운로드는 직접 GET이라 CORS preflight 필요 (신규 등록은 SDK 자체 RPC라 무관)
+- `cors.json` 정책 (모든 origin GET 허용) 작성, `gsutil cors set`으로 `digital-closet-32c43.firebasestorage.app` 버킷에 적용
+
+### 5. 호스팅 캐시 정책 정정 (`firebase.json`)
+- 기존: 모든 `.js` → `max-age=31536000, immutable` (해시 없는 파일도 1년 박혀 갱신 불가)
+- 변경: `.js`/`.wasm`/`.json` → `no-cache`, 이미지·폰트 → `max-age=86400`
+
+### 6. Service Worker 비활성화 (`web/index.html`)
+- 페이지 진입 시 기존 SW 강제 unregister + CacheStorage 전체 삭제
+- `_flutter.loader.loadEntrypoint`에서 `serviceWorker` 옵션 제거 (새 SW 등록 안 함)
+- PWA 오프라인 캐시 잃지만 모듈 갱신 신뢰성 확보
+
+### 7. 신규 파일
+- `lib/services/bg_removal_service.dart` / `bg_removal_stub.dart` / `bg_removal_web.dart` (web/non-web conditional)
+- `cors.json` (Storage CORS 정책)
+- `docs/specifications/project_spec_v3.6.md` (변경점 명세 문서)
+
+---
+
 ## 2026-04-08
 
 ### 1. `lib/screens/upload_screen.dart` — 이미지 미리보기 수정

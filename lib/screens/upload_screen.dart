@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
 import '../utils/categories.dart';
+import '../services/bg_removal_service.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -13,6 +14,9 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   XFile? _imageFile;
+  Uint8List? _originalImageBytes;
+  Uint8List? _processedImageBytes;
+  bool _isRemovingBg = false;
   final ImagePicker _picker = ImagePicker();
   String _selectedCategory = '상의';
   String _selectedSubCategory = '';
@@ -29,8 +33,12 @@ class _UploadScreenState extends State<UploadScreen> {
       imageQuality: 70,
     );
     if (photo != null) {
+      final bytes = await photo.readAsBytes();
       setState(() {
         _imageFile = photo;
+        _originalImageBytes = bytes;
+        _processedImageBytes = bytes;
+        _isRemovingBg = false;
       });
     }
   }
@@ -44,9 +52,35 @@ class _UploadScreenState extends State<UploadScreen> {
       imageQuality: 70,
     );
     if (image != null) {
+      final bytes = await image.readAsBytes();
       setState(() {
         _imageFile = image;
+        _originalImageBytes = bytes;
+        _processedImageBytes = bytes;
+        _isRemovingBg = false;
       });
+    }
+  }
+
+  // 누끼 제거 호출
+  Future<void> _removeBackground() async {
+    if (_processedImageBytes == null) return;
+    setState(() => _isRemovingBg = true);
+    try {
+      final resultBytes = await BgRemovalService.removeBackground(_processedImageBytes!);
+      setState(() {
+        _processedImageBytes = resultBytes;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('배경 제거 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRemovingBg = false);
+      }
     }
   }
 
@@ -71,23 +105,34 @@ class _UploadScreenState extends State<UploadScreen> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: _imageFile != null
+                    color: _processedImageBytes != null
                         ? Colors.transparent
                         : Theme.of(context).colorScheme.primary.withOpacity(0.5),
                     width: 2,
                   ),
                 ),
-                child: _imageFile != null
+                child: _processedImageBytes != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(26),
-                        child: FutureBuilder<Uint8List>(
-                          future: _imageFile!.readAsBytes(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              return Image.memory(snapshot.data!, fit: BoxFit.contain);
-                            }
-                            return const Center(child: CircularProgressIndicator());
-                          },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.memory(_processedImageBytes!, fit: BoxFit.contain),
+                            if (_isRemovingBg)
+                              Container(
+                                color: Colors.black.withOpacity(0.5),
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(color: Colors.white),
+                                      SizedBox(height: 16),
+                                      Text('누끼 제거 중...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       )
                     : Column(
@@ -116,14 +161,33 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 갤러리 전환 버튼
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _pickFromGallery,
-                icon: const Icon(Icons.photo_library_rounded),
-                label: const Text('앨범에서 가져오기'),
-              ),
+            // 갤러리 전환 및 누끼 제거 버튼
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (_processedImageBytes != null)
+                  if (_processedImageBytes == _originalImageBytes)
+                    TextButton.icon(
+                      onPressed: _isRemovingBg ? null : _removeBackground,
+                      icon: const Icon(Icons.auto_fix_high),
+                      label: const Text('누끼 제거하기'),
+                    )
+                  else
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _processedImageBytes = _originalImageBytes;
+                        });
+                      },
+                      icon: const Icon(Icons.restore),
+                      label: const Text('원본 복원하기'),
+                    ),
+                TextButton.icon(
+                  onPressed: _pickFromGallery,
+                  icon: const Icon(Icons.photo_library_rounded),
+                  label: const Text('앨범에서 가져오기'),
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
@@ -192,7 +256,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : FilledButton(
                     onPressed: () async {
-                      if (_imageFile == null) {
+                      if (_processedImageBytes == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('옷 사진을 먼저 촬영해주세요!')),
                         );
@@ -208,8 +272,8 @@ class _UploadScreenState extends State<UploadScreen> {
 
                       setState(() => _isLoading = true);
                       try {
-                        final bytes = await _imageFile!.readAsBytes();
-                        String imageUrl = await _firebaseService.uploadImage(bytes, 'jpg');
+                        final bytes = _processedImageBytes!;
+                        String imageUrl = await _firebaseService.uploadImage(bytes, 'png');
 
                         await _firebaseService.saveClothingData(
                           imageUrl: imageUrl,

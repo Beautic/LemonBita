@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import '../utils/categories.dart';
+import '../services/bg_removal_service.dart';
+import 'dart:typed_data';
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> item;
@@ -30,10 +32,15 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   late String _selectedCategory;
   late String _selectedSubCategory;
   bool _isLoading = false;
+  bool _isRemovingBg = false;
+  late String _currentImageUrl;
+  late String _originalImageUrl;
 
   @override
   void initState() {
     super.initState();
+    _currentImageUrl = widget.item['imageUrl'];
+    _originalImageUrl = widget.item['imageUrl'];
     _brandController = TextEditingController(text: widget.item['brand'] ?? '');
     _sizeController = TextEditingController(text: widget.item['size'] ?? '');
     _tagsController = TextEditingController(text: widget.item['tags'] ?? '');
@@ -69,12 +76,47 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _removeBackground() async {
+    setState(() => _isRemovingBg = true);
+    try {
+      final originalBytes = await _firebaseService.downloadImage(_currentImageUrl);
+      if (originalBytes == null) {
+        throw Exception('이미지를 불러올 수 없습니다.');
+      }
+      // 저장된 PNG는 알파 채널이 있어 라이브러리 입력으로 부적합 → 흰배경 JPEG로 평탄화
+      final flatBytes = await BgRemovalService.flattenImageToJpeg(originalBytes);
+      final resultBytes = await BgRemovalService.removeBackground(flatBytes);
+      String newImageUrl = await _firebaseService.uploadImage(resultBytes, 'png');
+
+      setState(() {
+        _currentImageUrl = newImageUrl;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('누끼가 성공적으로 제거되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('배경 제거 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRemovingBg = false);
+      }
+    }
+  }
+
   Future<void> _updateInfo() async {
     setState(() => _isLoading = true);
     try {
       await _firebaseService.updateClothingData(
         docId: widget.docId,
         updatedData: {
+          'imageUrl': _currentImageUrl,
           'brand': _brandController.text,
           'size': _sizeController.text,
           'tags': _tagsController.text,
@@ -175,13 +217,39 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                           ),
                         ],
                         image: DecorationImage(
-                          image: NetworkImage(widget.item['imageUrl']),
+                          image: NetworkImage(_currentImageUrl),
                           fit: BoxFit.contain,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // 누끼 제거 및 원본 복원 버튼
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _isRemovingBg
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : _currentImageUrl == _originalImageUrl
+                            ? TextButton.icon(
+                                onPressed: _removeBackground,
+                                icon: const Icon(Icons.auto_fix_high),
+                                label: const Text('현재 이미지 누끼 제거하기'),
+                              )
+                            : TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _currentImageUrl = _originalImageUrl;
+                                  });
+                                },
+                                icon: const Icon(Icons.restore),
+                                label: const Text('원본 이미지로 복원하기'),
+                              ),
+                  ),
+                  const SizedBox(height: 8),
 
                   // 활용 통계 섹션 추가
                   _buildOotdUsageSection(),

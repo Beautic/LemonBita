@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -157,6 +158,39 @@ class FirebaseService {
 
     TaskSnapshot snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
+  }
+
+  // 1-1. 스토리지에서 이미지 다운로드 (raw XHR — Storage bucket의 CORS 정책 필요)
+  Future<Uint8List?> downloadImage(String url) async {
+    if (url.isEmpty) {
+      throw Exception('Image URL is empty');
+    }
+    final completer = Completer<Uint8List>();
+    final request = html.HttpRequest()
+      ..open('GET', url)
+      ..responseType = 'arraybuffer';
+
+    request.onLoad.listen((_) {
+      final status = request.status ?? 0;
+      if (status >= 200 && status < 300) {
+        final buf = request.response as ByteBuffer;
+        completer.complete(buf.asUint8List());
+      } else {
+        completer.completeError(
+          Exception('HTTP $status ${request.statusText ?? ""}'),
+        );
+      }
+    });
+
+    request.onError.listen((_) {
+      final status = request.status ?? 0;
+      completer.completeError(
+        Exception('Network/CORS error (status=$status)'),
+      );
+    });
+
+    request.send();
+    return await completer.future;
   }
 
   // 2. 옷 정보를 Firestore에 저장 (현재 유저 uid와 연결)

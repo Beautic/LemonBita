@@ -40,6 +40,9 @@
   <script src="flutter.js" defer></script>
 
   <!-- Firebase SDKs: Flutter 플러그인이 자체 번들하므로 수동 로드 불필요 -->
+  
+  <!-- AI 배경 제거 브릿지 스크립트 -->
+  <script type="module" src="bg_removal.js"></script>
 </head>
 <body>
   <!-- 로딩 상태 및 에러 메시지 출력용 UI -->
@@ -71,17 +74,26 @@
       return false;
     };
 
+    // 캐시/SW 문제로 옛 bg_removal.js가 박혀있는 사용자 강제 정리
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      }).catch(function() {});
+    }
+    if (window.caches) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) { caches.delete(k); });
+      }).catch(function() {});
+    }
+
     window.addEventListener('load', function(ev) {
       const loaderMsg = document.getElementById('loader-msg');
 
       try {
         loaderMsg.innerText = "Starting Engine...";
 
-        // Download main.dart.js
+        // Download main.dart.js (SW 등록 비활성화 - 캐시 문제 해결 후 재활성화 가능)
         _flutter.loader.loadEntrypoint({
-          serviceWorker: {
-            serviceWorkerVersion: serviceWorkerVersion,
-          },
           onEntrypointLoaded: function(engineInitializer) {
             loaderMsg.innerText = "Initializing UI Engine...";
             engineInitializer.initializeEngine({
