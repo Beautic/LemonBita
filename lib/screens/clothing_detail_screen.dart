@@ -35,6 +35,31 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   bool _isRemovingBg = false;
   late String _currentImageUrl;
   late String _originalImageUrl;
+  
+  String? _selectedColorPreset;
+  bool _isCustomColor = false;
+
+  final List<Map<String, dynamic>> _colorPresets = [
+    {'name': '블랙', 'color': Colors.black},
+    {'name': '화이트', 'color': Colors.white},
+    {'name': '아이보리', 'color': const Color(0xFFFFFFF0)},
+    {'name': '베이지', 'color': const Color(0xFFF5F5DC)},
+    {'name': '그레이', 'color': Colors.grey},
+    {'name': '차콜', 'color': const Color(0xFF36454F)},
+    {'name': '네이비', 'color': const Color(0xFF000080)},
+    {'name': '브라운', 'color': Colors.brown},
+    {'name': '카키', 'color': const Color(0xFFBDB76B)},
+    {'name': '와인', 'color': const Color(0xFF722F37)},
+    {'name': '레드', 'color': Colors.red},
+    {'name': '오렌지', 'color': Colors.orange},
+    {'name': '옐로우', 'color': Colors.yellow},
+    {'name': '그린', 'color': Colors.green},
+    {'name': '민트', 'color': const Color(0xFF98FF98)},
+    {'name': '스카이블루', 'color': Colors.lightBlueAccent},
+    {'name': '블루', 'color': Colors.blue},
+    {'name': '퍼플', 'color': Colors.purple},
+    {'name': '핑크', 'color': Colors.pink},
+  ];
 
   @override
   void initState() {
@@ -45,7 +70,21 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     _sizeController = TextEditingController(text: widget.item['size'] ?? '');
     _tagsController = TextEditingController(text: widget.item['tags'] ?? '');
     _memoController = TextEditingController(text: widget.item['memo'] ?? '');
-    _colorController = TextEditingController(text: widget.item['color'] ?? '');
+    
+    final initialColor = widget.item['color'] ?? '';
+    _colorController = TextEditingController(text: initialColor);
+    
+    if (initialColor.isNotEmpty) {
+      final presetExists = _colorPresets.any((p) => p['name'] == initialColor);
+      if (presetExists) {
+        _selectedColorPreset = initialColor;
+        _isCustomColor = false;
+      } else {
+        _selectedColorPreset = null;
+        _isCustomColor = true;
+      }
+    }
+    
     _patternController = TextEditingController(text: widget.item['pattern'] ?? '');
     _materialController = TextEditingController(text: widget.item['material'] ?? '');
     _fitController = TextEditingController(text: widget.item['fit'] ?? '');
@@ -297,10 +336,70 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                     const SizedBox(height: 16),
                   ],
                   
-                  TextField(
-                    controller: _colorController,
-                    decoration: _inputDecoration('색상 (예: 크림 베이지)'),
+                  Text('색상', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[800])),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ..._colorPresets.map((preset) {
+                        final String name = preset['name'];
+                        final Color color = preset['color'];
+                        final isSelected = !_isCustomColor && _selectedColorPreset == name;
+                        
+                        return ChoiceChip(
+                          avatar: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: color == Colors.white || color == const Color(0xFFFFFFF0) ? Colors.grey[400]! : Colors.transparent,
+                              ),
+                            ),
+                          ),
+                          label: Text(name),
+                          selected: isSelected,
+                          selectedColor: Colors.grey[800],
+                          backgroundColor: Colors.grey[200],
+                          labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 13),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedColorPreset = name;
+                                _isCustomColor = false;
+                                _colorController.text = name;
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
+                      ChoiceChip(
+                        label: const Text('직접입력'),
+                        selected: _isCustomColor,
+                        selectedColor: Colors.grey[800],
+                        backgroundColor: Colors.grey[200],
+                        labelStyle: TextStyle(color: _isCustomColor ? Colors.white : Colors.black87, fontSize: 13),
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _isCustomColor = true;
+                              _selectedColorPreset = null;
+                              _colorController.clear();
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
+                  if (_isCustomColor) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _colorController,
+                      decoration: _inputDecoration('색상 (예: 크림 베이지)'),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   
                   TextField(

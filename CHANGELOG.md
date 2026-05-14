@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v3.7] - 2026-05-15
+
+### Added
+- **색깔 선택 기능**: 옷 등록 화면(`upload_screen.dart`)과 상세 페이지(`clothing_detail_screen.dart`)에 색상 태깅 UI 도입. 19색 프리셋(블랙·화이트·아이보리·베이지·그레이·차콜·네이비·브라운·카키·와인·레드·오렌지·옐로우·그린·민트·스카이블루·블루·퍼플·핑크) ChoiceChip + "직접입력" 옵션 제공.
+- **상세 페이지 프리셋 자동 복원**: 저장된 `color` 값이 19색 프리셋과 일치하면 해당 칩이 자동 선택되고, 그 외의 임의 문자열이면 "직접입력" 모드로 TextField에 복원.
+- **상세 작업지시서**: `docs/specifications/project_spec_v3.7.md` 추가.
+
+### Changed
+- **Firestore `color` 필드 활성화**: v3.5부터 검색 필터에는 존재했으나 입력 수단 부재로 비어 있던 `clothing.color` 필드를 정식 입력 경로 확보로 활성화.
+- **`FirebaseService.saveClothingData` 시그니처**: optional `String? color` 파라미터 추가 (기본값 빈 문자열 — 기존 데이터 호환성 유지, 마이그레이션 불필요).
+
+### Known Issues
+- 입력 측 19색 ↔ 검색 측 12색(`search_clothes_screen.dart::_commonColors`) 불일치 — 후속 정리 항목 (v3.7 §1.5 참조).
+
 ## [v3.5] - 2026-05-08
 
 ### Added

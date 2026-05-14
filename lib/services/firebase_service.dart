@@ -199,6 +199,7 @@ class FirebaseService {
     required String category,
     required String subCategory,
     required String tags,
+    String? color,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
 
@@ -208,6 +209,7 @@ class FirebaseService {
       'category': category,
       'subCategory': subCategory,
       'tags': tags,
+      'color': color ?? '',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

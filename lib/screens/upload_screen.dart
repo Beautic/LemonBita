@@ -24,6 +24,38 @@ class _UploadScreenState extends State<UploadScreen> {
   
   final FirebaseService _firebaseService = FirebaseService();
 
+  String? _selectedColorPreset;
+  bool _isCustomColor = false;
+  final TextEditingController _colorController = TextEditingController();
+
+  final List<Map<String, dynamic>> _colorPresets = [
+    {'name': '블랙', 'color': Colors.black},
+    {'name': '화이트', 'color': Colors.white},
+    {'name': '아이보리', 'color': const Color(0xFFFFFFF0)},
+    {'name': '베이지', 'color': const Color(0xFFF5F5DC)},
+    {'name': '그레이', 'color': Colors.grey},
+    {'name': '차콜', 'color': const Color(0xFF36454F)},
+    {'name': '네이비', 'color': const Color(0xFF000080)},
+    {'name': '브라운', 'color': Colors.brown},
+    {'name': '카키', 'color': const Color(0xFFBDB76B)},
+    {'name': '와인', 'color': const Color(0xFF722F37)},
+    {'name': '레드', 'color': Colors.red},
+    {'name': '오렌지', 'color': Colors.orange},
+    {'name': '옐로우', 'color': Colors.yellow},
+    {'name': '그린', 'color': Colors.green},
+    {'name': '민트', 'color': const Color(0xFF98FF98)},
+    {'name': '스카이블루', 'color': Colors.lightBlueAccent},
+    {'name': '블루', 'color': Colors.blue},
+    {'name': '퍼플', 'color': Colors.purple},
+    {'name': '핑크', 'color': Colors.pink},
+  ];
+
+  @override
+  void dispose() {
+    _colorController.dispose();
+    super.dispose();
+  }
+
   // 카메라 앱 호출
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(
@@ -249,6 +281,83 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
             ],
 
+            const SizedBox(height: 24),
+            
+            // 4. 색상 선택
+            const Text('색상 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ..._colorPresets.map((preset) {
+                  final String name = preset['name'];
+                  final Color color = preset['color'];
+                  final isSelected = !_isCustomColor && _selectedColorPreset == name;
+                  
+                  return ChoiceChip(
+                    avatar: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: color == Colors.white || color == const Color(0xFFFFFFF0) ? Colors.grey[400]! : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    label: Text(name),
+                    selected: isSelected,
+                    selectedColor: Colors.grey[800],
+                    backgroundColor: Colors.grey[200],
+                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 13),
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedColorPreset = name;
+                          _isCustomColor = false;
+                          _colorController.text = name;
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
+                ChoiceChip(
+                  label: const Text('직접입력'),
+                  selected: _isCustomColor,
+                  selectedColor: Colors.grey[800],
+                  backgroundColor: Colors.grey[200],
+                  labelStyle: TextStyle(color: _isCustomColor ? Colors.white : Colors.black87, fontSize: 13),
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _isCustomColor = true;
+                        _selectedColorPreset = null;
+                        _colorController.clear();
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            if (_isCustomColor) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _colorController,
+                decoration: InputDecoration(
+                  labelText: '색상 (예: 크림 베이지)',
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 48),
 
             // 3. 저장 버튼
@@ -280,6 +389,7 @@ class _UploadScreenState extends State<UploadScreen> {
                           category: _selectedCategory,
                           subCategory: _selectedSubCategory,
                           tags: '#$_selectedCategory',
+                          color: _colorController.text,
                         );
 
                         if (mounted) {
