@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'upload_screen.dart';
 import 'profile_screen.dart';
+import 'notification_screen.dart';
 import 'ootd_screen.dart';
 import 'upload_ootd_screen.dart';
 import 'coordination_canvas_screen.dart';

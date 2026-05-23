@@ -6,6 +6,7 @@ import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
 import 'upload_ootd_screen.dart';
 import 'coordination_canvas_screen.dart';
+import 'friends_ootd_feed_screen.dart';
 
 class OotdScreen extends StatefulWidget {
   const OotdScreen({super.key});
@@ -125,7 +126,7 @@ class _OotdScreenState extends State<OotdScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -153,6 +154,7 @@ class _OotdScreenState extends State<OotdScreen> {
             indicatorColor: Colors.black,
             tabs: [
               Tab(text: '내 OOTD'),
+              Tab(text: '친구 피드'),
               Tab(text: '코디 아이디어'),
             ],
           ),
@@ -164,6 +166,7 @@ class _OotdScreenState extends State<OotdScreen> {
               color: Colors.black,
               child: _buildBody(),
             ),
+            const FriendsOotdFeedScreen(),
             RefreshIndicator(
               onRefresh: () => _loadPlannedOotds(refresh: true),
               color: Colors.black,

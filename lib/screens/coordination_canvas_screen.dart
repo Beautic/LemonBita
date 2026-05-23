@@ -26,11 +26,15 @@ class CanvasItem {
 class CoordinationCanvasScreen extends StatefulWidget {
   final String? editDocId;
   final List<dynamic>? initialCanvasItems;
+  final String? friendUid;
+  final String? friendNickname;
 
   const CoordinationCanvasScreen({
     super.key,
     this.editDocId,
     this.initialCanvasItems,
+    this.friendUid,
+    this.friendNickname,
   });
 
   @override
@@ -105,20 +109,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     await Future.delayed(const Duration(milliseconds: 100));
 
     try {
-      final boundary = _canvasKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final pngBytes = byteData!.buffer.asUint8List();
-
-      final imageUrl = await _firebaseService.uploadImage(pngBytes, 'png');
-
+      final imageBytes = await _capturePng();
+      
       final taggedClothes = _items.map((item) => {
         'id': item.docId,
         'imageUrl': item.imageUrl,
         'title': item.title,
       }).toList();
 
-      final canvasItems = _items.map((item) => {
+      final canvasData = _items.map((item) => {
         'id': item.docId,
         'imageUrl': item.imageUrl,
         'title': item.title,
@@ -128,16 +127,11 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         'rotation': item.rotation,
       }).toList();
 
-      // 중복 제거
-      final uniqueTaggedClothes = <String, Map<String, dynamic>>{};
-      for (var c in taggedClothes) {
-        uniqueTaggedClothes[c['id'] as String] = c;
-      }
-
       await _firebaseService.savePlannedOOTDData(
-        imageUrl: imageUrl,
-        taggedClothes: uniqueTaggedClothes.values.toList(),
-        canvasItems: canvasItems,
+        imageBytes: imageBytes,
+        taggedClothes: taggedClothes,
+        canvasItems: canvasData,
+        targetUserId: widget.friendUid,
         docId: widget.editDocId,
       );
 
@@ -161,6 +155,43 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     }
   }
 
+  Widget _buildClothesList(StateSetter setSheetState, ScrollController scrollController) {
+    final targetUid = widget.friendUid ?? _firebaseService.currentUserId;
+    if (targetUid == null) return const Center(child: Text('로그인이 필요합니다.'));
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('clothes')
+          .where('userId', isEqualTo: targetUid)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.black));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
+        }
+
+        final allDocs = snapshot.data!.docs;
+
+        // 동적으로 카테고리 목록 생성
+        final categoriesSet = <String>{};
+        for (var doc in allDocs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['category'] != null && data['category'].toString().isNotEmpty) {
+            categoriesSet.add(data['category'].toString());
+          }
+        }
+        final categories = ['전체', ...categoriesSet.toList()..sort()];
+
+        // 임시 로컬 상태 변수를 위해 상위 호출자에서 관리해야 함 (여기서는 단순화)
+        // 실제 구현시에는 StatefulBuilder 내부 변수 사용
+        return Container(); // 예시: GridView 구현부 포함
+      },
+    );
+  }
+
   void _showClothesBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -179,127 +210,128 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
               maxChildSize: 0.9,
               expand: false,
               builder: (context, scrollController) {
+                final targetUid = widget.friendUid ?? _firebaseService.currentUserId;
                 return StreamBuilder<QuerySnapshot>(
-                  stream: _firebaseService.getClothesStream(),
+                  stream: FirebaseFirestore.instance
+                      .collection('clothes')
+                      .where('userId', isEqualTo: targetUid)
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: Colors.black));
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
-                }
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
+                    }
 
-                final allDocs = snapshot.data!.docs;
+                    final allDocs = snapshot.data!.docs;
+                    final categoriesSet = <String>{};
+                    for (var doc in allDocs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      if (data['category'] != null && data['category'].toString().isNotEmpty) {
+                        categoriesSet.add(data['category'].toString());
+                      }
+                    }
+                    final categories = ['전체', ...categoriesSet.toList()..sort()];
+                    final docs = selectedCategory == '전체'
+                        ? allDocs
+                        : allDocs.where((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            return data['category'] == selectedCategory;
+                          }).toList();
 
-                // 동적으로 카테고리 목록 생성
-                final categoriesSet = <String>{};
-                for (var doc in allDocs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  if (data['category'] != null && data['category'].toString().isNotEmpty) {
-                    categoriesSet.add(data['category'].toString());
-                  }
-                }
-                final categories = ['전체', ...categoriesSet.toList()..sort()];
-
-                // 선택된 카테고리로 필터링
-                final docs = selectedCategory == '전체'
-                    ? allDocs
-                    : allDocs.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        return data['category'] == selectedCategory;
-                      }).toList();
-
-                return Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text('추가할 옷 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    if (categories.length > 1)
-                      SizedBox(
-                        height: 40,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: categories.length,
-                          itemBuilder: (context, index) {
-                            final cat = categories[index];
-                            final isSelected = cat == selectedCategory;
-                            return GestureDetector(
-                              onTap: () {
-                                setSheetState(() {
-                                  selectedCategory = cat;
-                                });
+                    return Column(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text('추가할 옷 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                        if (categories.length > 1)
+                          SizedBox(
+                            height: 40,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: categories.length,
+                              itemBuilder: (context, index) {
+                                final cat = categories[index];
+                                final isSelected = cat == selectedCategory;
+                                return GestureDetector(
+                                  onTap: () {
+                                    setSheetState(() {
+                                      selectedCategory = cat;
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.black : Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        cat,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : Colors.black87,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
                               },
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.black : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    cat,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black87,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      fontSize: 13,
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: GridView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 1,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: docs.length,
+                            itemBuilder: (context, index) {
+                              final data = docs[index].data() as Map<String, dynamic>;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _items.add(CanvasItem(
+                                      docId: docs[index].id,
+                                      imageUrl: data['imageUrl'] ?? '',
+                                      title: data['category'] ?? '',
+                                      offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
+                                    ));
+                                    _selectedIndex = _items.length - 1;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.grey[100],
+                                    image: DecorationImage(
+                                      image: NetworkImage(data['imageUrl'] ?? ''),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: GridView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          childAspectRatio: 1,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final data = docs[index].data() as Map<String, dynamic>;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _items.add(CanvasItem(
-                                  docId: docs[index].id,
-                                  imageUrl: data['imageUrl'] ?? '',
-                                  title: data['category'] ?? '',
-                                  offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
-                                ));
-                                _selectedIndex = _items.length - 1;
-                              });
-                              Navigator.pop(context);
+                              );
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey[100],
-                                image: DecorationImage(
-                                  image: NetworkImage(data['imageUrl'] ?? ''),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             );
-          },
-        );
           },
         );
       },
@@ -308,10 +340,17 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String title = '코디 캔버스';
+    if (widget.friendNickname != null) {
+      title = '${widget.friendNickname}님 코디 도와주기';
+    } else if (widget.editDocId != null) {
+      title = '코디 아이디어 수정';
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('가상 코디 캔버스', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveCanvas,

@@ -473,21 +473,30 @@ class FirebaseService {
   // ==== 예비 OOTD (코디 캔버스) 관련 로직 ====
 
   Future<void> savePlannedOOTDData({
-    required String imageUrl,
+    required Uint8List imageBytes,
     required List<Map<String, dynamic>> taggedClothes,
     required List<Map<String, dynamic>> canvasItems,
+    String? targetUserId,
     String? docId,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
 
-    List<String> taggedClothesIds = taggedClothes.map((cloth) => cloth['id'] as String).toList();
+    final uid = targetUserId ?? currentUserId!;
+    
+    String? suggestedBy;
+    if (targetUserId != null && targetUserId != currentUserId) {
+      final myProfile = await _firestore.collection('users').doc(currentUserId).get();
+      suggestedBy = myProfile.data()?['nickname'];
+    }
+
+    String imageUrl = await uploadImage(imageBytes, 'png');
 
     final data = {
-      'userId': currentUserId,
+      'userId': uid,
       'imageUrl': imageUrl,
       'taggedClothes': taggedClothes,
-      'taggedClothesIds': taggedClothesIds,
       'canvasItems': canvasItems,
+      if (suggestedBy != null) 'suggestedBy': suggestedBy,
     };
 
     if (docId != null) {
@@ -496,6 +505,15 @@ class FirebaseService {
     } else {
       data['createdAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('planned_ootds').add(data);
+      
+      if (targetUserId != null && targetUserId != currentUserId && suggestedBy != null) {
+        await sendNotification(
+          recipientId: targetUserId,
+          type: 'outfit_suggestion',
+          message: '$suggestedBy님이 코디를 추천했습니다!',
+          targetId: '',
+        );
+      }
     }
   }
 
@@ -541,5 +559,208 @@ class FirebaseService {
   Future<void> deletePlannedOOTDData(String docId) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     await _firestore.collection('planned_ootds').doc(docId).delete();
+  }
+
+  // ==== 마이크로 소셜 (친구, 알림, 댓글) ====
+
+  // 1. 사용자 검색 (이메일, 폰번호, 닉네임)
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    if (query.isEmpty) return [];
+    
+    // 단순화를 위해 병렬 쿼리 후 병합
+    final byEmail = await _firestore.collection('users').where('email', isEqualTo: query).get();
+    final byPhone = await _firestore.collection('users').where('phoneNumber', isEqualTo: query).get();
+    final byNickname = await _firestore.collection('users').where('nickname', isEqualTo: query).get();
+
+    final Map<String, Map<String, dynamic>> results = {};
+    for (var doc in [...byEmail.docs, ...byPhone.docs, ...byNickname.docs]) {
+      if (doc.id == currentUserId) continue; // 본인 제외
+      final data = doc.data();
+      data['uid'] = doc.id;
+      results[doc.id] = data;
+    }
+    return results.values.toList();
+  }
+
+  // 2. 친구 요청 보내기
+  Future<void> sendFriendRequest(String toUserId) async {
+    if (currentUserId == null) return;
+    
+    final myProfile = await _firestore.collection('users').doc(currentUserId).get();
+    final myData = myProfile.data() ?? {};
+
+    await _firestore.collection('users').doc(toUserId).collection('friend_requests').doc(currentUserId).set({
+      'uid': currentUserId,
+      'nickname': myData['nickname'],
+      'profileImageUrl': myData['profileImageUrl'],
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await sendNotification(
+      recipientId: toUserId,
+      type: 'friend_request',
+      message: '${myData['nickname']}님이 친구 요청을 보냈습니다.',
+      targetId: currentUserId!,
+    );
+  }
+
+  // 3. 친구 요청 수락
+  Future<void> acceptFriendRequest(String fromUserId) async {
+    if (currentUserId == null) return;
+
+    final batch = _firestore.batch();
+    
+    final myRef = _firestore.collection('users').doc(currentUserId);
+    final friendRef = _firestore.collection('users').doc(fromUserId);
+    final requestRef = _firestore.collection('users').doc(currentUserId).collection('friend_requests').doc(fromUserId);
+
+    batch.update(myRef, {'friends': FieldValue.arrayUnion([fromUserId])});
+    batch.update(friendRef, {'friends': FieldValue.arrayUnion([currentUserId])});
+    batch.delete(requestRef);
+    
+    await batch.commit();
+
+    final myProfile = await myRef.get();
+    final myData = myProfile.data() ?? {};
+    
+    await sendNotification(
+      recipientId: fromUserId,
+      type: 'friend_accept',
+      message: '${myData['nickname']}님이 친구 요청을 수락했습니다.',
+      targetId: currentUserId!,
+    );
+  }
+
+  Future<void> rejectFriendRequest(String fromUserId) async {
+    if (currentUserId == null) return;
+    await _firestore.collection('users').doc(currentUserId).collection('friend_requests').doc(fromUserId).delete();
+  }
+
+  // 4. 내 친구 목록 가져오기
+  Future<List<Map<String, dynamic>>> getFriends() async {
+    if (currentUserId == null) return [];
+    final myDoc = await _firestore.collection('users').doc(currentUserId).get();
+    final List<dynamic> friendUids = myDoc.data()?['friends'] ?? [];
+    
+    if (friendUids.isEmpty) return [];
+
+    final snapshot = await _firestore.collection('users').where(FieldPath.documentId, whereIn: friendUids.take(10).toList()).get();
+    return snapshot.docs.map((d) {
+      final data = d.data();
+      data['uid'] = d.id;
+      return data;
+    }).toList();
+  }
+  
+  Stream<QuerySnapshot> getFriendRequestsStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore.collection('users').doc(currentUserId).collection('friend_requests').orderBy('createdAt', descending: true).snapshots();
+  }
+
+  // 5. 알림 보내기
+  Future<void> sendNotification({
+    required String recipientId,
+    required String type,
+    required String message,
+    required String targetId,
+  }) async {
+    if (currentUserId == null || currentUserId == recipientId) return;
+
+    final myProfile = await _firestore.collection('users').doc(currentUserId).get();
+    final myData = myProfile.data() ?? {};
+
+    await _firestore.collection('users').doc(recipientId).collection('notifications').add({
+      'senderId': currentUserId,
+      'senderNickname': myData['nickname'],
+      'senderProfileUrl': myData['profileImageUrl'],
+      'type': type,
+      'message': message,
+      'targetId': targetId,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<QuerySnapshot> getNotificationsStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore.collection('users').doc(currentUserId).collection('notifications')
+        .orderBy('createdAt', descending: true).snapshots();
+  }
+
+  Future<void> markNotificationAsRead(String notifId) async {
+    if (currentUserId == null) return;
+    await _firestore.collection('users').doc(currentUserId).collection('notifications').doc(notifId).update({'isRead': true});
+  }
+
+  // 6. OOTD 좋아요 토글
+  Future<void> toggleOotdLike(String ootdId, String ownerId, bool isCurrentlyLiked) async {
+    if (currentUserId == null) return;
+
+    final ref = _firestore.collection('ootds').doc(ootdId);
+    if (isCurrentlyLiked) {
+      await ref.update({'likedBy': FieldValue.arrayRemove([currentUserId])});
+    } else {
+      await ref.update({'likedBy': FieldValue.arrayUnion([currentUserId])});
+      await sendNotification(
+        recipientId: ownerId,
+        type: 'ootd_like',
+        message: '회원님의 OOTD를 좋아합니다.',
+        targetId: ootdId,
+      );
+    }
+  }
+
+  // 7. OOTD 댓글 쓰기
+  Future<void> addOotdComment(String ootdId, String ownerId, String text, {String? replyToId}) async {
+    if (currentUserId == null) return;
+    
+    final myProfile = await _firestore.collection('users').doc(currentUserId).get();
+    final myData = myProfile.data() ?? {};
+
+    await _firestore.collection('ootds').doc(ootdId).collection('comments').add({
+      'userId': currentUserId,
+      'nickname': myData['nickname'],
+      'profileImageUrl': myData['profileImageUrl'],
+      'text': text,
+      'replyToId': replyToId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await sendNotification(
+      recipientId: ownerId,
+      type: 'ootd_comment',
+      message: '회원님의 OOTD에 댓글을 남겼습니다.',
+      targetId: ootdId,
+    );
+  }
+
+  Stream<QuerySnapshot> getOotdCommentsStream(String ootdId) {
+    return _firestore.collection('ootds').doc(ootdId).collection('comments').orderBy('createdAt', descending: false).snapshots();
+  }
+
+  // 8. 친구 OOTD 피드
+  Future<List<QueryDocumentSnapshot>> getFriendsOotdFeed() async {
+    if (currentUserId == null) return [];
+    final myDoc = await _firestore.collection('users').doc(currentUserId).get();
+    final List<dynamic> friendUids = myDoc.data()?['friends'] ?? [];
+    
+    if (friendUids.isEmpty) return [];
+
+    final snapshot = await _firestore.collection('ootds')
+        .where('userId', whereIn: friendUids.take(10).toList())
+        .get();
+        
+    List<QueryDocumentSnapshot> docs = snapshot.docs;
+    docs.sort((a, b) {
+      final aData = a.data() as Map<String, dynamic>;
+      final bData = b.data() as Map<String, dynamic>;
+      final aTime = aData['createdAt'] as Timestamp?;
+      final bTime = bData['createdAt'] as Timestamp?;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+      return bTime.compareTo(aTime);
+    });
+    
+    return docs;
   }
 }
