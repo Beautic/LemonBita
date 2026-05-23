@@ -134,30 +134,90 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return StreamBuilder<QuerySnapshot>(
-              stream: _firebaseService.getClothesStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.black));
+        String selectedCategory = '전체';
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (context, scrollController) {
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _firebaseService.getClothesStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.black));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
                 }
 
-                final docs = snapshot.data!.docs;
+                final allDocs = snapshot.data!.docs;
+
+                // 동적으로 카테고리 목록 생성
+                final categoriesSet = <String>{};
+                for (var doc in allDocs) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  if (data['category'] != null && data['category'].toString().isNotEmpty) {
+                    categoriesSet.add(data['category'].toString());
+                  }
+                }
+                final categories = ['전체', ...categoriesSet.toList()..sort()];
+
+                // 선택된 카테고리로 필터링
+                final docs = selectedCategory == '전체'
+                    ? allDocs
+                    : allDocs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return data['category'] == selectedCategory;
+                      }).toList();
 
                 return Column(
                   children: [
                     const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text('추가할 옷 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
+                    if (categories.length > 1)
+                      SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: categories.length,
+                          itemBuilder: (context, index) {
+                            final cat = categories[index];
+                            final isSelected = cat == selectedCategory;
+                            return GestureDetector(
+                              onTap: () {
+                                setSheetState(() {
+                                  selectedCategory = cat;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.black : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    cat,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black87,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: GridView.builder(
                         controller: scrollController,
