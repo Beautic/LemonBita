@@ -3,6 +3,7 @@ import '../services/firebase_service.dart';
 import 'ootd_post_widget.dart';
 
 class OotdInteractionBar extends StatefulWidget {
+  final String collectionName;
   final String ootdId;
   final String ownerId;
   final List<dynamic> likedBy;
@@ -12,6 +13,7 @@ class OotdInteractionBar extends StatefulWidget {
 
   const OotdInteractionBar({
     super.key,
+    this.collectionName = 'ootds',
     required this.ootdId,
     required this.ownerId,
     required this.likedBy,
@@ -45,7 +47,7 @@ class _OotdInteractionBarState extends State<OotdInteractionBar> {
     setState(() => _isLiking = true);
 
     try {
-      await widget.firebaseService.toggleOotdLike(widget.ootdId, widget.ownerId, isLiked);
+      await widget.firebaseService.toggleLike(widget.collectionName, widget.ootdId, widget.ownerId, isLiked);
     } catch (e) {
       // Revert on error
       final revertedLikedBy = List.from(newLikedBy);
@@ -69,6 +71,7 @@ class _OotdInteractionBarState extends State<OotdInteractionBar> {
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: CommentsSheet(
+          collectionName: widget.collectionName,
           ootdId: widget.ootdId,
           ownerId: widget.ownerId,
           firebaseService: widget.firebaseService,

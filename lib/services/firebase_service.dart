@@ -692,32 +692,34 @@ class FirebaseService {
     await _firestore.collection('users').doc(currentUserId).collection('notifications').doc(notifId).update({'isRead': true});
   }
 
-  // 6. OOTD 좋아요 토글
-  Future<void> toggleOotdLike(String ootdId, String ownerId, bool isCurrentlyLiked) async {
+  // 6. 좋아요 토글 (공통)
+  Future<void> toggleLike(String collection, String docId, String ownerId, bool isCurrentlyLiked) async {
     if (currentUserId == null) return;
 
-    final ref = _firestore.collection('ootds').doc(ootdId);
+    final ref = _firestore.collection(collection).doc(docId);
     if (isCurrentlyLiked) {
       await ref.update({'likedBy': FieldValue.arrayRemove([currentUserId])});
     } else {
       await ref.update({'likedBy': FieldValue.arrayUnion([currentUserId])});
-      await sendNotification(
-        recipientId: ownerId,
-        type: 'ootd_like',
-        message: '회원님의 OOTD를 좋아합니다.',
-        targetId: ootdId,
-      );
+      if (ownerId.isNotEmpty && ownerId != currentUserId) {
+        await sendNotification(
+          recipientId: ownerId,
+          type: 'ootd_like', // You can customize type based on collection if needed
+          message: '회원님의 게시물을 좋아합니다.',
+          targetId: docId,
+        );
+      }
     }
   }
 
-  // 7. OOTD 댓글 쓰기
-  Future<void> addOotdComment(String ootdId, String ownerId, String text, {String? parentId}) async {
+  // 7. 댓글 쓰기 (공통)
+  Future<void> addComment(String collection, String docId, String ownerId, String text, {String? parentId}) async {
     if (currentUserId == null) return;
     
     final myProfile = await _firestore.collection('users').doc(currentUserId).get();
     final myData = myProfile.data() ?? {};
 
-    await _firestore.collection('ootds').doc(ootdId).collection('comments').add({
+    await _firestore.collection(collection).doc(docId).collection('comments').add({
       'userId': currentUserId,
       'nickname': myData['nickname'],
       'profileImageUrl': myData['profileImageUrl'],
@@ -726,20 +728,22 @@ class FirebaseService {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    await _firestore.collection('ootds').doc(ootdId).update({
+    await _firestore.collection(collection).doc(docId).update({
       'commentCount': FieldValue.increment(1),
     }).catchError((_) {}); // Ignore if document doesn't exist
 
-    await sendNotification(
-      recipientId: ownerId,
-      type: 'ootd_comment',
-      message: '회원님의 OOTD에 댓글을 남겼습니다.',
-      targetId: ootdId,
-    );
+    if (ownerId.isNotEmpty && ownerId != currentUserId) {
+      await sendNotification(
+        recipientId: ownerId,
+        type: 'ootd_comment',
+        message: '회원님의 게시물에 댓글을 남겼습니다.',
+        targetId: docId,
+      );
+    }
   }
 
-  Stream<QuerySnapshot> getOotdCommentsStream(String ootdId) {
-    return _firestore.collection('ootds').doc(ootdId).collection('comments').orderBy('createdAt', descending: false).snapshots();
+  Stream<QuerySnapshot> getCommentsStream(String collection, String docId) {
+    return _firestore.collection(collection).doc(docId).collection('comments').orderBy('createdAt', descending: false).snapshots();
   }
 
   // 8. 친구 OOTD 피드

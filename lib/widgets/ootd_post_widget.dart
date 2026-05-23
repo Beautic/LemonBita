@@ -5,12 +5,14 @@ import '../services/firebase_service.dart';
 import 'ootd_interaction_bar.dart';
 
 class OotdPostWidget extends StatefulWidget {
+  final String collectionName;
   final String ootdId;
   final Map<String, dynamic> data;
   final FirebaseService firebaseService;
 
   const OotdPostWidget({
     super.key,
+    this.collectionName = 'ootds',
     required this.ootdId,
     required this.data,
     required this.firebaseService,
@@ -141,6 +143,7 @@ class _OotdPostWidgetState extends State<OotdPostWidget> {
               ),
             // Actions
             OotdInteractionBar(
+              collectionName: widget.collectionName,
               ootdId: widget.ootdId,
               ownerId: ownerId,
               likedBy: _likedBy,
@@ -176,12 +179,14 @@ class _OotdPostWidgetState extends State<OotdPostWidget> {
 }
 
 class CommentsSheet extends StatefulWidget {
+  final String collectionName;
   final String ootdId;
   final String ownerId;
   final FirebaseService firebaseService;
 
   const CommentsSheet({
     super.key,
+    this.collectionName = 'ootds',
     required this.ootdId,
     required this.ownerId,
     required this.firebaseService,
@@ -207,7 +212,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
       _replyingToNickname = null;
     });
 
-    await widget.firebaseService.addOotdComment(widget.ootdId, widget.ownerId, text, parentId: parentId);
+    await widget.firebaseService.addComment(widget.collectionName, widget.ootdId, widget.ownerId, text, parentId: parentId);
   }
 
   void _startReply(String commentId, String nickname) {
@@ -235,7 +240,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
           const Divider(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: widget.firebaseService.getOotdCommentsStream(widget.ootdId),
+              stream: widget.firebaseService.getCommentsStream(widget.collectionName, widget.ootdId),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.black));
                 final allComments = snapshot.data!.docs;

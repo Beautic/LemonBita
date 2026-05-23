@@ -6,6 +6,7 @@ import '../widgets/ootd_interaction_bar.dart';
 import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
 import 'upload_ootd_screen.dart';
+import 'my_ootd_detail_screen.dart';
 import 'coordination_canvas_screen.dart';
 import 'friends_ootd_feed_screen.dart';
 
@@ -197,22 +198,48 @@ class _OotdScreenState extends State<OotdScreen> {
       );
     }
 
-    return ListView.separated(
+    return GridView.builder(
       controller: _scrollController,
+      padding: const EdgeInsets.all(2),
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-      itemCount: _ootds.length + (_hasMore ? 1 : 0),
-      separatorBuilder: (context, index) => const Divider(height: 32, thickness: 8, color: Color(0xFFF5F5F5)),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 2,
+        mainAxisSpacing: 2,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: _ootds.length,
       itemBuilder: (context, index) {
-        if (index == _ootds.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.0),
-            child: Center(child: CircularProgressIndicator(color: Colors.black)),
-          );
-        }
-
         final doc = _ootds[index];
         final item = doc.data() as Map<String, dynamic>;
-        return _buildOotdPost(doc.id, item);
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MyOotdDetailScreen(ootdId: doc.id)),
+            ).then((deleted) {
+              if (deleted == true) {
+                _loadOotds(refresh: true);
+              }
+            });
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                item['imageUrl'] ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image_not_supported, color: Colors.grey)),
+              ),
+              if ((item['taggedClothes'] as List?)?.isNotEmpty == true)
+                const Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Icon(Icons.style, color: Colors.white, size: 16),
+                ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -358,201 +385,6 @@ class _OotdScreenState extends State<OotdScreen> {
     );
   }
 
-  Widget _buildOotdPost(String docId, Map<String, dynamic> item) {
-    // Timestamp 변환
-    String dateStr = '';
-    if (item['createdAt'] != null) {
-      final dt = (item['createdAt'] as Timestamp).toDate();
-      dateStr = DateFormat('yyyy년 MM월 dd일').format(dt);
-    }
 
-    // 태그된 옷 파싱
-    List<dynamic> taggedClothes = item['taggedClothes'] ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1. 헤더 (날짜)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.black,
-                child: Icon(Icons.person, size: 20, color: Colors.white),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'My Daily Look',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const Spacer(),
-              Text(
-                dateStr,
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
-              ),
-              IconButton(
-                icon: const Icon(Icons.calendar_month, size: 20, color: Colors.black54),
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-                onPressed: () async {
-                  final initialDate = item['createdAt'] != null ? (item['createdAt'] as Timestamp).toDate() : DateTime.now();
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: initialDate,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime.now(),
-                    builder: (context, child) {
-                      return Theme(
-                        data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: Colors.black,
-                            onPrimary: Colors.white,
-                            onSurface: Colors.black,
-                          ),
-                        ),
-                        child: child!,
-                      );
-                    },
-                  );
-                  if (picked != null && !DateUtils.isSameDay(picked, initialDate)) {
-                    await _firebaseService.updateOOTDDate(docId, picked);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('날짜가 수정되었습니다.')),
-                      );
-                    }
-                    _loadOotds(refresh: true);
-                  }
-                },
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20, color: Colors.black54),
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-                onPressed: () async {
-                  final initialIds = taggedClothes.map((cloth) => cloth['id'] as String).toSet();
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SearchClothesScreen(
-                        isSelectionMode: true,
-                        initialSelectedIds: initialIds,
-                      ),
-                    ),
-                  );
-
-                  if (result != null && result is List<Map<String, dynamic>>) {
-                    await _firebaseService.updateOOTDTags(docId, result);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('태그가 수정되었습니다.')),
-                      );
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-
-        // 2. 이미지
-        Container(
-          width: double.infinity,
-          height: 400,
-          color: Colors.grey[100],
-          child: Image.network(
-            item['imageUrl'] ?? '',
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
-          ),
-        ),
-
-        // 3. 코멘트 영역
-        if ((item['description'] ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(
-              item['description'],
-              style: const TextStyle(fontSize: 14, height: 1.4),
-            ),
-          ),
-
-        // 3.5. 소셜 인터랙션 영역 (좋아요, 댓글)
-        OotdInteractionBar(
-          ootdId: docId,
-          ownerId: item['userId'] ?? '',
-          likedBy: item['likedBy'] ?? [],
-          commentCount: item['commentCount'] ?? 0,
-          firebaseService: _firebaseService,
-          onLikeToggled: (newLikedBy) {
-            // OotdScreen의 _ootds 리스트를 업데이트할 수 없으므로 무시하거나,
-            // setState로 전체를 다시 불러오지 않고 해당 아이템 데이터만 수정
-            setState(() {
-              item['likedBy'] = newLikedBy;
-            });
-          },
-        ),
-
-        // 4. 태그된 옷 영역
-        if (taggedClothes.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.sell, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text('이 OOTD에 입은 옷', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 60,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: taggedClothes.length,
-                    itemBuilder: (context, index) {
-                      final cloth = taggedClothes[index];
-                      return Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundImage: NetworkImage(cloth['imageUrl'] ?? ''),
-                              backgroundColor: Colors.grey[200],
-                            ),
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Text(
-                                cloth['title'] ?? '',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
+import '../widgets/ootd_interaction_bar.dart';
 import 'coordination_canvas_screen.dart';
 import 'upload_ootd_screen.dart';
 
@@ -76,6 +77,32 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
               width: double.infinity,
               height: MediaQuery.of(context).size.width,
               fit: BoxFit.cover,
+            ),
+            if (suggestedBy != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                color: Colors.white,
+                child: Text(
+                  '💡 $suggestedBy님이 추천해준 코디예요',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+            Container(
+              color: Colors.white,
+              child: OotdInteractionBar(
+                collectionName: 'planned_ootds',
+                ootdId: widget.plannedOotdId,
+                ownerId: data['userId'] ?? '',
+                likedBy: data['likedBy'] ?? [],
+                commentCount: data['commentCount'] ?? 0,
+                firebaseService: _firebaseService,
+                onLikeToggled: (newLikedBy) {
+                  setState(() {
+                    _data!['likedBy'] = newLikedBy;
+                  });
+                },
+              ),
             ),
             Container(
               color: Colors.white,
