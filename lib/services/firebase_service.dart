@@ -243,6 +243,72 @@ class FirebaseService {
 
   // ==== OOTD 관련 로직 ====
 
+  // 6.5 기존 OOTD에 옷 태그 일괄 연결/해제
+  Future<void> updateOOTDClothesTags({
+    required String clothingId,
+    required Map<String, dynamic> clothingItemData,
+    required List<String> selectedOotdIds,
+    required List<String> originalOotdIds,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    final toAdd = selectedOotdIds.where((id) => !originalOotdIds.contains(id)).toList();
+    final toRemove = originalOotdIds.where((id) => !selectedOotdIds.contains(id)).toList();
+
+    String title = '${clothingItemData['color'] ?? ''} ${clothingItemData['pattern'] ?? ''}'.trim();
+    if (title.isEmpty) title = clothingItemData['brand'] ?? '';
+    if (title.isEmpty) title = clothingItemData['category'] ?? '옷 정보 없음';
+
+    final tagObject = {
+      'id': clothingId,
+      'imageUrl': clothingItemData['imageUrl'],
+      'title': title,
+    };
+
+    // 추가할 OOTD 처리
+    for (var docId in toAdd) {
+      final docRef = _firestore.collection('ootds').doc(docId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) return;
+        
+        final data = snapshot.data() as Map<String, dynamic>;
+        List<dynamic> taggedClothes = List.from(data['taggedClothes'] ?? []);
+        List<dynamic> taggedClothesIds = List.from(data['taggedClothesIds'] ?? []);
+        
+        if (!taggedClothesIds.contains(clothingId)) {
+          taggedClothesIds.add(clothingId);
+          taggedClothes.add(tagObject);
+          transaction.update(docRef, {
+            'taggedClothes': taggedClothes,
+            'taggedClothesIds': taggedClothesIds,
+          });
+        }
+      });
+    }
+
+    // 제거할 OOTD 처리
+    for (var docId in toRemove) {
+      final docRef = _firestore.collection('ootds').doc(docId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) return;
+        
+        final data = snapshot.data() as Map<String, dynamic>;
+        List<dynamic> taggedClothes = List.from(data['taggedClothes'] ?? []);
+        List<dynamic> taggedClothesIds = List.from(data['taggedClothesIds'] ?? []);
+        
+        taggedClothesIds.remove(clothingId);
+        taggedClothes.removeWhere((item) => item is Map && item['id'] == clothingId);
+        
+        transaction.update(docRef, {
+          'taggedClothes': taggedClothes,
+          'taggedClothesIds': taggedClothesIds,
+        });
+      });
+    }
+  }
+
   // 6. OOTD 저장 (태그된 옷 정보 포함)
   Future<void> saveOOTDData({
     required String imageUrl,

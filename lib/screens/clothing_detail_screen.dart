@@ -5,6 +5,7 @@ import '../utils/categories.dart';
 import '../services/bg_removal_service.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'ootd_selection_screen.dart';
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> item;
@@ -607,8 +608,6 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
           }
         }
 
-        if (usedOotds.isEmpty) return const SizedBox.shrink();
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -628,9 +627,42 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                itemCount: usedOotds.length,
+                itemCount: usedOotds.length + 1,
                 itemBuilder: (context, index) {
-                  final ootd = usedOotds[index];
+                  if (index == 0) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OotdSelectionScreen(
+                              clothingId: widget.docId,
+                              clothingItemData: widget.item,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey[50],
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: Colors.grey[600], size: 28),
+                            const SizedBox(height: 4),
+                            Text('+ OOTD 연결', style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final ootd = usedOotds[index - 1];
                   return Container(
                     width: 100,
                     margin: const EdgeInsets.only(right: 12),

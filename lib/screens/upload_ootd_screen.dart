@@ -286,7 +286,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
             ),
             
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, bottom: 16.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
               child: OutlinedButton.icon(
                 onPressed: () async {
                   final result = await Navigator.push(
