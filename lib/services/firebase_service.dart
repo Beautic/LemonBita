@@ -101,6 +101,8 @@ class FirebaseService {
   Future<void> signUpWithDetails({
     required String email,
     required String password,
+    required String realName,
+    required String phoneNumber,
     required String nickname,
     required bool agreedToTerms,
     Uint8List? profileImageBytes,
@@ -119,6 +121,8 @@ class FirebaseService {
 
       await _firestore.collection('users').doc(uid).set({
         'email': email,
+        'realName': realName,
+        'phoneNumber': phoneNumber,
         'nickname': nickname,
         'profileImageUrl': profileImageUrl,
         'agreedToTerms': agreedToTerms,

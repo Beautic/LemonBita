@@ -17,6 +17,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController = TextEditingController();
+  final TextEditingController _realNameController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
 
   Uint8List? _profileImageBytes;
@@ -80,9 +82,11 @@ class _SignupScreenState extends State<SignupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final passwordConfirm = _passwordConfirmController.text.trim();
+    final realName = _realNameController.text.trim();
+    final phoneNumber = _phoneNumberController.text.trim();
     final nickname = _nicknameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty || passwordConfirm.isEmpty || nickname.isEmpty) {
+    if (email.isEmpty || password.isEmpty || passwordConfirm.isEmpty || realName.isEmpty || phoneNumber.isEmpty || nickname.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('모든 항목을 입력해주세요.')));
       return;
     }
@@ -108,6 +112,8 @@ class _SignupScreenState extends State<SignupScreen> {
       await _firebaseService.signUpWithDetails(
         email: email,
         password: password,
+        realName: realName,
+        phoneNumber: phoneNumber,
         nickname: nickname,
         agreedToTerms: true,
         profileImageBytes: _profileImageBytes,
@@ -213,6 +219,27 @@ class _SignupScreenState extends State<SignupScreen> {
                     decoration: InputDecoration(
                       labelText: '비밀번호 확인',
                       prefixIcon: const Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _realNameController,
+                    decoration: InputDecoration(
+                      labelText: '이름 (실명)',
+                      prefixIcon: const Icon(Icons.badge_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _phoneNumberController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: '휴대폰 번호 (- 없이 입력)',
+                      prefixIcon: const Icon(Icons.phone_android_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
