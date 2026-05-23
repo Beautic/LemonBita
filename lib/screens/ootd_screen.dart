@@ -7,6 +7,7 @@ import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
 import 'upload_ootd_screen.dart';
 import 'my_ootd_detail_screen.dart';
+import 'planned_ootd_detail_screen.dart';
 import 'coordination_canvas_screen.dart';
 import 'friends_ootd_feed_screen.dart';
 
@@ -278,7 +279,10 @@ class _OotdScreenState extends State<OotdScreen> {
         
         return GestureDetector(
           onTap: () {
-            _showPlannedOotdDetail(doc.id, data);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
+            ).then((_) => _loadPlannedOotds(refresh: true));
           },
           child: Container(
             decoration: BoxDecoration(
