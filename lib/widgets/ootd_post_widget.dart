@@ -42,38 +42,6 @@ class _OotdPostWidgetState extends State<OotdPostWidget> {
     }
   }
 
-  Future<void> _toggleLike() async {
-    final myUid = widget.firebaseService.currentUserId;
-    if (myUid == null) return;
-
-    final ownerId = widget.data['userId'] ?? '';
-    final isLiked = _likedBy.contains(myUid);
-    
-    // Optimistic update
-    setState(() {
-      if (isLiked) {
-        _likedBy.remove(myUid);
-      } else {
-        _likedBy.add(myUid);
-      }
-    });
-
-    try {
-      await widget.firebaseService.toggleOotdLike(widget.ootdId, ownerId, isLiked);
-    } catch (e) {
-      // Revert on error
-      if (mounted) {
-        setState(() {
-          if (isLiked) {
-            _likedBy.add(myUid);
-          } else {
-            _likedBy.remove(myUid);
-          }
-        });
-      }
-    }
-  }
-
   void _showCommentsSheet() {
     showModalBottomSheet(
       context: context,
