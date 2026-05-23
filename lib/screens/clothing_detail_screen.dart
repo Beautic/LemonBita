@@ -4,6 +4,7 @@ import '../services/firebase_service.dart';
 import '../utils/categories.dart';
 import '../services/bg_removal_service.dart';
 import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> item;
@@ -38,6 +39,10 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   
   String? _selectedColorPreset;
   bool _isCustomColor = false;
+
+  final ImagePicker _picker = ImagePicker();
+  Uint8List? _localImageBytes;
+  Uint8List? _originalLocalImageBytes;
 
   final List<Map<String, dynamic>> _colorPresets = [
     {'name': '블랙', 'color': Colors.black},
@@ -115,25 +120,49 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _changeImage(ImageSource source) async {
+    final XFile? image = await _picker.pickImage(
+      source: source,
+      maxWidth: 1080,
+      maxHeight: 1080,
+      imageQuality: 70,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _localImageBytes = bytes;
+        _originalLocalImageBytes = bytes;
+      });
+    }
+  }
+
   Future<void> _removeBackground() async {
     setState(() => _isRemovingBg = true);
     try {
-      final originalBytes = await _firebaseService.downloadImage(_currentImageUrl);
-      if (originalBytes == null) {
-        throw Exception('이미지를 불러올 수 없습니다.');
+      Uint8List? originalBytes;
+      
+      if (_localImageBytes != null) {
+        originalBytes = _localImageBytes;
+      } else {
+        originalBytes = await _firebaseService.downloadImage(_currentImageUrl);
+        if (originalBytes == null) {
+          throw Exception('이미지를 불러올 수 없습니다.');
+        }
       }
-      // 저장된 PNG는 알파 채널이 있어 라이브러리 입력으로 부적합 → 흰배경 JPEG로 평탄화
-      final flatBytes = await BgRemovalService.flattenImageToJpeg(originalBytes);
-      final resultBytes = await BgRemovalService.removeBackground(flatBytes);
-      String newImageUrl = await _firebaseService.uploadImage(resultBytes, 'png');
 
+      final flatBytes = await BgRemovalService.flattenImageToJpeg(originalBytes!);
+      final resultBytes = await BgRemovalService.removeBackground(flatBytes);
+      
       setState(() {
-        _currentImageUrl = newImageUrl;
+        _localImageBytes = resultBytes;
+        if (_originalLocalImageBytes == null) {
+          _originalLocalImageBytes = originalBytes;
+        }
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('누끼가 성공적으로 제거되었습니다.')),
+          const SnackBar(content: Text('누끼가 성공적으로 제거되었습니다. 정보 저장하기를 눌러 반영하세요.')),
         );
       }
     } catch (e) {
@@ -152,10 +181,15 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   Future<void> _updateInfo() async {
     setState(() => _isLoading = true);
     try {
+      String imageUrlToSave = _currentImageUrl;
+      if (_localImageBytes != null) {
+        imageUrlToSave = await _firebaseService.uploadImage(_localImageBytes!, 'png');
+      }
+
       await _firebaseService.updateClothingData(
         docId: widget.docId,
         updatedData: {
-          'imageUrl': _currentImageUrl,
+          'imageUrl': imageUrlToSave,
           'brand': _brandController.text,
           'size': _sizeController.text,
           'tags': _tagsController.text,
@@ -243,23 +277,84 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   // 1. 이미지 프리뷰
                   Hero(
                     tag: widget.docId,
-                    child: Container(
-                      height: 400,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 10),
+                    child: Stack(
+                      children: [
+                        Container(
+                          height: 400,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                            image: DecorationImage(
+                              image: _localImageBytes != null 
+                                  ? MemoryImage(_localImageBytes!) as ImageProvider
+                                  : NetworkImage(_currentImageUrl),
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                        ],
-                        image: DecorationImage(
-                          image: NetworkImage(_currentImageUrl),
-                          fit: BoxFit.contain,
                         ),
-                      ),
+                        if (_isRemovingBg)
+                          Container(
+                            height: 400,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(color: Colors.white),
+                                  SizedBox(height: 16),
+                                  Text('이미지 처리 중...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          right: 16,
+                          bottom: 16,
+                          child: FloatingActionButton.small(
+                            heroTag: 'changeImage_${widget.docId}',
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) => SafeArea(
+                                  child: Wrap(
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.camera_alt),
+                                        title: const Text('카메라로 촬영'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          _changeImage(ImageSource.camera);
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.photo_library),
+                                        title: const Text('앨범에서 선택'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          _changeImage(ImageSource.gallery);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                            backgroundColor: Colors.black87,
+                            child: const Icon(Icons.edit, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -268,24 +363,25 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: _isRemovingBg
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                            child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                          )
-                        : _currentImageUrl == _originalImageUrl
+                        ? const SizedBox.shrink()
+                        : (_localImageBytes != null && _localImageBytes != _originalLocalImageBytes) || (_localImageBytes == null && _currentImageUrl != _originalImageUrl)
                             ? TextButton.icon(
-                                onPressed: _removeBackground,
-                                icon: const Icon(Icons.auto_fix_high),
-                                label: const Text('현재 이미지 누끼 제거하기'),
-                              )
-                            : TextButton.icon(
                                 onPressed: () {
                                   setState(() {
-                                    _currentImageUrl = _originalImageUrl;
+                                    if (_localImageBytes != null) {
+                                      _localImageBytes = _originalLocalImageBytes;
+                                    } else {
+                                      _currentImageUrl = _originalImageUrl;
+                                    }
                                   });
                                 },
                                 icon: const Icon(Icons.restore),
                                 label: const Text('원본 이미지로 복원하기'),
+                              )
+                            : TextButton.icon(
+                                onPressed: _removeBackground,
+                                icon: const Icon(Icons.auto_fix_high),
+                                label: const Text('현재 이미지 누끼 제거하기'),
                               ),
                   ),
                   const SizedBox(height: 8),
