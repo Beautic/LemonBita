@@ -756,21 +756,15 @@ class FirebaseService {
     List<dynamic> targetUids = List.from(friendUids);
     targetUids.add(currentUserId);
 
+    if (targetUids.isEmpty) return [];
+
+    // in 쿼리는 최대 30개까지 지원함
     final snapshot = await _firestore.collection('ootds')
         .where('userId', whereIn: targetUids.take(30).toList())
+        .orderBy('createdAt', descending: true)
+        .limit(20)
         .get();
         
-    List<QueryDocumentSnapshot> docs = snapshot.docs;
-    docs.sort((a, b) {
-      final aData = a.data() as Map<String, dynamic>;
-      final bData = b.data() as Map<String, dynamic>;
-      final aTime = aData['createdAt'] as Timestamp?;
-      final bTime = bData['createdAt'] as Timestamp?;
-      if (aTime == null) return 1;
-      if (bTime == null) return -1;
-      return bTime.compareTo(aTime);
-    });
-    
-    return docs;
+    return snapshot.docs;
   }
 }
