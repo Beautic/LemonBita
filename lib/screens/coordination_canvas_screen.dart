@@ -264,6 +264,8 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
             );
           },
         );
+          },
+        );
       },
     );
   }
