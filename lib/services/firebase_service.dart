@@ -517,14 +517,15 @@ class FirebaseService {
     }
   }
 
-  Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({DocumentSnapshot? lastDoc, int limit = 10}) async {
-    if (currentUserId == null) return [];
+  Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({String? targetUserId, DocumentSnapshot? lastDoc, int limit = 10}) async {
+    final uid = targetUserId ?? currentUserId;
+    if (uid == null) return [];
 
     // 복합 인덱스(Composite Index) 에러를 방지하기 위해 
     // 로컬에서 정렬하는 방식으로 변경합니다.
     Query query = _firestore
         .collection('planned_ootds')
-        .where('userId', isEqualTo: currentUserId);
+        .where('userId', isEqualTo: uid);
 
     final snapshot = await query.get();
     

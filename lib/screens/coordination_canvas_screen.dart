@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
+import 'planned_ootd_detail_screen.dart';
 
 class CanvasItem {
   final String docId;
@@ -81,7 +82,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
   Future<void> _loadPlannedOotds() async {
     setState(() { _isLoadingOotds = true; });
     try {
-      final docs = await _firebaseService.getPlannedOOTDPage(limit: 20);
+      final docs = await _firebaseService.getPlannedOOTDPage(targetUserId: widget.friendUid, limit: 20);
       setState(() {
         _plannedOotds = docs;
         _isLoadingOotds = false;
@@ -504,7 +505,10 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                                 final data = doc.data() as Map<String, dynamic>;
                                 return GestureDetector(
                                   onTap: () {
-                                    // TODO: 코디 아이디어를 OOTD로 변환하거나 자세히 보기
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
+                                    );
                                   },
                                   child: Container(
                                     width: 80,
