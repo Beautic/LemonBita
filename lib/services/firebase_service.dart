@@ -346,18 +346,28 @@ class FirebaseService {
   Future<void> savePlannedOOTDData({
     required String imageUrl,
     required List<Map<String, dynamic>> taggedClothes,
+    required List<Map<String, dynamic>> canvasItems,
+    String? docId,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
 
     List<String> taggedClothesIds = taggedClothes.map((cloth) => cloth['id'] as String).toList();
 
-    await _firestore.collection('planned_ootds').add({
+    final data = {
       'userId': currentUserId,
       'imageUrl': imageUrl,
       'taggedClothes': taggedClothes,
       'taggedClothesIds': taggedClothesIds,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+      'canvasItems': canvasItems,
+    };
+
+    if (docId != null) {
+      data['updatedAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('planned_ootds').doc(docId).update(data);
+    } else {
+      data['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('planned_ootds').add(data);
+    }
   }
 
   Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({DocumentSnapshot? lastDoc, int limit = 10}) async {

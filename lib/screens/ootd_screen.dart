@@ -5,6 +5,7 @@ import '../services/firebase_service.dart';
 import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
 import 'upload_ootd_screen.dart';
+import 'coordination_canvas_screen.dart';
 
 class OotdScreen extends StatefulWidget {
   const OotdScreen({super.key});
@@ -284,8 +285,10 @@ class _OotdScreenState extends State<OotdScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     TextButton.icon(
                       onPressed: () async {
@@ -295,6 +298,29 @@ class _OotdScreenState extends State<OotdScreen> {
                       },
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       label: const Text('삭제', style: TextStyle(color: Colors.red)),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        List<dynamic> canvasItems = data['canvasItems'] ?? data['taggedClothes'] ?? [];
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CoordinationCanvasScreen(
+                              editDocId: docId,
+                              initialCanvasItems: canvasItems,
+                            ),
+                          ),
+                        ).then((_) {
+                          _loadPlannedOotds(refresh: true);
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[200],
+                        foregroundColor: Colors.black,
+                      ),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('코디 수정'),
                     ),
                     ElevatedButton.icon(
                       onPressed: () {

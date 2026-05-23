@@ -24,7 +24,14 @@ class CanvasItem {
 }
 
 class CoordinationCanvasScreen extends StatefulWidget {
-  const CoordinationCanvasScreen({super.key});
+  final String? editDocId;
+  final List<dynamic>? initialCanvasItems;
+
+  const CoordinationCanvasScreen({
+    super.key,
+    this.editDocId,
+    this.initialCanvasItems,
+  });
 
   @override
   State<CoordinationCanvasScreen> createState() => _CoordinationCanvasScreenState();
@@ -48,6 +55,23 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
   void initState() {
     super.initState();
     _loadPlannedOotds();
+
+    if (widget.initialCanvasItems != null) {
+      for (var item in widget.initialCanvasItems!) {
+        final data = item as Map<String, dynamic>;
+        _items.add(CanvasItem(
+          docId: data['id'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
+          title: data['title'] ?? '',
+          offset: Offset(
+            (data['dx'] as num?)?.toDouble() ?? 100.0, 
+            (data['dy'] as num?)?.toDouble() ?? 150.0
+          ),
+          scale: (data['scale'] as num?)?.toDouble() ?? 1.0,
+          rotation: (data['rotation'] as num?)?.toDouble() ?? 0.0,
+        ));
+      }
+    }
   }
 
   Future<void> _loadPlannedOotds() async {
@@ -94,6 +118,16 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         'title': item.title,
       }).toList();
 
+      final canvasItems = _items.map((item) => {
+        'id': item.docId,
+        'imageUrl': item.imageUrl,
+        'title': item.title,
+        'dx': item.offset.dx,
+        'dy': item.offset.dy,
+        'scale': item.scale,
+        'rotation': item.rotation,
+      }).toList();
+
       // 중복 제거
       final uniqueTaggedClothes = <String, Map<String, dynamic>>{};
       for (var c in taggedClothes) {
@@ -103,6 +137,8 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
       await _firebaseService.savePlannedOOTDData(
         imageUrl: imageUrl,
         taggedClothes: uniqueTaggedClothes.values.toList(),
+        canvasItems: canvasItems,
+        docId: widget.editDocId,
       );
 
       if (mounted) {
