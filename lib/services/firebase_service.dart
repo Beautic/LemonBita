@@ -363,18 +363,40 @@ class FirebaseService {
   Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({DocumentSnapshot? lastDoc, int limit = 10}) async {
     if (currentUserId == null) return [];
 
+    // 복합 인덱스(Composite Index) 에러를 방지하기 위해 
+    // 로컬에서 정렬하는 방식으로 변경합니다.
     Query query = _firestore
         .collection('planned_ootds')
-        .where('userId', isEqualTo: currentUserId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
-
-    if (lastDoc != null) {
-      query = query.startAfterDocument(lastDoc);
-    }
+        .where('userId', isEqualTo: currentUserId);
 
     final snapshot = await query.get();
-    return snapshot.docs;
+    
+    // 로컬 메모리에서 최신순 정렬
+    List<QueryDocumentSnapshot> docs = snapshot.docs;
+    docs.sort((a, b) {
+      final aData = a.data() as Map<String, dynamic>;
+      final bData = b.data() as Map<String, dynamic>;
+      final aTime = aData['createdAt'] as Timestamp?;
+      final bTime = bData['createdAt'] as Timestamp?;
+      
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+      return bTime.compareTo(aTime);
+    });
+
+    // 페이징 처리 (클라이언트 사이드)
+    int startIndex = 0;
+    if (lastDoc != null) {
+      final idx = docs.indexWhere((doc) => doc.id == lastDoc.id);
+      if (idx != -1) startIndex = idx + 1;
+    }
+
+    int endIndex = startIndex + limit;
+    if (endIndex > docs.length) endIndex = docs.length;
+
+    if (startIndex >= docs.length) return [];
+    return docs.sublist(startIndex, endIndex);
   }
 
   Future<void> deletePlannedOOTDData(String docId) async {
