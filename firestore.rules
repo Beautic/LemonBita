@@ -1,8 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // 기본 차단
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
+    }
+
+    // 1. 유저 프로필: 누구나 읽을 수 있지만, 수정은 본인만 가능
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // 알림: 알림 생성은 누구나(좋아요/댓글 등), 수정/삭제는 본인만
+      match /notifications/{notiId} {
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null;
+      }
+    }
+
+    // 2. 옷장: 누구나 읽을 수 있지만, 생성/수정/삭제는 본인만 가능
+    match /clothes/{clothId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // 3. OOTD: 삭제는 본인만, 수정(좋아요 등)은 누구나
+    match /ootds/{ootdId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null; 
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // 댓글: 작성은 누구나(본인 UID로), 수정/삭제는 댓글 작성자만
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      }
+    }
+
+    // 4. 코디 아이디어 (Planned OOTDs)
+    match /planned_ootds/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null; 
+      // 삭제는 코디 대상자(주인)이거나, 해당 코디를 추천한 사람만 가능하게 해야하지만
+      // 단순화를 위해 본인(주인)에게만 허용 (추천인은 UID 필드가 없음)
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      }
     }
   }
 }
