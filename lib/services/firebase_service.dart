@@ -511,7 +511,7 @@ class FirebaseService {
           recipientId: targetUserId,
           type: 'outfit_suggestion',
           message: '$suggestedBy님이 코디를 추천했습니다!',
-          targetId: '',
+          targetId: docRef.id,
         );
       }
     }
@@ -711,7 +711,7 @@ class FirebaseService {
   }
 
   // 7. OOTD 댓글 쓰기
-  Future<void> addOotdComment(String ootdId, String ownerId, String text, {String? replyToId}) async {
+  Future<void> addOotdComment(String ootdId, String ownerId, String text, {String? parentId}) async {
     if (currentUserId == null) return;
     
     final myProfile = await _firestore.collection('users').doc(currentUserId).get();
@@ -722,9 +722,13 @@ class FirebaseService {
       'nickname': myData['nickname'],
       'profileImageUrl': myData['profileImageUrl'],
       'text': text,
-      'replyToId': replyToId,
+      'parentId': parentId,
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    await _firestore.collection('ootds').doc(ootdId).update({
+      'commentCount': FieldValue.increment(1),
+    }).catchError((_) {}); // Ignore if document doesn't exist
 
     await sendNotification(
       recipientId: ownerId,
@@ -744,10 +748,11 @@ class FirebaseService {
     final myDoc = await _firestore.collection('users').doc(currentUserId).get();
     final List<dynamic> friendUids = myDoc.data()?['friends'] ?? [];
     
-    if (friendUids.isEmpty) return [];
+    List<dynamic> targetUids = List.from(friendUids);
+    targetUids.add(currentUserId);
 
     final snapshot = await _firestore.collection('ootds')
-        .where('userId', whereIn: friendUids.take(10).toList())
+        .where('userId', whereIn: targetUids.take(30).toList())
         .get();
         
     List<QueryDocumentSnapshot> docs = snapshot.docs;

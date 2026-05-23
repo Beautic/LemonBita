@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'friends_screen.dart';
-// 필요 시 ootd detail 화면 import 등 연동
+import 'planned_ootd_detail_screen.dart';
+import 'single_ootd_screen.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -73,8 +74,11 @@ class NotificationScreen extends StatelessWidget {
                     }
                     if (type == 'friend_request') {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const FriendsScreen()));
+                    } else if (type == 'outfit_suggestion' && data['targetId'] != null && data['targetId'].isNotEmpty) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: data['targetId'])));
+                    } else if ((type == 'ootd_like' || type == 'ootd_comment') && data['targetId'] != null && data['targetId'].isNotEmpty) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => SingleOotdScreen(ootdId: data['targetId'])));
                     }
-                    // TODO: OOTD 상세페이지나 코디 추천 페이지로 이동
                   },
                 ),
               );

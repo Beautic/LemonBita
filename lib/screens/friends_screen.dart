@@ -161,7 +161,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         onPressed: () => _firebaseService.rejectFriendRequest(fromUid),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () async {
                           if (_friends.length >= 10) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('친구는 최대 10명까지만 가능합니다.')));

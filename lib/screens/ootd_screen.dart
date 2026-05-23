@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
+import '../widgets/ootd_interaction_bar.dart';
 import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
 import 'upload_ootd_screen.dart';
@@ -478,6 +479,22 @@ class _OotdScreenState extends State<OotdScreen> {
               style: const TextStyle(fontSize: 14, height: 1.4),
             ),
           ),
+
+        // 3.5. 소셜 인터랙션 영역 (좋아요, 댓글)
+        OotdInteractionBar(
+          ootdId: docId,
+          ownerId: item['userId'] ?? '',
+          likedBy: item['likedBy'] ?? [],
+          commentCount: item['commentCount'] ?? 0,
+          firebaseService: _firebaseService,
+          onLikeToggled: (newLikedBy) {
+            // OotdScreen의 _ootds 리스트를 업데이트할 수 없으므로 무시하거나,
+            // setState로 전체를 다시 불러오지 않고 해당 아이템 데이터만 수정
+            setState(() {
+              item['likedBy'] = newLikedBy;
+            });
+          },
+        ),
 
         // 4. 태그된 옷 영역
         if (taggedClothes.isNotEmpty)
