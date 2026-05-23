@@ -127,8 +127,8 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => UploadOotdScreen(
-                            preSelectedClothes: taggedClothes,
-                            plannedImageUrl: data['imageUrl'],
+                            initialImageUrl: data['imageUrl'],
+                            initialTaggedClothes: taggedClothes,
                           ),
                         ),
                       );

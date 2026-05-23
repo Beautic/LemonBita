@@ -504,7 +504,7 @@ class FirebaseService {
       await _firestore.collection('planned_ootds').doc(docId).update(data);
     } else {
       data['createdAt'] = FieldValue.serverTimestamp();
-      await _firestore.collection('planned_ootds').add(data);
+      final docRef = await _firestore.collection('planned_ootds').add(data);
       
       if (targetUserId != null && targetUserId != currentUserId && suggestedBy != null) {
         await sendNotification(
