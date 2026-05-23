@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   
-  bool _isLoginMode = true;
   bool _isLoading = false;
 
   Future<void> _submit() async {
@@ -30,17 +30,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      if (_isLoginMode) {
-        await _firebaseService.loginWithEmail(email, password);
-      } else {
-        await _firebaseService.signUpWithEmail(email, password);
-      }
+      await _firebaseService.loginWithEmail(email, password);
       // 성공 시 AuthStateChanges 스트림에 의해 자동으로 라우팅 변경됨
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('오류 발생: $e'),
+            content: Text('로그인 실패: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -71,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '어디서든 내 옷을 관리하세요',
+                '다시 오셨군요! 로그인해주세요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
@@ -80,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: '이메일',
+                  labelText: '이메일 주소',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
@@ -109,22 +105,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(
-                        _isLoginMode ? '로그인' : '회원가입',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      child: const Text(
+                        '로그인',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  setState(() {
-                    _isLoginMode = !_isLoginMode;
-                  });
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignupScreen()),
+                  );
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.grey[800]),
-                child: Text(
-                  _isLoginMode ? '계정이 없으신가요? 새로 가입하기' : '이미 계정이 있으신가요? 로그인하기',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                child: const Text(
+                  '아직 계정이 없으신가요? 회원가입 하기',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],

@@ -78,7 +78,7 @@ class FirebaseService {
   // 현재 유저 가져오기
   AuthUser? get currentUser => _currentUser;
 
-  // 이메일 회원가입
+  // 이메일 회원가입 (기본)
   Future<AuthUser> signUpWithEmail(String email, String password) async {
     try {
       final cred = await auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -95,6 +95,65 @@ class FirebaseService {
     } on auth.FirebaseAuthException catch (e) {
       throw _parseAuthError(e);
     }
+  }
+
+  // 상세 정보 포함 회원가입
+  Future<void> signUpWithDetails({
+    required String email,
+    required String password,
+    required String nickname,
+    required bool agreedToTerms,
+    Uint8List? profileImageBytes,
+  }) async {
+    try {
+      final cred = await auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final uid = cred.user!.uid;
+
+      String profileImageUrl = '';
+      if (profileImageBytes != null) {
+        profileImageUrl = await uploadImage(profileImageBytes, 'jpg');
+      }
+
+      await _firestore.collection('users').doc(uid).set({
+        'email': email,
+        'nickname': nickname,
+        'profileImageUrl': profileImageUrl,
+        'agreedToTerms': agreedToTerms,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+    } on auth.FirebaseAuthException catch (e) {
+      throw _parseAuthError(e);
+    }
+  }
+
+  // 프로필 정보 업데이트
+  Future<void> updateUserProfile({
+    required String nickname,
+    Uint8List? profileImageBytes,
+    String? existingImageUrl,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    
+    String imageUrl = existingImageUrl ?? '';
+    
+    if (profileImageBytes != null) {
+      imageUrl = await uploadImage(profileImageBytes, 'jpg');
+    }
+
+    await _firestore.collection('users').doc(currentUserId).update({
+      'nickname': nickname,
+      'profileImageUrl': imageUrl,
+    });
+  }
+
+  // 프로필 정보 스트림
+  Stream<DocumentSnapshot> getUserProfileStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore.collection('users').doc(currentUserId).snapshots();
   }
 
   // 이메일 로그인
