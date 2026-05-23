@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
+import 'search_clothes_screen.dart';
 
 class UploadOotdScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -283,8 +284,39 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                 ],
               ),
             ),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, bottom: 16.0),
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SearchClothesScreen(
+                        isSelectionMode: true,
+                        initialSelectedIds: _selectedClothesIds,
+                      ),
+                    ),
+                  );
+                  
+                  if (result != null && result is List<Map<String, dynamic>>) {
+                    setState(() {
+                      _selectedClothesIds.clear();
+                      _selectedClothesIds.addAll(result.map((e) => e['id'] as String));
+                    });
+                  }
+                },
+                icon: const Icon(Icons.add, color: Colors.black),
+                label: const Text('내 옷장에서 옷 선택하기', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  side: const BorderSide(color: Colors.black26),
+                ),
+              ),
+            ),
 
-            // 옷 목록 가로 스크롤
+            // 선택된 옷 목록 가로 스크롤
             if (_isLoadingClothes)
               const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator(color: Colors.black)))
             else if (_allClothes.isEmpty)
@@ -299,9 +331,10 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: _allClothes.length,
+                  itemCount: _allClothes.where((doc) => _selectedClothesIds.contains(doc.id)).length,
                   itemBuilder: (context, index) {
-                    final doc = _allClothes[index];
+                    final selectedDocs = _allClothes.where((doc) => _selectedClothesIds.contains(doc.id)).toList();
+                    final doc = selectedDocs[index];
                     final item = doc.data() as Map<String, dynamic>;
                     final isSelected = _selectedClothesIds.contains(doc.id);
 
@@ -344,10 +377,10 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(2),
                                       decoration: const BoxDecoration(
-                                        color: Colors.black,
+                                        color: Colors.red,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.check, size: 16, color: Colors.white),
+                                      child: const Icon(Icons.close, size: 16, color: Colors.white),
                                     ),
                                   ),
                               ],
