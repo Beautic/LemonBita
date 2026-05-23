@@ -5,7 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
 
 class UploadOotdScreen extends StatefulWidget {
-  const UploadOotdScreen({super.key});
+  final String? initialImageUrl;
+  final Set<String>? initialTaggedClothes;
+
+  const UploadOotdScreen({
+    super.key,
+    this.initialImageUrl,
+    this.initialTaggedClothes,
+  });
 
   @override
   State<UploadOotdScreen> createState() => _UploadOotdScreenState();
@@ -30,6 +37,9 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialTaggedClothes != null) {
+      _selectedClothesIds.addAll(widget.initialTaggedClothes!);
+    }
     _fetchClothes();
   }
 
@@ -80,7 +90,7 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
   }
 
   Future<void> _uploadOOTD() async {
-    if (_imageBytes == null) {
+    if (_imageBytes == null && widget.initialImageUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('OOTD 사진을 선택해주세요.')),
       );
@@ -93,10 +103,15 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
 
     try {
       // 1. 이미지 업로드
-      String imageUrl = await _firebaseService.uploadImage(
-        _imageBytes!,
-        _imageExtension ?? 'jpg',
-      );
+      String imageUrl;
+      if (_imageBytes != null) {
+        imageUrl = await _firebaseService.uploadImage(
+          _imageBytes!,
+          _imageExtension ?? 'jpg',
+        );
+      } else {
+        imageUrl = widget.initialImageUrl!;
+      }
 
       // 2. 태그된 옷 데이터 구성
       List<Map<String, dynamic>> taggedClothes = [];
@@ -177,10 +192,12 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
                 color: Colors.grey[100],
                 child: _imageBytes != null
                     ? Image.memory(_imageBytes!, fit: BoxFit.contain)
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_a_photo_outlined, size: 48, color: Colors.grey[400]),
+                    : widget.initialImageUrl != null
+                        ? Image.network(widget.initialImageUrl!, fit: BoxFit.contain)
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, size: 48, color: Colors.grey[400]),
                           const SizedBox(height: 12),
                           Text('OOTD 사진 선택', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
                         ],

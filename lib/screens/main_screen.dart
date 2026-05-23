@@ -4,6 +4,7 @@ import 'upload_screen.dart';
 import 'profile_screen.dart';
 import 'ootd_screen.dart';
 import 'upload_ootd_screen.dart';
+import 'coordination_canvas_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -69,6 +70,23 @@ class _MainScreenState extends State<MainScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UploadOotdScreen(),
+                        fullscreenDialog: true,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.black,
+                    child: Icon(Icons.dashboard_customize_outlined, color: Colors.white),
+                  ),
+                  title: const Text('가상 코디 캔버스 (코디하기)', style: TextStyle(fontWeight: FontWeight.w600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CoordinationCanvasScreen(),
                         fullscreenDialog: true,
                       ),
                     );

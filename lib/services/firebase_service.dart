@@ -340,4 +340,45 @@ class FirebaseService {
 
     return snapshot.docs;
   }
+
+  // ==== 예비 OOTD (코디 캔버스) 관련 로직 ====
+
+  Future<void> savePlannedOOTDData({
+    required String imageUrl,
+    required List<Map<String, dynamic>> taggedClothes,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    List<String> taggedClothesIds = taggedClothes.map((cloth) => cloth['id'] as String).toList();
+
+    await _firestore.collection('planned_ootds').add({
+      'userId': currentUserId,
+      'imageUrl': imageUrl,
+      'taggedClothes': taggedClothes,
+      'taggedClothesIds': taggedClothesIds,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({DocumentSnapshot? lastDoc, int limit = 10}) async {
+    if (currentUserId == null) return [];
+
+    Query query = _firestore
+        .collection('planned_ootds')
+        .where('userId', isEqualTo: currentUserId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    if (lastDoc != null) {
+      query = query.startAfterDocument(lastDoc);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs;
+  }
+
+  Future<void> deletePlannedOOTDData(String docId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('planned_ootds').doc(docId).delete();
+  }
 }

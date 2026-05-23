@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
 import 'search_clothes_screen.dart';
 import 'ootd_calendar_screen.dart';
+import 'upload_ootd_screen.dart';
 
 class OotdScreen extends StatefulWidget {
   const OotdScreen({super.key});
@@ -21,10 +22,17 @@ class _OotdScreenState extends State<OotdScreen> {
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
 
+  // 코디 아이디어용 상태
+  List<QueryDocumentSnapshot> _plannedOotds = [];
+  bool _isLoadingPlanned = false;
+  bool _hasMorePlanned = true;
+  DocumentSnapshot? _lastPlannedDoc;
+
   @override
   void initState() {
     super.initState();
     _loadOotds();
+    _loadPlannedOotds();
     _scrollController.addListener(_onScroll);
   }
 
@@ -74,38 +82,94 @@ class _OotdScreenState extends State<OotdScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      // NOTE: 탭에 따라 각각의 로드 함수를 호출해야 하지만,
+      // 간단하게 구현하기 위해 둘 다 호출합니다. (이미 로딩중이거나 hasMore가 아니면 무시됨)
       _loadOotds();
+      _loadPlannedOotds();
+    }
+  }
+
+  Future<void> _loadPlannedOotds({bool refresh = false}) async {
+    if (_isLoadingPlanned) return;
+    if (refresh) {
+      setState(() {
+        _plannedOotds.clear();
+        _lastPlannedDoc = null;
+        _hasMorePlanned = true;
+      });
+    }
+
+    if (!_hasMorePlanned) return;
+
+    setState(() { _isLoadingPlanned = true; });
+
+    try {
+      final newDocs = await _firebaseService.getPlannedOOTDPage(lastDoc: _lastPlannedDoc, limit: 10);
+      setState(() {
+        if (newDocs.length < 10) {
+          _hasMorePlanned = false;
+        }
+        if (newDocs.isNotEmpty) {
+          _lastPlannedDoc = newDocs.last;
+          _plannedOotds.addAll(newDocs);
+        }
+        _isLoadingPlanned = false;
+      });
+    } catch (e) {
+      setState(() { _isLoadingPlanned = false; });
+      debugPrint("Planned OOTD 로드 에러: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'OOTD',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month, color: Colors.black87),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const OotdCalendarScreen(),
-                ),
-              );
-            },
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'OOTD',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadOotds(refresh: true),
-        color: Colors.black,
-        child: _buildBody(),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.calendar_month, color: Colors.black87),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OotdCalendarScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
+          bottom: const TabBar(
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.black,
+            tabs: [
+              Tab(text: '내 OOTD'),
+              Tab(text: '코디 아이디어'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            RefreshIndicator(
+              onRefresh: () => _loadOotds(refresh: true),
+              color: Colors.black,
+              child: _buildBody(),
+            ),
+            RefreshIndicator(
+              onRefresh: () => _loadPlannedOotds(refresh: true),
+              color: Colors.black,
+              child: _buildPlannedBody(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -144,6 +208,122 @@ class _OotdScreenState extends State<OotdScreen> {
         final doc = _ootds[index];
         final item = doc.data() as Map<String, dynamic>;
         return _buildOotdPost(doc.id, item);
+      },
+    );
+  }
+
+  Widget _buildPlannedBody() {
+    if (_plannedOotds.isEmpty && _isLoadingPlanned) {
+      return const Center(child: CircularProgressIndicator(color: Colors.black));
+    }
+
+    if (_plannedOotds.isEmpty && !_isLoadingPlanned) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.dashboard_customize_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text('가상 코디 캔버스에서 아이디어를 저장해보세요!', style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _plannedOotds.length,
+      itemBuilder: (context, index) {
+        final doc = _plannedOotds[index];
+        final data = doc.data() as Map<String, dynamic>;
+        
+        return GestureDetector(
+          onTap: () {
+            _showPlannedOotdDetail(doc.id, data);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                image: NetworkImage(data['imageUrl'] ?? ''),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPlannedOotdDetail(String docId, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Image.network(
+                  data['imageUrl'] ?? '',
+                  width: double.infinity,
+                  height: 300,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _firebaseService.deletePlannedOOTDData(docId);
+                        _loadPlannedOotds(refresh: true);
+                      },
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      label: const Text('삭제', style: TextStyle(color: Colors.red)),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        List<dynamic> tagged = data['taggedClothes'] ?? [];
+                        final tagsSet = tagged.map((e) => e['id'] as String).toSet();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UploadOotdScreen(
+                              initialImageUrl: data['imageUrl'],
+                              initialTaggedClothes: tagsSet,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.check),
+                      label: const Text('OOTD로 등록'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
