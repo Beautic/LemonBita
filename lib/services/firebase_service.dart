@@ -148,10 +148,10 @@ class FirebaseService {
       imageUrl = await uploadImage(profileImageBytes, 'jpg');
     }
 
-    await _firestore.collection('users').doc(currentUserId).update({
+    await _firestore.collection('users').doc(currentUserId).set({
       'nickname': nickname,
       'profileImageUrl': imageUrl,
-    });
+    }, SetOptions(merge: true));
   }
 
   // 프로필 정보 스트림
@@ -216,7 +216,7 @@ class FirebaseService {
 
     UploadTask uploadTask = ref.putData(
       fileBytes,
-      SettableMetadata(contentType: 'image/$extension'),
+      SettableMetadata(contentType: extension == 'jpg' ? 'image/jpeg' : 'image/$extension'),
     );
 
     TaskSnapshot snapshot = await uploadTask;
