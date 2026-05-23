@@ -123,12 +123,14 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                         }).toList();
                       }
                       
+                      Set<String> taggedIds = taggedClothes.map((e) => e['id'] as String).toSet();
+                      
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UploadOotdScreen(
                             initialImageUrl: data['imageUrl'],
-                            initialTaggedClothes: taggedClothes,
+                            initialTaggedClothes: taggedIds,
                           ),
                         ),
                       );
