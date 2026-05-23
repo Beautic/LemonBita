@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'coordination_canvas_screen.dart';
 
 class FriendClosetScreen extends StatelessWidget {
@@ -74,11 +73,14 @@ class FriendClosetScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         color: Colors.grey[200],
-                        child: CachedNetworkImage(
-                          imageUrl: data['imageUrl'] ?? '',
+                        child: Image.network(
+                          data['imageUrl'] ?? '',
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                          },
+                          errorBuilder: (context, url, error) => const Icon(Icons.error),
                         ),
                       ),
                     );

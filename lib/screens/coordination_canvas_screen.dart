@@ -109,7 +109,10 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     await Future.delayed(const Duration(milliseconds: 100));
 
     try {
-      final imageBytes = await _capturePng();
+      final boundary = _canvasKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final imageBytes = byteData!.buffer.asUint8List();
       
       final taggedClothes = _items.map((item) => {
         'id': item.docId,
