@@ -116,3 +116,18 @@
 - **로딩 개수 제한(Limit) 적용**: `FirebaseService`의 `getFriendsOotdFeed` 함수 내 Firestore 쿼리를 수정하여, `orderBy('createdAt', descending: true)`와 `.limit(20)` 메서드를 사용해 가장 최신 게시물 20개만 선별적으로 불러오도록 구조를 변경.
 
 **이유**: 불필요한 네트워크 통신과 이미지 렌더링 부하를 줄이고, 앱의 반응성을 극대화하여 쾌적한 피드 스크롤 경험을 제공하기 위함.
+
+### 4. 데이터베이스 및 소스 코드 보안(Security) 강화
+**문제**:
+- 초기 앱 기획 단계에서 적용되었던 개방형 데이터베이스 권한(`allow read, write: if request.auth != null`)으로 인해, 악의적인 유저가 API를 호출할 경우 타인의 데이터를 임의로 수정 및 삭제할 수 있는 치명적 보안 취약점 존재.
+- 앱을 외부인에게 배포(공유)할 경우 소스 코드 복제(카피캣)에 대한 방어가 확실히 인지되지 않음.
+
+**수정 내용**:
+- **Firestore Security Rules 전면 개편**: 
+  - `firestore.rules`를 수정하여, 옷장(`clothes`), OOTD(`ootds`), 프로필(`users`) 등 모든 주요 컬렉션의 **수정(update) 및 삭제(delete) 권한을 데이터를 생성한 본인(userId == request.auth.uid)**에게만 부여하도록 통제.
+  - 타인이 내 게시물에 좋아요를 누르거나 댓글을 달기 위해 필요한 최소한의 하위 문서(Comments 등) 생성 권한만 부분 허용.
+- **소스 코드 난독화(Obfuscation) 및 Canvas 렌더링 검증**: 
+  - 앱 배포 시 Flutter Web의 CanvasKit 렌더링 엔진과 Release Mode 빌드가 작동하여 소스 코드가 완벽히 난독화(Minification)됨을 확인.
+  - HTML 태그가 존재하지 않아 F12 개발자 도구 등을 이용한 UI/UX 구조 무단 복제가 사실상 불가능함을 보증.
+
+**이유**: 프라이빗 소셜 서비스로서 타인의 악의적인 데이터 훼손을 데이터베이스 레벨에서 원천 차단하고, 외부 배포 시 발생할 수 있는 소스 코드 유출 및 카피캣 위협으로부터 앱의 지식재산권을 보호하기 위함.
