@@ -372,6 +372,25 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
               onTap: () {
                 setState(() { _selectedIndex = null; });
               },
+              onScaleStart: (details) {
+                if (_selectedIndex != null) {
+                  setState(() {
+                    final item = _items[_selectedIndex!];
+                    _baseScale = item.scale;
+                    _baseRotation = item.rotation;
+                  });
+                }
+              },
+              onScaleUpdate: (details) {
+                if (_selectedIndex != null) {
+                  setState(() {
+                    final item = _items[_selectedIndex!];
+                    item.offset += details.focalPointDelta;
+                    item.scale = (_baseScale * details.scale).clamp(0.2, 5.0);
+                    item.rotation = _baseRotation + details.rotation;
+                  });
+                }
+              },
               child: RepaintBoundary(
                 key: _canvasKey,
                 child: Container(
@@ -394,7 +413,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                           left: item.offset.dx,
                           top: item.offset.dy,
                           child: GestureDetector(
-                            onTap: () {
+                            onTapDown: (_) {
                               setState(() {
                                 // 선택 시 맨 앞으로 가져오기
                                 _items.removeAt(index);
@@ -402,25 +421,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                                 _selectedIndex = _items.length - 1;
                               });
                             },
-                            onScaleStart: (details) {
-                              setState(() {
-                                _items.removeAt(index);
-                                _items.add(item);
-                                _selectedIndex = _items.length - 1;
-                                _baseScale = item.scale;
-                                _baseRotation = item.rotation;
-                              });
-                            },
-                            onScaleUpdate: (details) {
-                              setState(() {
-                                if (_selectedIndex != null) {
-                                  final selectedItem = _items[_selectedIndex!];
-                                  selectedItem.offset += details.focalPointDelta;
-                                  selectedItem.scale = (_baseScale * details.scale).clamp(0.2, 5.0);
-                                  selectedItem.rotation = _baseRotation + details.rotation;
-                                }
-                              });
-                            },
+                            onTap: () {}, // 부모 onTap을 막기 위한 빈 핸들러
                             child: Transform.rotate(
                               angle: item.rotation,
                               child: Transform.scale(
@@ -429,8 +430,10 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                                   clipBehavior: Clip.none,
                                   children: [
                                     Container(
-                                      width: 120,
-                                      height: 120,
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 150,
+                                        maxHeight: 150,
+                                      ),
                                       decoration: BoxDecoration(
                                         border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
                                       ),
