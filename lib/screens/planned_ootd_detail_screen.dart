@@ -76,7 +76,7 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
               data['imageUrl'] ?? '',
               width: double.infinity,
               height: MediaQuery.of(context).size.width,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
             ),
             if (suggestedBy != null)
               Container(

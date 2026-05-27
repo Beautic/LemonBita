@@ -229,7 +229,7 @@ class _OotdScreenState extends State<OotdScreen> {
             children: [
               Image.network(
                 item['imageUrl'] ?? '',
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image_not_supported, color: Colors.grey)),
               ),
               if ((item['taggedClothes'] as List?)?.isNotEmpty == true)
@@ -293,7 +293,7 @@ class _OotdScreenState extends State<OotdScreen> {
                   borderRadius: BorderRadius.circular(12),
                   image: DecorationImage(
                     image: NetworkImage(data['imageUrl'] ?? ''),
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -343,7 +343,7 @@ class _OotdScreenState extends State<OotdScreen> {
                   data['imageUrl'] ?? '',
                   width: double.infinity,
                   height: 300,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
               Padding(

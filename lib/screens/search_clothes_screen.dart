@@ -360,7 +360,7 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       item['imageUrl'] ?? '',
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (context, error, stackTrace) => Container(

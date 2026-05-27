@@ -147,7 +147,7 @@ class _OotdSelectionScreenState extends State<OotdSelectionScreen> {
                               ),
                               image: DecorationImage(
                                 image: NetworkImage(data['imageUrl'] ?? ''),
-                                fit: BoxFit.cover,
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),

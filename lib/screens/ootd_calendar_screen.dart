@@ -255,7 +255,7 @@ class _OotdCalendarScreenState extends State<OotdCalendarScreen> {
                 aspectRatio: 3 / 4,
                 child: Image.network(
                   item['imageUrl'] ?? '',
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey[100],
                     child: const Icon(Icons.image_not_supported, color: Colors.grey),

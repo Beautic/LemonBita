@@ -175,7 +175,7 @@ class _MyOotdDetailScreenState extends State<MyOotdDetailScreen> {
                   color: Colors.grey[100],
                   child: Image.network(
                     item['imageUrl'] ?? '',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
                   ),
                 ),

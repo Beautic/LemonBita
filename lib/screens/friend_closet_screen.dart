@@ -75,7 +75,7 @@ class FriendClosetScreen extends StatelessWidget {
                         color: Colors.grey[200],
                         child: Image.network(
                           data['imageUrl'] ?? '',
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return const Center(child: CircularProgressIndicator(strokeWidth: 2));

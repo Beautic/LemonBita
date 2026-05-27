@@ -105,7 +105,7 @@ class _OotdPostWidgetState extends State<OotdPostWidget> {
             if (imageUrl.isNotEmpty)
               Image.network(
                 imageUrl,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 width: double.infinity,
                 height: MediaQuery.of(context).size.width,
               ),
