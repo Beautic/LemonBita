@@ -48,8 +48,16 @@ class CategoryData {
 
   // 소분류의 아이콘 에셋 경로 반환
   static String getIconPath(String subCategory) {
-    // 파일명에는 '/' 기호가 사용될 수 없으므로 '_'로 변경되어 저장됨
-    final fileName = subCategory.replaceAll('/', '_').replaceAll(' ', '');
+    // Mac OS와 웹 브라우저 간의 한글 파일명 인코딩(NFD/NFC) 차이를 방지하기 위해,
+    // 한글 파일명을 유니코드 16진수 값으로 인코딩한 안전한 파일명을 반환합니다.
+    // 변환 전 공백(' ') 및 슬래시('/') 기호를 파일명 규칙에 맞게 제거/치환합니다.
+    final cleanCategory = subCategory.replaceAll(' ', '').replaceAll('/', '_');
+    List<String> hexParts = [];
+    for (int i = 0; i < cleanCategory.length; i++) {
+      int code = cleanCategory.codeUnitAt(i);
+      hexParts.add(code.toRadixString(16).padLeft(4, '0'));
+    }
+    final fileName = hexParts.join('_');
     return 'assets/icons/$fileName.png';
   }
 }

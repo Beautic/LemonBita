@@ -85,34 +85,70 @@ class _OotdInteractionBarState extends State<OotdInteractionBar> {
     final myUid = widget.firebaseService.currentUserId;
     final isLiked = myUid != null && widget.likedBy.contains(myUid);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? Colors.red : Colors.black),
-                onPressed: _toggleLike,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+      child: Row(
+        children: [
+          // 하트(좋아요) 영역
+          InkWell(
+            onTap: _toggleLike,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+              child: Row(
+                children: [
+                  Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: isLiked ? Colors.red : Colors.black,
+                    size: 24,
+                  ),
+                  if (widget.likedBy.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.likedBy.length}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.mode_comment_outlined, color: Colors.black),
-                onPressed: _showCommentsSheet,
-              ),
-              const Spacer(),
-            ],
-          ),
-        ),
-        if (widget.likedBy.isNotEmpty || widget.commentCount > 0)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Text(
-              '좋아요 ${widget.likedBy.length}개 · 댓글 ${widget.commentCount}개',
-              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-      ],
+          const SizedBox(width: 16),
+          // 댓글 영역
+          InkWell(
+            onTap: _showCommentsSheet,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.mode_comment_outlined,
+                    color: Colors.black,
+                    size: 24,
+                  ),
+                  if (widget.commentCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.commentCount}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+        ],
+      ),
     );
   }
 }

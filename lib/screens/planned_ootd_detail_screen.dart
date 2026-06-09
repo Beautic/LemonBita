@@ -43,6 +43,88 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
     }
   }
 
+  void _showFolderMoveDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String? currentFolderId = _data!['folderId'];
+        String tempSelectedId = currentFolderId ?? 'unclassified';
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text('폴더 이동', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _firebaseService.getPlannedFoldersStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.black));
+                    }
+                    
+                    final folders = snapshot.data!;
+                    
+                    return ListView(
+                      shrinkWrap: true,
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('미분류'),
+                          value: 'unclassified',
+                          groupValue: tempSelectedId,
+                          activeColor: Colors.black,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              tempSelectedId = val!;
+                            });
+                          },
+                        ),
+                        ...folders.map((folder) {
+                          return RadioListTile<String>(
+                            title: Text(folder['name'] as String),
+                            value: folder['id'] as String,
+                            groupValue: tempSelectedId,
+                            activeColor: Colors.black,
+                            onChanged: (val) {
+                              setDialogState(() {
+                                tempSelectedId = val!;
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final targetFolderId = tempSelectedId == 'unclassified' ? null : tempSelectedId;
+                    try {
+                      await _firebaseService.updatePlannedOotdFolder(widget.plannedOotdId, targetFolderId);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더가 변경되었습니다.')));
+                      _loadData();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('폴더 변경 실패: $e')));
+                    }
+                  },
+                  child: const Text('이동', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -68,6 +150,14 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
       appBar: AppBar(
         title: Text(suggestedBy != null ? '$suggestedBy님의 추천 코디' : '코디 아이디어', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_open, color: Colors.black87),
+            onPressed: _showFolderMoveDialog,
+            tooltip: '폴더 이동',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

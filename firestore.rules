@@ -56,5 +56,12 @@ service cloud.firestore {
         allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
       }
     }
+
+    // 5. 예비 OOTD 폴더 (Planned Folders)
+    match /planned_folders/{folderId} {
+      allow read: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
   }
 }

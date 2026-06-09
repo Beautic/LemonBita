@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'upload_screen.dart';
 import 'profile_screen.dart';
@@ -16,6 +17,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  DateTime? _lastPressedAt;
 
   final List<Widget> _pages = [
     const HomeScreen(),
@@ -103,75 +105,105 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 2) {
-            _showUploadBottomSheet(context);
-          } else {
-            setState(() {
-              _currentIndex = index;
-            });
-          }
-        },
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.grid_view_rounded,
-              color: _currentIndex == 0 ? Colors.black : Colors.grey[400],
-              size: 28,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+
+        // 1. 현재 탭이 첫 번째 탭(옷장, index=0)이 아닌 경우, 첫 번째 탭으로 이동시킵니다.
+        if (_currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+          return;
+        }
+
+        // 2. 이미 첫 번째 탭일 경우, 연속 두 번 누르면 종료되도록 제어합니다.
+        final now = DateTime.now();
+        if (_lastPressedAt == null || now.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+          _lastPressedAt = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('뒤로가기를 한 번 더 누르면 종료됩니다.'),
+              duration: Duration(seconds: 2),
             ),
-            label: '옷장',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              width: 26,
-              height: 30,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: _currentIndex == 1 ? Colors.black : Colors.grey[400]!,
-                  width: 2,
+          );
+          return;
+        }
+
+        // 3. 2초 내에 두 번 누른 경우, 실제 앱을 종료 처리합니다.
+        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      },
+      child: Scaffold(
+        body: _pages[_currentIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            if (index == 2) {
+              _showUploadBottomSheet(context);
+            } else {
+              setState(() {
+                _currentIndex = index;
+              });
+            }
+          },
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.grid_view_rounded,
+                color: _currentIndex == 0 ? Colors.black : Colors.grey[400],
+                size: 28,
+              ),
+              label: '옷장',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                width: 26,
+                height: 30,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: _currentIndex == 1 ? Colors.black : Colors.grey[400]!,
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.person,
+                  color: _currentIndex == 1 ? Colors.black : Colors.grey[400],
+                  size: 18,
                 ),
               ),
-              child: Icon(
-                Icons.person,
-                color: _currentIndex == 1 ? Colors.black : Colors.grey[400],
-                size: 18,
-              ),
+              label: 'OOTD',
             ),
-            label: 'OOTD',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2),
+            BottomNavigationBarItem(
+              icon: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                ),
+                child: const Center(
+                  child: Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, height: 1.1)),
+                ),
               ),
-              child: const Center(
-                child: Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, height: 1.1)),
+              label: '추가',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.person_outline,
+                color: _currentIndex == 3 ? Colors.black : Colors.grey[400],
+                size: 30,
               ),
+              label: '프로필',
             ),
-            label: '추가',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.person_outline,
-              color: _currentIndex == 3 ? Colors.black : Colors.grey[400],
-              size: 30,
-            ),
-            label: '프로필',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -517,7 +517,7 @@ class FirebaseService {
     }
   }
 
-  Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({String? targetUserId, DocumentSnapshot? lastDoc, int limit = 10}) async {
+  Future<List<QueryDocumentSnapshot>> getPlannedOOTDPage({String? targetUserId, String? folderId, DocumentSnapshot? lastDoc, int limit = 10}) async {
     final uid = targetUserId ?? currentUserId;
     if (uid == null) return [];
 
@@ -531,6 +531,23 @@ class FirebaseService {
     
     // 로컬 메모리에서 최신순 정렬
     List<QueryDocumentSnapshot> docs = snapshot.docs;
+
+    // 폴더 필터링
+    if (folderId != null) {
+      if (folderId == 'unclassified') {
+        docs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final fid = data['folderId'];
+          return fid == null || fid.toString().isEmpty;
+        }).toList();
+      } else if (folderId != 'all') {
+        docs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['folderId'] == folderId;
+        }).toList();
+      }
+    }
+
     docs.sort((a, b) {
       final aData = a.data() as Map<String, dynamic>;
       final bData = b.data() as Map<String, dynamic>;
@@ -560,6 +577,90 @@ class FirebaseService {
   Future<void> deletePlannedOOTDData(String docId) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     await _firestore.collection('planned_ootds').doc(docId).delete();
+  }
+
+  // ==== 예비 OOTD 폴더(그룹핑) 관련 로직 ====
+
+  // 폴더 생성
+  Future<String> createPlannedFolder(String name) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final doc = await _firestore.collection('planned_folders').add({
+      'userId': currentUserId,
+      'name': name,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return doc.id;
+  }
+
+  // 폴더 목록 조회 (실시간 Stream)
+  Stream<List<Map<String, dynamic>>> getPlannedFoldersStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore
+        .collection('planned_folders')
+        .where('userId', isEqualTo: currentUserId)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'] ?? '',
+              'createdAt': data['createdAt'],
+            };
+          }).toList();
+          
+          list.sort((a, b) {
+            final aTime = a['createdAt'] as Timestamp?;
+            final bTime = b['createdAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return aTime.compareTo(bTime);
+          });
+          return list;
+        });
+  }
+
+  // 폴더 삭제
+  Future<void> deletePlannedFolder(String folderId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    
+    final batch = _firestore.batch();
+    
+    // 폴더 삭제
+    batch.delete(_firestore.collection('planned_folders').doc(folderId));
+    
+    // 해당 폴더의 코디 아이디어들의 folderId를 null로 업데이트하기 위해 먼저 조회
+    final ootdsSnapshot = await _firestore
+        .collection('planned_ootds')
+        .where('userId', isEqualTo: currentUserId)
+        .where('folderId', isEqualTo: folderId)
+        .get();
+        
+    for (var doc in ootdsSnapshot.docs) {
+      batch.update(doc.reference, {'folderId': FieldValue.delete()});
+    }
+    
+    await batch.commit();
+  }
+
+  // 폴더 이름 수정
+  Future<void> updatePlannedFolder(String folderId, String newName) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('planned_folders').doc(folderId).update({
+      'name': newName,
+    });
+  }
+
+  // 코디 아이디어를 특정 폴더로 이동
+  Future<void> updatePlannedOotdFolder(String ootdId, String? folderId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final ref = _firestore.collection('planned_ootds').doc(ootdId);
+    if (folderId == null || folderId.isEmpty) {
+      await ref.update({'folderId': FieldValue.delete()});
+    } else {
+      await ref.update({'folderId': folderId});
+    }
   }
 
   // ==== 마이크로 소셜 (친구, 알림, 댓글) ====

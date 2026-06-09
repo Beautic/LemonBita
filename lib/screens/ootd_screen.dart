@@ -32,6 +32,7 @@ class _OotdScreenState extends State<OotdScreen> {
   bool _isLoadingPlanned = false;
   bool _hasMorePlanned = true;
   DocumentSnapshot? _lastPlannedDoc;
+  String _selectedFolderId = 'all';
 
   @override
   void initState() {
@@ -109,7 +110,11 @@ class _OotdScreenState extends State<OotdScreen> {
     setState(() { _isLoadingPlanned = true; });
 
     try {
-      final newDocs = await _firebaseService.getPlannedOOTDPage(lastDoc: _lastPlannedDoc, limit: 10);
+      final newDocs = await _firebaseService.getPlannedOOTDPage(
+        folderId: _selectedFolderId,
+        lastDoc: _lastPlannedDoc,
+        limit: 10,
+      );
       setState(() {
         if (newDocs.length < 10) {
           _hasMorePlanned = false;
@@ -170,11 +175,7 @@ class _OotdScreenState extends State<OotdScreen> {
               child: _buildBody(),
             ),
             const FriendsOotdFeedScreen(),
-            RefreshIndicator(
-              onRefresh: () => _loadPlannedOotds(refresh: true),
-              color: Colors.black,
-              child: _buildPlannedBody(),
-            ),
+            _buildPlannedBody(),
           ],
         ),
       ),
@@ -246,6 +247,347 @@ class _OotdScreenState extends State<OotdScreen> {
   }
 
   Widget _buildPlannedBody() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildFolderBar(),
+        Divider(height: 1, color: Colors.grey[200]),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _loadPlannedOotds(refresh: true),
+            color: Colors.black,
+            child: _buildPlannedGrid(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFolderBar() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firebaseService.getPlannedFoldersStream(),
+      builder: (context, snapshot) {
+        final folders = snapshot.data ?? [];
+        
+        return Container(
+          height: 60,
+          color: Colors.white,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            children: [
+              _buildFolderChip(id: 'all', name: '전체'),
+              const SizedBox(width: 8),
+              _buildFolderChip(id: 'unclassified', name: '미분류'),
+              const SizedBox(width: 8),
+              ...folders.map((folder) => Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: _buildFolderChip(
+                  id: folder['id'] as String,
+                  name: folder['name'] as String,
+                  isDeletable: true,
+                ),
+              )),
+              IconButton(
+                icon: const Icon(Icons.create_new_folder_outlined, color: Colors.black54, size: 20),
+                onPressed: _showCreateFolderDialog,
+                tooltip: '폴더 만들기',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFolderChip({required String id, required String name, bool isDeletable = false}) {
+    final isSelected = _selectedFolderId == id;
+    return GestureDetector(
+      onTap: () {
+        if (_selectedFolderId != id) {
+          setState(() {
+            _selectedFolderId = id;
+          });
+          _loadPlannedOotds(refresh: true);
+        }
+      },
+      onLongPress: isDeletable ? () => _showFolderManageOptions(id, name) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDeletable)
+              Icon(Icons.folder_outlined, size: 14, color: isSelected ? Colors.white70 : Colors.grey),
+            if (isDeletable)
+              const SizedBox(width: 4),
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateFolderDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('새 폴더 만들기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: '폴더 이름을 입력하세요 (예: 유럽여행)',
+              hintStyle: TextStyle(fontSize: 14),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  Navigator.pop(context);
+                  try {
+                    await _firebaseService.createPlannedFolder(name);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더가 생성되었습니다.')));
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('폴더 생성 실패: $e')));
+                  }
+                }
+              },
+              child: const Text('만들기', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFolderManageOptions(String id, String name) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Text('"$name" 폴더 관리', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.black87),
+                title: const Text('폴더 이름 수정'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showUpdateFolderDialog(id, name);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('폴더 삭제', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteFolderDialog(id, name);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showUpdateFolderDialog(String id, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('폴더 이름 수정', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: '새 이름을 입력하세요',
+              hintStyle: TextStyle(fontSize: 14),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty && name != currentName) {
+                  Navigator.pop(context);
+                  try {
+                    await _firebaseService.updatePlannedFolder(id, name);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더 이름이 수정되었습니다.')));
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('이름 수정 실패: $e')));
+                  }
+                }
+              },
+              child: const Text('수정', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteFolderDialog(String id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('폴더 삭제', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: Text('"$name" 폴더를 삭제하시겠습니까?\n폴더 내의 코디 아이디어는 삭제되지 않고 미분류로 이동합니다.', style: const TextStyle(fontSize: 14)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await _firebaseService.deletePlannedFolder(id);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더가 삭제되었습니다.')));
+                  if (_selectedFolderId == id) {
+                    setState(() {
+                      _selectedFolderId = 'all';
+                    });
+                    _loadPlannedOotds(refresh: true);
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('폴더 삭제 실패: $e')));
+                }
+              },
+              child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFolderMoveDialog(String ootdId, String? currentFolderId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String tempSelectedId = currentFolderId ?? 'unclassified';
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text('폴더 이동', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _firebaseService.getPlannedFoldersStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.black));
+                    }
+                    
+                    final folders = snapshot.data!;
+                    
+                    return ListView(
+                      shrinkWrap: true,
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('미분류'),
+                          value: 'unclassified',
+                          groupValue: tempSelectedId,
+                          activeColor: Colors.black,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              tempSelectedId = val!;
+                            });
+                          },
+                        ),
+                        ...folders.map((folder) {
+                          return RadioListTile<String>(
+                            title: Text(folder['name'] as String),
+                            value: folder['id'] as String,
+                            groupValue: tempSelectedId,
+                            activeColor: Colors.black,
+                            onChanged: (val) {
+                              setDialogState(() {
+                                tempSelectedId = val!;
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final targetFolderId = tempSelectedId == 'unclassified' ? null : tempSelectedId;
+                    try {
+                      await _firebaseService.updatePlannedOotdFolder(ootdId, targetFolderId);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더가 변경되었습니다.')));
+                      _loadPlannedOotds(refresh: true);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('폴더 변경 실패: $e')));
+                    }
+                  },
+                  child: const Text('이동', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPlannedGrid() {
     if (_plannedOotds.isEmpty && _isLoadingPlanned) {
       return const Center(child: CircularProgressIndicator(color: Colors.black));
     }
@@ -257,7 +599,7 @@ class _OotdScreenState extends State<OotdScreen> {
           children: [
             Icon(Icons.dashboard_customize_outlined, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text('가상 코디 캔버스에서 아이디어를 저장해보세요!', style: TextStyle(color: Colors.grey[500])),
+            Text('저장된 코디 아이디어가 없습니다.', style: TextStyle(color: Colors.grey[500])),
           ],
         ),
       );
@@ -284,6 +626,7 @@ class _OotdScreenState extends State<OotdScreen> {
               MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
             ).then((_) => _loadPlannedOotds(refresh: true));
           },
+          onLongPress: () => _showFolderMoveDialog(doc.id, data['folderId']),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -416,7 +759,4 @@ class _OotdScreenState extends State<OotdScreen> {
       },
     );
   }
-
-
 }
-
