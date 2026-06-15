@@ -1,5 +1,7 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import '../utils/image_filters.dart';
 
 import 'bg_removal_stub.dart'
   if (dart.library.html) 'bg_removal_web.dart';
@@ -7,14 +9,28 @@ import 'bg_removal_stub.dart'
 class BgRemovalService {
   static Future<Uint8List> removeBackground(Uint8List imageBytes) async {
     final resultBytes = await removeBackgroundImpl(imageBytes);
-    return _cropToSquare(resultBytes);
+    
+    // 배경 제거 후, 흰색을 소거하고 긴 면을 100% 꽉 채우는 사각형 정렬 및 보정 연산 적용
+    try {
+      final straightened = await compute(
+        runAutoStraightenIsolate,
+        AutoStraightenParams(imageBytes: resultBytes, targetSize: 800),
+      );
+      if (straightened != null) {
+        return straightened;
+      }
+    } catch (e) {
+      debugPrint("Auto-straighten helper inside removeBackground failed: $e");
+    }
+    
+    return _cropToContent(resultBytes);
   }
 
   static Future<Uint8List> flattenImageToJpeg(Uint8List imageBytes) async {
     return flattenImageToJpegImpl(imageBytes);
   }
 
-  static Uint8List _cropToSquare(Uint8List imageBytes) {
+  static Uint8List _cropToContent(Uint8List imageBytes) {
     final image = img.decodeImage(imageBytes);
     if (image == null) return imageBytes;
 
@@ -42,17 +58,17 @@ class BgRemovalService {
     int bboxWidth = maxX - minX + 1;
     int bboxHeight = maxY - minY + 1;
 
-    // 정사각형으로 만들기 위해 가장 긴 변의 길이를 기준으로 여백을 추가
-    int targetSize = bboxWidth > bboxHeight ? bboxWidth : bboxHeight;
-    targetSize = (targetSize * 1.1).round(); // 10% 여백
+    // 옷의 실제 종횡비를 유지한 채 상하좌우 5% 버퍼만 추가 (정사각형 강제 X)
+    int canvasWidth = (bboxWidth * 1.1).round();
+    int canvasHeight = (bboxHeight * 1.1).round();
 
-    final squareImage = img.Image(width: targetSize, height: targetSize, numChannels: 4);
+    final framedImage = img.Image(width: canvasWidth, height: canvasHeight, numChannels: 4);
 
-    int offsetX = (targetSize - bboxWidth) ~/ 2;
-    int offsetY = (targetSize - bboxHeight) ~/ 2;
+    int offsetX = (canvasWidth - bboxWidth) ~/ 2;
+    int offsetY = (canvasHeight - bboxHeight) ~/ 2;
 
     img.compositeImage(
-      squareImage,
+      framedImage,
       image,
       dstX: offsetX,
       dstY: offsetY,
@@ -63,6 +79,6 @@ class BgRemovalService {
       blend: img.BlendMode.direct,
     );
 
-    return img.encodePng(squareImage);
+    return img.encodePng(framedImage);
   }
 }

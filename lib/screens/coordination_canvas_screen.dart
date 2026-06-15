@@ -1,14 +1,22 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 import '../services/firebase_service.dart';
+import '../utils/color_compatibility.dart';
 import 'planned_ootd_detail_screen.dart';
 
 class CanvasItem {
   final String docId;
   final String imageUrl;
   final String title;
+  final String color;
+  final String category;
+  Uint8List? imageBytes;
+  bool isLoadingBytes;
 
   Offset offset;
   double scale;
@@ -18,9 +26,13 @@ class CanvasItem {
     required this.docId,
     required this.imageUrl,
     required this.title,
+    this.color = '',
+    this.category = '',
     this.offset = Offset.zero,
     this.scale = 1.0,
     this.rotation = 0.0,
+    this.imageBytes,
+    this.isLoadingBytes = false,
   });
 }
 
@@ -64,17 +76,21 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     if (widget.initialCanvasItems != null) {
       for (var item in widget.initialCanvasItems!) {
         final data = item as Map<String, dynamic>;
-        _items.add(CanvasItem(
+        final canvasItem = CanvasItem(
           docId: data['id'] ?? '',
           imageUrl: data['imageUrl'] ?? '',
           title: data['title'] ?? '',
+          color: data['color'] ?? '',
+          category: data['category'] ?? data['title'] ?? '',
           offset: Offset(
             (data['dx'] as num?)?.toDouble() ?? 100.0, 
             (data['dy'] as num?)?.toDouble() ?? 150.0
           ),
           scale: (data['scale'] as num?)?.toDouble() ?? 1.0,
           rotation: (data['rotation'] as num?)?.toDouble() ?? 0.0,
-        ));
+        );
+        _items.add(canvasItem);
+        _loadImageBytesFor(canvasItem);
       }
     }
   }
@@ -90,6 +106,34 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     } catch (e) {
       debugPrint('Failed to load planned ootds: $e');
       setState(() { _isLoadingOotds = false; });
+    }
+  }
+
+  void _loadImageBytesFor(CanvasItem item) async {
+    if (item.imageBytes != null) return;
+    setState(() {
+      item.isLoadingBytes = true;
+    });
+    try {
+      final proxyUrl = 'https://images.weserv.nl/?url=${Uri.encodeComponent(item.imageUrl)}';
+      final response = await http.get(Uri.parse(proxyUrl)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        setState(() {
+          item.imageBytes = response.bodyBytes;
+          item.isLoadingBytes = false;
+        });
+      } else {
+        final directResp = await http.get(Uri.parse(item.imageUrl)).timeout(const Duration(seconds: 10));
+        setState(() {
+          item.imageBytes = directResp.bodyBytes;
+          item.isLoadingBytes = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Failed to load image bytes for canvas: $e");
+      setState(() {
+        item.isLoadingBytes = false;
+      });
     }
   }
 
@@ -125,6 +169,8 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         'id': item.docId,
         'imageUrl': item.imageUrl,
         'title': item.title,
+        'color': item.color,
+        'category': item.category,
         'dx': item.offset.dx,
         'dy': item.offset.dy,
         'scale': item.scale,
@@ -305,15 +351,19 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                               final data = docs[index].data() as Map<String, dynamic>;
                               return GestureDetector(
                                 onTap: () {
+                                  final newItem = CanvasItem(
+                                    docId: docs[index].id,
+                                    imageUrl: data['imageUrl'] ?? '',
+                                    title: data['category'] ?? '',
+                                    color: data['color'] ?? '',
+                                    category: data['category'] ?? '',
+                                    offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
+                                  );
                                   setState(() {
-                                    _items.add(CanvasItem(
-                                      docId: docs[index].id,
-                                      imageUrl: data['imageUrl'] ?? '',
-                                      title: data['category'] ?? '',
-                                      offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
-                                    ));
+                                    _items.add(newItem);
                                     _selectedIndex = _items.length - 1;
                                   });
+                                  _loadImageBytesFor(newItem);
                                   Navigator.pop(context);
                                 },
                                 child: Container(
@@ -437,11 +487,27 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                                       decoration: BoxDecoration(
                                         border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
                                       ),
-                                      child: Image.network(
-                                        item.imageUrl,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
-                                      ),
+                                      child: item.imageBytes != null
+                                          ? Image.memory(
+                                              item.imageBytes!,
+                                              fit: BoxFit.contain,
+                                            )
+                                          : (item.isLoadingBytes
+                                              ? const Center(
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                )
+                                              : Image.network(
+                                                  _getProxyImageUrl(item.imageUrl),
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                )),
                                     ),
                                     if (isSelected)
                                       Positioned(
@@ -478,9 +544,12 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
             ),
           ),
           
-          // 하단 코디 아이디어 리스트 영역
+          // 1. 코디 추천 섹션 추가
+          _buildRecommendationSection(),
+
+          // 2. 하단 코디 아이디어 리스트 영역
           Container(
-            height: 140,
+            height: 130,
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -535,7 +604,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 140), // 하단 리스트 위로 올리기
+        padding: const EdgeInsets.only(bottom: 320), // 추천 섹션 + 코디 아이디어 리스트 높이만큼 올림
         child: FloatingActionButton.extended(
           onPressed: _showClothesBottomSheet,
           backgroundColor: Colors.black,
@@ -544,6 +613,233 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildRecommendationSection() {
+    if (_items.isEmpty) {
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+        ),
+        alignment: Alignment.center,
+        child: const Text(
+          '캔버스에 옷을 추가하거나 선택하시면\n어울리는 색상의 옷을 추천해 드립니다. ✨',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+        ),
+      );
+    }
+
+    final targetUid = widget.friendUid ?? _firebaseService.currentUserId;
+    if (targetUid == null) return const SizedBox.shrink();
+
+    // 캔버스에 추가된 모든 카테고리 및 색상 정보 추출
+    final existingCategories = _items.map((e) => e.category).toSet();
+    final existingColors = _items.map((e) => e.color).where((c) => c.isNotEmpty).toSet();
+
+    String headerText = '';
+    if (_items.length == 1) {
+      final item = _items.first;
+      headerText = '"${item.category} (${item.color.isEmpty ? '색상 미정' : item.color})"와 어울리는 추천 코디';
+    } else {
+      final colorsStr = existingColors.isEmpty ? '미정' : existingColors.join(', ');
+      headerText = '"$colorsStr" 조합과 어울리는 추천 코디';
+    }
+
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                const Icon(Icons.wb_sunny_outlined, size: 18, color: Colors.deepOrangeAccent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    headerText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('clothes')
+                  .where('userId', isEqualTo: targetUid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2));
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('추천할 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)));
+                }
+
+                // 1. 다중 색상 전체 교집합 매칭 시도
+                var recommendedDocs = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final itemColor = data['color'] ?? '';
+                  final itemCategory = data['category'] ?? '';
+                  
+                  // 이미 캔버스에 추가된 실물 옷은 추천에서 제외
+                  if (_items.any((item) => item.docId == doc.id)) return false;
+                  
+                  // 이미 캔버스에 추가된 카테고리의 옷도 추천에서 제외
+                  if (existingCategories.contains(itemCategory)) return false;
+                  
+                  // 캔버스 내 모든 옷들의 색상과 어울리는지 교집합 검사
+                  bool allComp = true;
+                  for (var baseCol in existingColors) {
+                    if (!ColorCompatibility.isCompatible(baseCol, itemColor)) {
+                      allComp = false;
+                      break;
+                    }
+                  }
+                  return allComp;
+                }).toList();
+
+                // 2. 만약 완벽히 매치되는 옷이 없으면, 가장 최근에 추가/선택된 옷 색상 1벌 기준 필터로 완화(Fallback Phase 1)
+                if (recommendedDocs.isEmpty && _items.isNotEmpty) {
+                  final lastItem = _items.last;
+                  recommendedDocs = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final itemColor = data['color'] ?? '';
+                    final itemCategory = data['category'] ?? '';
+                    
+                    if (_items.any((item) => item.docId == doc.id)) return false;
+                    if (existingCategories.contains(itemCategory)) return false;
+                    
+                    return ColorCompatibility.isCompatible(lastItem.color, itemColor);
+                  }).toList();
+                }
+
+                // 3. 그래도 옷이 없다면, 무난한 기본 모노톤 및 파스텔톤 계열로 추천 (Fallback Phase 2)
+                if (recommendedDocs.isEmpty) {
+                  recommendedDocs = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final itemColor = data['color'] ?? '';
+                    final itemCategory = data['category'] ?? '';
+                    
+                    if (_items.any((item) => item.docId == doc.id)) return false;
+                    if (existingCategories.contains(itemCategory)) return false;
+                    
+                    final normalized = ColorCompatibility.normalizeColor(itemColor);
+                    return ['블랙', '화이트', '그레이', '아이보리', '베이지'].contains(normalized);
+                  }).toList();
+                }
+
+                if (recommendedDocs.isEmpty) {
+                  return const Center(child: Text('어울리는 다른 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)));
+                }
+
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: recommendedDocs.length,
+                  itemBuilder: (context, index) {
+                    final doc = recommendedDocs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final color = data['color'] ?? '';
+                    final category = data['category'] ?? '';
+
+                    return GestureDetector(
+                      onTap: () {
+                        // 추천 옷 탭 시 캔버스에 추가
+                        final newItem = CanvasItem(
+                          docId: doc.id,
+                          imageUrl: data['imageUrl'] ?? '',
+                          title: category,
+                          color: color,
+                          category: category,
+                          offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
+                        );
+                        setState(() {
+                          _items.add(newItem);
+                          _selectedIndex = _items.length - 1;
+                        });
+                        _loadImageBytesFor(newItem);
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$category ($color) 옷이 코디 캔버스에 추가되었습니다!'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 90,
+                        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                                child: Image.network(
+                                  _getProxyImageUrl(data['imageUrl'] ?? ''),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    color.isEmpty ? '색상 미정' : color,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getProxyImageUrl(String url) {
+    if (kIsWeb && url.isNotEmpty && !url.startsWith('data:')) {
+      return 'https://images.weserv.nl/?url=${Uri.encodeComponent(url)}';
+    }
+    return url;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
@@ -289,7 +290,13 @@ class _OotdScreenState extends State<OotdScreen> {
                 ),
               )),
               IconButton(
-                icon: const Icon(Icons.create_new_folder_outlined, color: Colors.black54, size: 20),
+                icon: Icon(
+                  Theme.of(context).platform == TargetPlatform.iOS
+                      ? CupertinoIcons.folder_badge_plus
+                      : Icons.create_new_folder_outlined,
+                  color: Colors.black54,
+                  size: 20,
+                ),
                 onPressed: _showCreateFolderDialog,
                 tooltip: '폴더 만들기',
                 padding: EdgeInsets.zero,

@@ -72,6 +72,8 @@ class _UploadScreenState extends State<UploadScreen> {
         _processedImageBytes = bytes;
         _isRemovingBg = false;
       });
+      // 사진 선택 즉시 누끼 제거 + 정사각형 꽉 채우기 보정 자동 적용
+      await _removeBackground();
     }
   }
 
@@ -91,6 +93,8 @@ class _UploadScreenState extends State<UploadScreen> {
         _processedImageBytes = bytes;
         _isRemovingBg = false;
       });
+      // 사진 선택 즉시 누끼 제거 + 정사각형 꽉 채우기 보정 자동 적용
+      await _removeBackground();
     }
   }
 

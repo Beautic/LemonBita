@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import '../utils/categories.dart';
+import '../utils/brands.dart';
 import '../services/bg_removal_service.dart';
-import 'dart:typed_data';
+import '../utils/image_filters.dart';
 import 'package:image_picker/image_picker.dart';
 import 'ootd_selection_screen.dart';
 class ClothingDetailScreen extends StatefulWidget {
@@ -35,6 +38,10 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   late String _selectedSubCategory;
   bool _isLoading = false;
   bool _isRemovingBg = false;
+  
+  // 누끼 완료 후 캐싱 변수
+  Uint8List? _removedBgLocalBytes;
+
   late String _currentImageUrl;
   late String _originalImageUrl;
   
@@ -105,6 +112,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     if (_selectedSubCategory.isNotEmpty && !CategoryData.getSubCategories(_selectedCategory).contains(_selectedSubCategory)) {
       _selectedSubCategory = '';
     }
+    
   }
 
   @override
@@ -156,6 +164,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
       
       setState(() {
         _localImageBytes = resultBytes;
+        _removedBgLocalBytes = resultBytes; // 보정 완료된 최종 누끼 이미지 캐싱
         if (_originalLocalImageBytes == null) {
           _originalLocalImageBytes = originalBytes;
         }
@@ -163,7 +172,10 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('누끼가 성공적으로 제거되었습니다. 정보 저장하기를 눌러 반영하세요.')),
+          const SnackBar(
+            content: Text('누끼 제거 및 화면 맞춤 정렬이 완료되었습니다.\n등록할 때 옷을 평평하게 잘 펴서 촬영해주시면 더욱 깔끔해집니다!'),
+            duration: Duration(seconds: 4),
+          ),
         );
       }
     } catch (e) {
@@ -314,7 +326,13 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                                 children: [
                                   CircularProgressIndicator(color: Colors.white),
                                   SizedBox(height: 16),
-                                  Text('이미지 처리 중...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    '누끼 제거 중...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -360,30 +378,37 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 누끼 제거 및 원본 복원 버튼
+                  // 누끼 제거, 원본 복원 버튼 영역
                   Align(
                     alignment: Alignment.centerRight,
                     child: _isRemovingBg
                         ? const SizedBox.shrink()
-                        : (_localImageBytes != null && _localImageBytes != _originalLocalImageBytes) || (_localImageBytes == null && _currentImageUrl != _originalImageUrl)
-                            ? TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    if (_localImageBytes != null) {
+                        : Wrap(
+                            spacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (_removedBgLocalBytes != null ||
+                                  (_localImageBytes != null && _localImageBytes != _originalLocalImageBytes) ||
+                                  (_localImageBytes == null && _currentImageUrl != _originalImageUrl))
+                                TextButton.icon(
+                                  onPressed: () {
+                                    setState(() {
                                       _localImageBytes = _originalLocalImageBytes;
-                                    } else {
                                       _currentImageUrl = _originalImageUrl;
-                                    }
-                                  });
-                                },
-                                icon: const Icon(Icons.restore),
-                                label: const Text('원본 이미지로 복원하기'),
-                              )
-                            : TextButton.icon(
-                                onPressed: _removeBackground,
-                                icon: const Icon(Icons.auto_fix_high),
-                                label: const Text('현재 이미지 누끼 제거하기'),
-                              ),
+                                      _removedBgLocalBytes = null;
+                                    });
+                                  },
+                                  icon: const Icon(Icons.restore),
+                                  label: const Text('원본 복원'),
+                                ),
+                              if (_removedBgLocalBytes == null)
+                                TextButton.icon(
+                                  onPressed: _removeBackground,
+                                  icon: const Icon(Icons.auto_fix_high),
+                                  label: const Text('누끼 제거'),
+                                ),
+                            ],
+                          ),
                   ),
                   const SizedBox(height: 8),
 
@@ -428,7 +453,11 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                           ],
                         ),
                       )).toList(),
-                      onChanged: (val) => setState(() => _selectedSubCategory = val ?? ''),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedSubCategory = val ?? '';
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -523,9 +552,73 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  TextField(
-                    controller: _brandController,
-                    decoration: _inputDecoration('브랜드 (예: 나이키, 자라)'),
+                  Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      return BrandData.filterBrands(textEditingValue.text);
+                    },
+                    onSelected: (String selection) {
+                      _brandController.text = selection;
+                    },
+                    fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                      if (textEditingController.text.isEmpty && _brandController.text.isNotEmpty) {
+                        textEditingController.text = _brandController.text;
+                      }
+                      return TextField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        decoration: _inputDecoration('브랜드 (예: 나이키, 자라)'),
+                        onChanged: (val) {
+                          _brandController.text = val;
+                        },
+                        onSubmitted: (value) {
+                          _brandController.text = value;
+                          onFieldSubmitted();
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 8,
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width - 48,
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!, width: 1),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final String option = options.elementAt(index);
+                                  return ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                    title: Text(
+                                      option,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    hoverColor: Colors.grey[100],
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   
