@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../utils/weather_helper.dart';
+import '../config/firebase_env.dart';
 import 'weather_service.dart';
 
 class AuthUser {
@@ -25,8 +26,6 @@ class AuthUser {
 }
 
 class FirebaseService {
-  static const String _apiKey = "AIzaSyA53XksiSaTI_S7TjENSv1J_slbSOWTwPg";
-  
   // 인증 상태 관리
   static AuthUser? _currentUser;
   static final StreamController<AuthUser?> _authStateController =
@@ -35,16 +34,10 @@ class FirebaseService {
   // Firebase 초기화 (플랫폼별 분기)
   static Future<void> initialize() async {
     if (kIsWeb) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: _apiKey,
-          appId: "1:891078999530:web:12ba98b8ab107e5ef24693",
-          messagingSenderId: "891078999530",
-          projectId: "digital-closet-32c43",
-          storageBucket: "digital-closet-32c43.firebasestorage.app",
-          authDomain: "digital-closet-32c43.web.app",
-        ),
-      );
+      // 운영/개발 환경에 따라 자동으로 해당 Firebase 프로젝트로 연결
+      // (--dart-define=ENV=prod|dev 로 전환, 기본 dev)
+      debugPrint("🔥 Firebase ENV: ${FirebaseEnv.env} (${FirebaseEnv.options.projectId})");
+      await Firebase.initializeApp(options: FirebaseEnv.options);
     } else {
       await Firebase.initializeApp();
     }

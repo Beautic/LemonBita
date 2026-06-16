@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "digital-closet-32c43"
+    "default": "digital-closet-32c43",
+    "prod": "digital-closet-32c43",
+    "dev": "digital-closet-dev"
   }
 }
