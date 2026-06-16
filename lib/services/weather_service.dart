@@ -9,14 +9,14 @@ class WeatherService {
   static Future<double> fetchCurrentTemperature() async {
     try {
       if (!kIsWeb) {
-        return _getFallbackTemperatureByMonth();
+        return getFallbackTemperatureFor(DateTime.now());
       }
 
       // 1. 브라우저 지오로케이션 지원 여부 확인 및 좌표 획득
       final geo = html.window.navigator.geolocation;
       final position = await _getCurrentPosition(geo);
       if (position == null) {
-        return _getFallbackTemperatureByMonth();
+        return getFallbackTemperatureFor(DateTime.now());
       }
 
       final double lat = position.coords?.latitude?.toDouble() ?? 37.5665; // 기본 서울 위도
@@ -37,7 +37,7 @@ class WeatherService {
       print('Failed to fetch real-time weather, falling back: $e');
     }
 
-    return _getFallbackTemperatureByMonth();
+    return getFallbackTemperatureFor(DateTime.now());
   }
 
   /// Geolocation API를 비동기로 호출하기 위한 헬퍼
@@ -53,10 +53,9 @@ class WeatherService {
     }
   }
 
-  /// 현재 월(Month) 기준 대한민국 평균 기온 폴백 값 반환
-  static double _getFallbackTemperatureByMonth() {
-    final now = DateTime.now();
-    switch (now.month) {
+  /// 특정 날짜(DateTime) 기준 대한민국 평균 기온 폴백 값 반환
+  static double getFallbackTemperatureFor(DateTime date) {
+    switch (date.month) {
       case 12:
       case 1:
       case 2:

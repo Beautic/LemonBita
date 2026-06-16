@@ -6,7 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import '../utils/weather_helper.dart';
+import 'weather_service.dart';
 
 class AuthUser {
   final String uid;
@@ -383,6 +385,19 @@ class FirebaseService {
 
     List<String> taggedClothesIds = taggedClothes.map((cloth) => cloth['id'] as String).toList();
 
+    // 날씨 기온 및 기온 레벨 유추
+    double temp = 20.0;
+    final targetDate = date ?? DateTime.now();
+    final today = DateTime.now();
+    
+    if (targetDate.year == today.year && targetDate.month == today.month && targetDate.day == today.day) {
+      temp = await WeatherService.fetchCurrentTemperature();
+    } else {
+      temp = WeatherService.getFallbackTemperatureFor(targetDate);
+    }
+    final level = WeatherHelper.getLevelFromCelsius(temp);
+
+    // OOTD 문서 저장
     await _firestore.collection('ootds').add({
       'userId': currentUserId,
       'imageUrl': imageUrl,
@@ -390,7 +405,20 @@ class FirebaseService {
       'taggedClothes': taggedClothes, // [{ id, imageUrl, title }, ...]
       'taggedClothesIds': taggedClothesIds,
       'createdAt': date != null ? Timestamp.fromDate(date) : FieldValue.serverTimestamp(),
+      'temperature': temp,
+      'weatherLevel': level,
     });
+
+    // 태그된 각 옷 문서에 착용 기온 레벨(wornWeatherLevels) 누적 기록
+    for (var clothId in taggedClothesIds) {
+      try {
+        await _firestore.collection('clothes').doc(clothId).update({
+          'wornWeatherLevels': FieldValue.arrayUnion([level]),
+        });
+      } catch (e) {
+        debugPrint("Failed to update wornWeatherLevels for cloth $clothId: $e");
+      }
+    }
   }
 
   // 6-1. OOTD 날짜 수정
@@ -407,10 +435,26 @@ class FirebaseService {
     
     List<String> taggedClothesIds = newTaggedClothes.map((cloth) => cloth['id'] as String).toList();
 
+    // 1. 기존 OOTD 문서 정보 갱신
     await _firestore.collection('ootds').doc(docId).update({
       'taggedClothes': newTaggedClothes,
       'taggedClothesIds': taggedClothesIds,
     });
+
+    // 2. 해당 OOTD의 기온 레벨(weatherLevel)을 조회하여 신규 태그된 옷장 의류에 착용 경험 누적
+    try {
+      final docSnapshot = await _firestore.collection('ootds').doc(docId).get();
+      final int? level = docSnapshot.data()?['weatherLevel'];
+      if (level != null) {
+        for (var clothId in taggedClothesIds) {
+          await _firestore.collection('clothes').doc(clothId).update({
+            'wornWeatherLevels': FieldValue.arrayUnion([level]),
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Failed to sync wornWeatherLevels on OOTD tag update: $e");
+    }
   }
 
   // 7. 실시간 OOTD 피드 스트림

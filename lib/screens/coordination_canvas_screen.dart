@@ -749,7 +749,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   return const Center(child: Text('추천할 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)));
                 }
 
-                // 1. 다중 색상 전체 교집합 매칭 시도 + 날씨(기온) 필터링
+                // 1. 다중 색상 전체 교집합 매칭 시도 + 날씨(기온) 필터링 (유추 기온 + 실제 OOTD 착용 이력 합집합)
                 var recommendedDocs = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final itemColor = data['color'] ?? '';
@@ -763,13 +763,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   // 이미 캔버스에 추가된 카테고리의 옷도 추천에서 제외
                   if (existingCategories.contains(itemCategory)) return false;
 
-                  // 날씨/기온 레벨 호환성 검사
+                  // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                   final suitableLevels = WeatherHelper.getSuitableLevels(
                     category: itemCategory,
                     subCategory: itemSubCategory,
                     material: itemMaterial,
                   );
-                  if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
+                  final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
+                  final allSuitable = {...suitableLevels, ...wornLevels.cast<int>()};
+                  if (!allSuitable.contains(_selectedTemperatureLevel)) return false;
                   
                   // 캔버스 내 모든 옷들의 색상과 어울리는지 교집합 검사
                   bool allComp = true;
@@ -795,13 +797,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
 
-                    // 날씨/기온 레벨 호환성 검사
+                    // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                     final suitableLevels = WeatherHelper.getSuitableLevels(
                       category: itemCategory,
                       subCategory: itemSubCategory,
                       material: itemMaterial,
                     );
-                    if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
+                    final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
+                    final allSuitable = {...suitableLevels, ...wornLevels.cast<int>()};
+                    if (!allSuitable.contains(_selectedTemperatureLevel)) return false;
                     
                     return ColorCompatibility.isCompatible(lastItem.color, itemColor);
                   }).toList();
@@ -819,13 +823,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
 
-                    // 날씨/기온 레벨 호환성 검사
+                    // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                     final suitableLevels = WeatherHelper.getSuitableLevels(
                       category: itemCategory,
                       subCategory: itemSubCategory,
                       material: itemMaterial,
                     );
-                    if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
+                    final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
+                    final allSuitable = {...suitableLevels, ...wornLevels.cast<int>()};
+                    if (!allSuitable.contains(_selectedTemperatureLevel)) return false;
                     
                     final normalized = ColorCompatibility.normalizeColor(itemColor);
                     return ['블랙', '화이트', '그레이', '아이보리', '베이지'].contains(normalized);
