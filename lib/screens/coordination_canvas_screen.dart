@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import '../services/firebase_service.dart';
 import '../utils/color_compatibility.dart';
+import '../utils/weather_helper.dart';
+import '../services/weather_service.dart';
 import 'planned_ootd_detail_screen.dart';
 
 class CanvasItem {
@@ -68,10 +70,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
   List<QueryDocumentSnapshot> _plannedOotds = [];
   bool _isLoadingOotds = true;
 
+  int _selectedTemperatureLevel = 3; // 기본값: 선선한 날 (17~22°C)
+  bool _isLoadingWeather = false;
+
   @override
   void initState() {
     super.initState();
     _loadPlannedOotds();
+    _initializeTodayWeather();
 
     if (widget.initialCanvasItems != null) {
       for (var item in widget.initialCanvasItems!) {
@@ -106,6 +112,25 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     } catch (e) {
       debugPrint('Failed to load planned ootds: $e');
       setState(() { _isLoadingOotds = false; });
+    }
+  }
+
+  void _initializeTodayWeather() async {
+    setState(() { _isLoadingWeather = true; });
+    try {
+      final temp = await WeatherService.fetchCurrentTemperature();
+      final level = WeatherHelper.getLevelFromCelsius(temp);
+      if (mounted) {
+        setState(() {
+          _selectedTemperatureLevel = level;
+          _isLoadingWeather = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Failed to initialize weather: $e");
+      if (mounted) {
+        setState(() { _isLoadingWeather = false; });
+      }
     }
   }
 
@@ -604,7 +629,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 320), // 추천 섹션 + 코디 아이디어 리스트 높이만큼 올림
+        padding: const EdgeInsets.only(bottom: 350), // 추천 섹션 (220px) + 코디 아이디어 리스트 (130px) 높이만큼 올림
         child: FloatingActionButton.extended(
           onPressed: _showClothesBottomSheet,
           backgroundColor: Colors.black,
@@ -618,14 +643,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
   Widget _buildRecommendationSection() {
     if (_items.isEmpty) {
       return Container(
-        height: 180,
+        height: 220,
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
         ),
         alignment: Alignment.center,
         child: const Text(
-          '캔버스에 옷을 추가하거나 선택하시면\n어울리는 색상의 옷을 추천해 드립니다. ✨',
+          '캔버스에 옷을 추가하거나 선택하시면\n어울리는 색상과 날씨의 옷을 추천해 드립니다. ✨',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
         ),
@@ -649,7 +674,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     }
 
     return Container(
-      height: 180,
+      height: 220,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
@@ -658,7 +683,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
               children: [
                 const Icon(Icons.wb_sunny_outlined, size: 18, color: Colors.deepOrangeAccent),
@@ -674,6 +699,42 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
               ],
             ),
           ),
+          
+          // 실시간 날씨 기온 필터 칩 바 추가
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            child: Row(
+              children: [4, 3, 2, 1].map((level) {
+                final isSelected = _selectedTemperatureLevel == level;
+                final label = WeatherHelper.getLevelLabel(level);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(
+                      label, 
+                      style: TextStyle(
+                        fontSize: 11, 
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.white : Colors.black87
+                      )
+                    ),
+                    selected: isSelected,
+                    selectedColor: Colors.black,
+                    backgroundColor: Colors.grey[100],
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedTemperatureLevel = level;
+                        });
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -688,17 +749,27 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   return const Center(child: Text('추천할 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)));
                 }
 
-                // 1. 다중 색상 전체 교집합 매칭 시도
+                // 1. 다중 색상 전체 교집합 매칭 시도 + 날씨(기온) 필터링
                 var recommendedDocs = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final itemColor = data['color'] ?? '';
                   final itemCategory = data['category'] ?? '';
+                  final itemSubCategory = data['subCategory'] ?? '';
+                  final itemMaterial = data['material'] ?? '';
                   
                   // 이미 캔버스에 추가된 실물 옷은 추천에서 제외
                   if (_items.any((item) => item.docId == doc.id)) return false;
                   
                   // 이미 캔버스에 추가된 카테고리의 옷도 추천에서 제외
                   if (existingCategories.contains(itemCategory)) return false;
+
+                  // 날씨/기온 레벨 호환성 검사
+                  final suitableLevels = WeatherHelper.getSuitableLevels(
+                    category: itemCategory,
+                    subCategory: itemSubCategory,
+                    material: itemMaterial,
+                  );
+                  if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
                   
                   // 캔버스 내 모든 옷들의 색상과 어울리는지 교집합 검사
                   bool allComp = true;
@@ -711,30 +782,50 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   return allComp;
                 }).toList();
 
-                // 2. 만약 완벽히 매치되는 옷이 없으면, 가장 최근에 추가/선택된 옷 색상 1벌 기준 필터로 완화(Fallback Phase 1)
+                // 2. 만약 완벽히 매치되는 옷이 없으면, 가장 최근에 추가/선택된 옷 색상 1벌 기준 필터로 완화 (단, 날씨 기온 필터는 유지)
                 if (recommendedDocs.isEmpty && _items.isNotEmpty) {
                   final lastItem = _items.last;
                   recommendedDocs = snapshot.data!.docs.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     final itemColor = data['color'] ?? '';
                     final itemCategory = data['category'] ?? '';
+                    final itemSubCategory = data['subCategory'] ?? '';
+                    final itemMaterial = data['material'] ?? '';
                     
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
+
+                    // 날씨/기온 레벨 호환성 검사
+                    final suitableLevels = WeatherHelper.getSuitableLevels(
+                      category: itemCategory,
+                      subCategory: itemSubCategory,
+                      material: itemMaterial,
+                    );
+                    if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
                     
                     return ColorCompatibility.isCompatible(lastItem.color, itemColor);
                   }).toList();
                 }
 
-                // 3. 그래도 옷이 없다면, 무난한 기본 모노톤 및 파스텔톤 계열로 추천 (Fallback Phase 2)
+                // 3. 그래도 옷이 없다면, 기온에 적합한 무난한 기본 모노톤 및 파스텔톤 계열로 추천 (단, 날씨 기온 필터는 유지)
                 if (recommendedDocs.isEmpty) {
                   recommendedDocs = snapshot.data!.docs.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     final itemColor = data['color'] ?? '';
                     final itemCategory = data['category'] ?? '';
+                    final itemSubCategory = data['subCategory'] ?? '';
+                    final itemMaterial = data['material'] ?? '';
                     
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
+
+                    // 날씨/기온 레벨 호환성 검사
+                    final suitableLevels = WeatherHelper.getSuitableLevels(
+                      category: itemCategory,
+                      subCategory: itemSubCategory,
+                      material: itemMaterial,
+                    );
+                    if (!suitableLevels.contains(_selectedTemperatureLevel)) return false;
                     
                     final normalized = ColorCompatibility.normalizeColor(itemColor);
                     return ['블랙', '화이트', '그레이', '아이보리', '베이지'].contains(normalized);
@@ -742,7 +833,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 }
 
                 if (recommendedDocs.isEmpty) {
-                  return const Center(child: Text('어울리는 다른 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)));
+                  return const Center(child: Text('선택한 날씨와 어울리는 다른 옷이 옷장에 없습니다.', style: TextStyle(fontSize: 11, color: Colors.grey)));
                 }
 
                 return ListView.builder(
