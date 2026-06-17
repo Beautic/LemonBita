@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v5.0] - 2026-06-17
+
+운영/개발 환경 완전 분리 마일스톤 (인프라 안정화 릴리스).
+
+### Added
+- **운영/개발 환경 전환 설정** (`lib/config/firebase_env.dart`): `--dart-define=ENV=prod|dev`로 Firebase 프로젝트 자동 전환, 기본값 `dev`.
+- **개발계 인프라**: 신규 `digital-closet-dev` 프로젝트에 Firestore(규칙·인덱스)·Storage(`us-west1`, 규칙)·Auth(이메일/비밀번호) 구성 및 배포.
+- **환경별 배포 스크립트**: `deploy_dev.sh`, `deploy_prod.sh`(운영 배포 확인 프롬프트 포함).
+- **Git 브랜치 전략**: `main`(개발) / `prod`(운영) 이원화.
+
+### Changed
+- **`firebase_service.dart`**: 하드코딩된 `FirebaseOptions`/API Key 제거 → `FirebaseEnv.options`로 일원화.
+- **`.firebaserc`**: `prod`(`digital-closet-32c43`) / `dev`(`digital-closet-dev`) 프로젝트 별칭 등록.
+
+> v4.1 ~ v4.4의 상세 내역은 [CHANGELOG_ANTIGRAVITY.md](./CHANGELOG_ANTIGRAVITY.md) 참조.
+
 ## [v3.7] - 2026-05-15
 
 ### Added

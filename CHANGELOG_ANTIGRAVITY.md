@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-06-17 (v5.0) — 운영/개발 환경 분리 마일스톤
+
+### 1. 운영(prod) / 개발(dev) Firebase 프로젝트 완전 분리
+**문제**: 단일 Firebase 프로젝트(`digital-closet-32c43`)만 존재해, 로컬 개발이나 신규 기능 테스트가 곧바로 운영 데이터(사용자·옷장·OOTD)에 영향을 줄 위험이 상존함.
+**수정 내용**:
+- `lib/config/firebase_env.dart` 신설: `--dart-define=ENV=prod|dev` 값에 따라 `FirebaseOptions`를 자동 전환. 기본값은 `dev`로 설정하여 로컬 `flutter run` 시 운영 데이터 접근을 원천 차단.
+- `firebase_service.dart`에 하드코딩돼 있던 `FirebaseOptions`/API Key를 제거하고 `FirebaseEnv.options`로 일원화.
+- 신규 개발계 프로젝트 `digital-closet-dev` 생성 및 웹 앱(`dress-dev-web`) 등록.
+**이유**: 운영 서비스의 안정성을 보장하면서, 개발자가 데이터 오염 걱정 없이 자유롭게 개발·테스트할 수 있는 격리 환경을 확보함.
+
+### 2. 개발계 백엔드 인프라 구성 (Firestore · Storage · Auth)
+**문제**: 신규 dev 프로젝트는 빈 상태로, 앱이 요구하는 백엔드 서비스가 미구성 상태였음.
+**수정 내용**:
+- Firestore 데이터베이스 생성 후 운영계와 동일한 보안 규칙(`firestore.rules`)·복합 색인(`firestore.indexes.json`) 배포.
+- Cloud Storage 버킷(`us-west1`) 생성 후 보안 규칙(`storage.rules`) 배포.
+- Authentication 이메일/비밀번호 로그인 활성화 (앱은 `createUserWithEmailAndPassword` / `signInWithEmailAndPassword` 사용).
+**이유**: 개발계에서도 운영과 동일한 데이터 구조·보안 정책으로 동작하도록 하여, 환경 차이로 인한 버그를 사전에 차단함.
+
+### 3. 환경별 배포 자동화 스크립트
+**문제**: 빌드 시 환경 플래그 누락, 잘못된 프로젝트로의 배포 등 휴먼 에러 가능성이 큼.
+**수정 내용**:
+- `deploy_dev.sh`: `ENV=dev` 웹 빌드 후 `digital-closet-dev` 호스팅에 배포.
+- `deploy_prod.sh`: 운영 배포 전 확인 프롬프트(Enter/Ctrl+C)를 거친 뒤 `ENV=prod` 빌드 및 운영 호스팅 배포.
+- `.firebaserc`에 `prod`/`dev` 프로젝트 별칭(alias) 등록.
+**이유**: 환경 전환과 배포를 표준화하여 실수로 인한 오배포를 방지하고 배포 절차를 단순화함.
+
+### 4. Git 브랜치 전략 수립 (main=개발 / prod=운영)
+**문제**: 단일 `main` 브랜치만 존재하여 개발 중인 코드와 운영 배포 코드의 구분이 없음.
+**수정 내용**:
+- `main` = 개발(dev) 트랙, `prod` = 운영(prod) 트랙으로 이원화하고 원격(origin)에 푸시.
+- 워크플로우 확립: `main`에서 개발·검증 → 운영 반영 시 `main → prod` 머지 후 운영 배포.
+**이유**: 개발과 운영 릴리스를 명확히 분리하여 배포 안정성과 추적성을 확보함.
+
+---
+
 ## 2026-06-09 (v4.4)
 
 ### 1. OOTD 및 코디 피드백 카운팅 UI 개선

@@ -11,9 +11,28 @@
 ## 업데이트 히스토리 (작업지시서 내역)
 자세한 변경 내역과 버전 별 상세 작업 내용은 [CHANGELOG_ANTIGRAVITY.md](./CHANGELOG_ANTIGRAVITY.md) 파일에서 확인하실 수 있습니다.
 
-## 최신 업데이트 (v4.4)
-- **피드백 카운팅 UI 개선**: 피드 및 코디 상세에서 좋아요/댓글 아이콘 옆에 개수가 1개 이상일 때 직접 카운팅 숫자가 노출되도록 디자인을 다듬었습니다.
-- **코디 아이디어 폴더 분류(그룹핑) 시스템**: "유럽여행", "데이트룩" 등 코디 분류 폴더를 생성, 수정, 삭제하고, 코디 아이디어 리스트를 길게 누르거나 상세 페이지에서 분류를 이동할 수 있는 종합 관리 흐름을 구현했습니다. (Firestore 복합 색인 우회 기능 적용)
-- **NFD 한글 에셋 웹 로드 버그 해결**: Mac OS 특유의 한글 자소분리(NFD) 현상으로 웹 배포 후 특정 카테고리(원피스 등) 에셋 이미지가 404로 깨지는 문제를 해결하기 위해, 한글 파일명을 유니코드 Hex 코드포인트 파일명으로 일괄 변환하여 매칭 안정성을 100% 확보했습니다.
-- **모바일 뒤로가기 강제 종료 방지**: `PopScope` 위젯을 사용해 뒤로가기 입력 시 홈(옷장) 탭으로 우선 복귀하도록 처리하고, 홈 탭에서 2초 이내에 연속 뒤로가기를 입력할 때에만 비로소 안전하게 종료되도록 이중 확인 구조를 설계했습니다.
+## 최신 업데이트 (v5.0) — 운영/개발 환경 분리 🚀
+이번 버전은 기능 추가가 아닌 **인프라 안정화 마일스톤**입니다. 운영 서비스와 개발/테스트를 데이터까지 완전히 분리하여, 이제 안심하고 개발·테스트할 수 있는 기반을 마련했습니다.
+
+- **운영(prod) / 개발(dev) Firebase 프로젝트 완전 분리**: `--dart-define=ENV=prod|dev` 한 줄로 접속 프로젝트가 자동 전환됩니다. 기본값은 `dev`라서 로컬 `flutter run` 시 실수로 운영 데이터를 건드릴 일이 없습니다. (`lib/config/firebase_env.dart`)
+- **개발 전용 인프라 신설**: 신규 `digital-closet-dev` 프로젝트에 Firestore·Storage·Authentication(이메일/비밀번호)을 별도로 구성하고 보안 규칙·인덱스를 배포했습니다. 개발 데이터가 운영에 전혀 닿지 않습니다.
+- **환경별 배포 스크립트**: `deploy_dev.sh` / `deploy_prod.sh`로 빌드부터 배포까지 한 번에 처리합니다. (운영 배포는 실수 방지용 확인 프롬프트 포함)
+- **민감 설정 정리**: `firebase_service.dart`에 하드코딩돼 있던 Firebase 옵션을 제거하고 환경 설정(`FirebaseEnv`)으로 일원화했습니다.
+
+## 환경 및 배포
+| 환경 | 브랜치 | Firebase 프로젝트 | 접속 링크 |
+|---|---|---|---|
+| 🟢 개발(dev) | `main` | `digital-closet-dev` | https://digital-closet-dev.web.app |
+| 🔴 운영(prod) | `prod` | `digital-closet-32c43` | https://digital-closet-32c43.web.app |
+
+```bash
+# 개발: main 브랜치에서 작업 → 커밋 → 개발계 배포 후 dev 링크에서 검증
+./deploy_dev.sh
+
+# 운영 반영: 검증이 끝나면 main → prod 머지 후 운영 배포
+git checkout prod && git merge main && git push
+./deploy_prod.sh
+```
+
+> 직전 버전(v4.4) 이하의 상세 변경 내역은 [CHANGELOG_ANTIGRAVITY.md](./CHANGELOG_ANTIGRAVITY.md)를 참고하세요.
 
