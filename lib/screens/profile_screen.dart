@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
 import 'friends_screen.dart';
+import 'closet_analytics_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -186,6 +187,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: () => _editProfile(userData),
                   icon: const Icon(Icons.edit, color: Colors.black),
                   label: const Text('프로필 수정', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    side: const BorderSide(color: Colors.black),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ClosetAnalyticsScreen()));
+                  },
+                  icon: const Icon(Icons.analytics_outlined, color: Colors.black),
+                  label: const Text('옷장 통계 분석 📊', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     side: const BorderSide(color: Colors.black),

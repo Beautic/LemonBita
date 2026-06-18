@@ -56,6 +56,120 @@ class _UploadScreenState extends State<UploadScreen> {
     super.dispose();
   }
 
+  // AI 누끼 가이드 다이얼로그 팝업 정의
+  void _showAiGuideDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.auto_fix_high, color: Colors.purpleAccent),
+              SizedBox(width: 8),
+              Text(
+                'AI 누끼 제거 가이드',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '옷을 등록할 때 배경을 깨끗이 지우면, 코디 캔버스에서 다른 아이템들과 함께 겹쳐서 꾸미기가 훨씬 수월해집니다.',
+                style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              // Before / After 가상 그래픽 영역
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Before
+                  Column(
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.amber[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: const Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Icon(Icons.chair_rounded, size: 24, color: Colors.brown),
+                            ),
+                            Icon(Icons.checkroom, size: 40, color: Colors.black54),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Before (배경 있음)',
+                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const Icon(Icons.arrow_forward_rounded, color: Colors.grey),
+                  // After
+                  Column(
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.purpleAccent, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purpleAccent.withOpacity(0.1),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            )
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.checkroom, size: 48, color: Colors.purpleAccent),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'After (AI 배경 제거)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.purpleAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                '💡 사용법:\n사진을 등록한 후, "누끼 제거하기" 버튼을 누르기만 하면 AI가 자동으로 최적의 배경 제거를 실행합니다.',
+                style: TextStyle(fontSize: 12, color: Colors.black54, height: 1.4),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('확인', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 카메라 앱 호출
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(
@@ -199,9 +313,14 @@ class _UploadScreenState extends State<UploadScreen> {
 
             // 갤러리 전환 및 누끼 제거 버튼
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (_processedImageBytes != null)
+                TextButton.icon(
+                  onPressed: _showAiGuideDialog,
+                  icon: const Icon(Icons.info_outline_rounded, color: Colors.purpleAccent),
+                  label: const Text('누끼 가이드 💡', style: TextStyle(color: Colors.purpleAccent)),
+                ),
+                const Spacer(),
+                if (_processedImageBytes != null) ...[
                   if (_processedImageBytes == _originalImageBytes)
                     TextButton.icon(
                       onPressed: _isRemovingBg ? null : _removeBackground,
@@ -218,6 +337,7 @@ class _UploadScreenState extends State<UploadScreen> {
                       icon: const Icon(Icons.restore),
                       label: const Text('원본 복원하기'),
                     ),
+                ],
                 TextButton.icon(
                   onPressed: _pickFromGallery,
                   icon: const Icon(Icons.photo_library_rounded),

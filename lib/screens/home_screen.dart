@@ -6,6 +6,8 @@ import 'clothing_detail_screen.dart';
 import 'search_clothes_screen.dart';
 import '../utils/categories.dart';
 import 'notification_screen.dart';
+import '../services/weather_service.dart';
+import '../utils/weather_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +21,11 @@ class _HomeScreenState extends State<HomeScreen> {
   late final Stream<QuerySnapshot> _clothesStream;
   late final Stream<QuerySnapshot> _ootdStream;
   String _selectedCategory = 'ALL';
+
+  // 날씨 및 추천용 변수 추가
+  double? _temperature;
+  int? _weatherLevel;
+  bool _isWeatherLoading = true;
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'ALL', 'icon': Icons.all_inclusive_rounded},
@@ -39,6 +46,28 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _clothesStream = _firebaseService.getClothesStream();
     _ootdStream = _firebaseService.getOOTDStream();
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    if (!mounted) return;
+    setState(() => _isWeatherLoading = true);
+    try {
+      final temp = await WeatherService.fetchCurrentTemperature();
+      final level = WeatherHelper.getLevelFromCelsius(temp);
+      if (mounted) {
+        setState(() {
+          _temperature = temp;
+          _weatherLevel = level;
+          _isWeatherLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("🚩 Failed to load weather: $e");
+      if (mounted) {
+        setState(() => _isWeatherLoading = false);
+      }
+    }
   }
 
   @override
@@ -112,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return Column(
             children: [
+              _buildWeatherRecommendationCard(clothes, tagCounts),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0, bottom: 4.0),
                 child: Row(
@@ -344,6 +374,255 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('데이터를 불러오지 못했습니다.\n$error', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black54)),
           ],
         ),
+      ),
+    );
+  }
+
+  // 날씨 맞춤형 추천 카드 빌더
+  Widget _buildWeatherRecommendationCard(List<QueryDocumentSnapshot> clothes, Map<String, int> tagCounts) {
+    if (_isWeatherLoading) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: const Center(
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+          ),
+        ),
+      );
+    }
+
+    if (_temperature == null || _weatherLevel == null) return const SizedBox.shrink();
+
+    // 추천 아이템 스코어링 및 정렬
+    final List<Map<String, dynamic>> scoredItems = [];
+    for (var doc in clothes) {
+      final data = doc.data() as Map<String, dynamic>;
+      final String docId = doc.id;
+      final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
+      
+      int score = 0;
+      // 1. 착용 기온 레벨 빈도 가중치 (10점씩)
+      final matchCount = wornLevels.where((l) => l == _weatherLevel).length;
+      score += matchCount * 10;
+
+      // 2. 착용 이력이 없을 경우 기본 추천 로직 적용 (5점)
+      if (wornLevels.isEmpty) {
+        final suitable = WeatherHelper.getSuitableLevels(
+          category: data['category'] ?? '',
+          subCategory: data['subCategory'] ?? '',
+          material: data['material'] ?? '',
+        );
+        if (suitable.contains(_weatherLevel)) {
+          score += 5;
+        }
+      }
+
+      if (score > 0) {
+        scoredItems.add({
+          'docId': docId,
+          'data': data,
+          'score': score,
+          'tagCount': tagCounts[docId] ?? 0,
+        });
+      }
+    }
+
+    scoredItems.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
+
+    final label = WeatherHelper.getLevelLabel(_weatherLevel!);
+    
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.grey[900]!, Colors.grey[800]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '오늘의 기온: ${_temperature!.toStringAsFixed(1)}°C',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '지금 날씨는 $label',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '스마트 추천 💡',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          if (scoredItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              child: Center(
+                child: Text(
+                  '이 날씨에 추천할 수 있는 의류가 아직 없습니다.\n새로운 옷과 OOTD를 더 등록해 보세요!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                ),
+              ),
+            )
+          else
+            Container(
+              height: 145,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: scoredItems.length,
+                itemBuilder: (context, index) {
+                  final item = scoredItems[index];
+                  final data = item['data'] as Map<String, dynamic>;
+                  final String docId = item['docId'];
+                  final int score = item['score'];
+
+                  String color = data['color'] ?? '';
+                  String pattern = data['pattern'] ?? '';
+                  String title = '$color $pattern'.trim();
+                  if (title.isEmpty) title = data['brand'] ?? '';
+                  if (title.isEmpty) title = data['category'] ?? '옷';
+
+                  final isBest = score >= 10;
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClothingDetailScreen(docId: docId, item: data),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 90,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                      image: NetworkImage(data['imageUrl'] ?? ''),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  left: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isBest ? Colors.redAccent : Colors.blueAccent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      isBest ? 'Best 🔥' : '추천 ⭐',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            data['category'] ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

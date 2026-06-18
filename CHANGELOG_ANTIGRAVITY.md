@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-06-19 (v5.1) — 스마트 코디 추천, 대시보드, 세탁 케어, 소셜 피드백 및 날짜 감지 고도화
+
+### 1. 날씨 맞춤형 스마트 코디 제안
+- **구현 내용**: 오늘 실시간 기온 데이터([weather_service.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/services/weather_service.dart))와 연동하여 현재 날씨 기온 레벨(Level 1~4)을 정의하고, 내 옷장 속 옷들의 과거 착용 기온 레벨 이력(`wornWeatherLevels`) 및 사전 추천 규칙을 기준으로 추천 가중치 점수(Score)를 동적 계산하여 홈 화면 상단에 스마트 추천 슬라이더 위젯으로 렌더링했습니다.
+- **이유**: 사용자가 매일 아침 오늘 기온에 최적화된 옷장 속 옷을 데이터 기반으로 쉽고 편리하게 추천받을 수 있도록 돕습니다.
+
+### 2. 디지털 옷장 분석 리포트 & 대시보드
+- **구현 내용**: 
+  - 신규 분석 화면([closet_analytics_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/closet_analytics_screen.dart)) 구현: 전체 의류 및 OOTD 통계 요약, 카테고리별 비중 바 차트, 선호 컬러 원형 차트, 착용 횟수 기준 최애 의류 TOP 3, OOTD 등록 이력이 없는 장롱 면허 의류 목록을 시각적으로 구현했습니다.
+  - 프로필 화면([profile_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/profile_screen.dart))에 통계 분석 진입로 버튼을 제공해 연결했습니다.
+- **이유**: 소장하고 있는 옷장 아이템의 카테고리/컬러 선호 경향 및 효율성 통계를 파악하게 하여 합리적인 옷장 정리와 미니멀 라이프 계획을 지원합니다.
+
+### 3. 의류 세탁 & 수명 관리 리마인더
+- **구현 내용**: 의류 상세 화면([clothing_detail_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/clothing_detail_screen.dart))에서 개별 옷의 권장 세탁 주기(3회, 5회, 10회 등)를 드롭다운으로 설정하도록 지원합니다. 마지막 세탁 이후의 OOTD 착용 횟수가 이 주기를 초과하면 "세탁 필요!" 🧼 경고 뱃지를 띄우고, 세탁 완료 시 착용 횟수가 리셋되도록 연동했습니다.
+- **이유**: 의류의 누적 마모와 세탁 주기를 파악해 소중한 패션 아이템을 최상의 컨디션으로 보존하게 케어합니다.
+
+### 4. '내 코디를 부탁해!' - 인터랙션 소셜 스타일링
+- **구현 내용**: 
+  - 코디 제안 저장 시 제안한 친구의 UID(`suggestedById`)를 DB에 함께 기록하여 관계 추적 안정성을 확보했습니다.
+  - 코디 상세 화면([planned_ootd_detail_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/planned_ootd_detail_screen.dart))에서 친구가 준 코디 추천에 대해 1~5점의 별점과 한줄평 피드백을 등록하도록 구현하고, 작성 시 제안해 준 친구에게 알림이 즉각 발송되게 연동했습니다.
+- **이유**: 친구 간 일방적인 제안을 넘어 실시간 코디 평가와 반응 피드백을 상호 교류하게 함으로써 소셜 연결고리를 강화합니다.
+
+### 5. EXIF & 파일명 기반 4단계 하이브리드 날짜 자동 감지 고도화
+- **구현 내용**: 
+  - OOTD 업로드 시 1순위 파일명 정규식 분석(KakaoTalk_20260618 등), 2순위 초경량 순수 JPEG EXIF 헤더 스캔(서브디렉토리 재귀 탐색), 3순위 파일 수정일(`lastModified`), 4순위 현재 일시로 이어지는 4단계 하이브리드 날짜 추출 파이프라인을 구축했습니다.
+  - 이미지 로드 시 메타데이터 유실과 파일명 임시 덮어쓰기를 유발하는 `ImagePicker` 내 웹 압축/리사이징 매개변수를 해제하여 원본 메타데이터가 100% 보존되도록 개선했습니다.
+- **이유**: 이미지 유입 경로와 포맷에 상관없이 날짜 데이터를 정확하고 누수 없이 획득하게 하여, 과거 날씨 기온 매핑 신뢰도를 보장합니다.
+
+### 6. AI 자동 누끼 가이드 모킹 UI
+- **구현 내용**: 옷 등록 화면([upload_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_screen.dart))에 가이드 버튼과 다이얼로그 팝업을 추가하여 Before(배경 있음)/After(배경 투명화)가 캔버스 코디에 미치는 긍정적 효과를 유저에게 모킹 안내하도록 연동했습니다.
+
+---
+
 ## 2026-06-17 (v5.0) — 운영/개발 환경 분리 마일스톤
 
 ### 1. 운영(prod) / 개발(dev) Firebase 프로젝트 완전 분리

@@ -48,6 +48,10 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   String? _selectedColorPreset;
   bool _isCustomColor = false;
 
+  // 세탁 관리 상태 변수 추가
+  int _washInterval = 0;
+  int _lastWashedCount = 0;
+
   final ImagePicker _picker = ImagePicker();
   Uint8List? _localImageBytes;
   Uint8List? _originalLocalImageBytes;
@@ -112,6 +116,9 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     if (_selectedSubCategory.isNotEmpty && !CategoryData.getSubCategories(_selectedCategory).contains(_selectedSubCategory)) {
       _selectedSubCategory = '';
     }
+
+    _washInterval = widget.item['washInterval'] ?? 0;
+    _lastWashedCount = widget.item['lastWashedCount'] ?? 0;
     
   }
 
@@ -214,6 +221,8 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
           'length': _lengthController.text,
           'category': _selectedCategory,
           'subCategory': _selectedSubCategory,
+          'washInterval': _washInterval,
+          'lastWashedCount': _lastWashedCount,
         },
       );
       if (mounted) {
@@ -772,9 +781,133 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            _buildWashCareSection(usedOotds.length),
           ],
         );
       },
+    );
+  }
+
+  // 세탁 케어 리마인더 카드 빌더
+  Widget _buildWashCareSection(int totalUsageCount) {
+    final int washedSince = totalUsageCount - _lastWashedCount;
+    final bool isWashRequired = _washInterval > 0 && washedSince >= _washInterval;
+
+    return Card(
+      elevation: 0,
+      color: isWashRequired ? Colors.blue[50] : Colors.grey[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isWashRequired ? Colors.blueAccent.withOpacity(0.5) : Colors.grey[200]!,
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_laundry_service_outlined,
+                      color: isWashRequired ? Colors.blueAccent : Colors.black87,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '세탁 & 수명 케어 🧼',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+                if (isWashRequired)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '세탁 필요!',
+                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '마지막 세탁 이후 $washedSince회 착용했습니다. (총 $totalUsageCount회 착용)',
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _washInterval,
+                    decoration: InputDecoration(
+                      labelText: '권장 세탁 주기',
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 0, child: Text('설정 안함')),
+                      DropdownMenuItem(value: 3, child: Text('3회 착용 후')),
+                      DropdownMenuItem(value: 5, child: Text('5회 착용 후')),
+                      DropdownMenuItem(value: 10, child: Text('10회 착용 후')),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _washInterval = val ?? 0;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _lastWashedCount = totalUsageCount;
+                    });
+                    try {
+                      await _firebaseService.updateClothingData(
+                        docId: widget.docId,
+                        updatedData: {
+                          'lastWashedCount': totalUsageCount,
+                        },
+                      );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('세탁이 완료되어 착용 횟수가 초기화되었습니다.')),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('🚩 Failed to reset washing count: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  child: const Text('세탁 완료', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

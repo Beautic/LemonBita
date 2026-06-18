@@ -194,6 +194,7 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                 },
               ),
             ),
+            _buildFeedbackSection(),
             Container(
               color: Colors.white,
               padding: const EdgeInsets.all(16.0),
@@ -265,6 +266,162 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // 피드백 등록 및 뷰 섹션 추가
+  Widget _buildFeedbackSection() {
+    final data = _data!;
+    final suggestedBy = data['suggestedBy'];
+    final suggestedById = data['suggestedById'];
+    final currentUserId = _firebaseService.currentUserId;
+
+    if (suggestedBy == null || data['userId'] != currentUserId) {
+      return const SizedBox.shrink();
+    }
+
+    final double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
+    final String currentFeedback = data['feedback'] ?? '';
+
+    if (currentRating > 0.0) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.purple[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.purpleAccent.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.feedback_outlined, color: Colors.purpleAccent, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  '$suggestedBy님에게 보낸 피드백 💬',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: List.generate(5, (index) {
+                return Icon(
+                  index < currentRating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 20,
+                );
+              }),
+            ),
+            if (currentFeedback.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '"$currentFeedback"',
+                style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: Colors.black87),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    double selectedRating = 5.0;
+    final feedbackController = TextEditingController();
+
+    return StatefulBuilder(
+      builder: (context, setSectionState) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '💡 $suggestedBy님의 코디 추천은 어떠셨나요?',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(5, (index) {
+                  final score = index + 1.0;
+                  return GestureDetector(
+                    onTap: () {
+                      setSectionState(() {
+                        selectedRating = score;
+                      });
+                    },
+                    child: Icon(
+                      selectedRating >= score ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 28,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: feedbackController,
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: '친구에게 피드백 한 줄 남기기 (예: 오늘 입을게!)',
+                  hintStyle: const TextStyle(fontSize: 12),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () async {
+                  final text = feedbackController.text.trim();
+                  try {
+                    await FirebaseFirestore.instance.collection('planned_ootds').doc(widget.plannedOotdId).update({
+                      'rating': selectedRating,
+                      'feedback': text,
+                      'feedbackAt': FieldValue.serverTimestamp(),
+                    });
+
+                    if (suggestedById != null) {
+                      final myDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+                      final myNickname = myDoc.data()?['nickname'] ?? '친구';
+                      
+                      await _firebaseService.sendNotification(
+                        recipientId: suggestedById,
+                        type: 'outfit_feedback',
+                        message: '$myNickname님이 내 코디 추천에 피드백을 남겼습니다!',
+                        targetId: widget.plannedOotdId,
+                      );
+                    }
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('피드백이 전달되었습니다.')));
+                      _loadData();
+                    }
+                  } catch (e) {
+                    debugPrint('🚩 Failed to submit feedback: $e');
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  minimumSize: const Size.fromHeight(38),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('피드백 보내기 💬', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

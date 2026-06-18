@@ -521,9 +521,11 @@ class FirebaseService {
     final uid = targetUserId ?? currentUserId!;
     
     String? suggestedBy;
+    String? suggestedById;
     if (targetUserId != null && targetUserId != currentUserId) {
       final myProfile = await _firestore.collection('users').doc(currentUserId).get();
       suggestedBy = myProfile.data()?['nickname'];
+      suggestedById = currentUserId;
     }
 
     String imageUrl = await uploadImage(imageBytes, 'png');
@@ -534,6 +536,7 @@ class FirebaseService {
       'taggedClothes': taggedClothes,
       'canvasItems': canvasItems,
       if (suggestedBy != null) 'suggestedBy': suggestedBy,
+      if (suggestedById != null) 'suggestedById': suggestedById,
     };
 
     if (docId != null) {

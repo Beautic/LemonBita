@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
 import 'search_clothes_screen.dart';
+import 'package:image/image.dart' as img;
 
 class UploadOotdScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -63,22 +64,228 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
     }
   }
 
+  // JPEG 파일의 EXIF 바이너리를 직접 디코딩 없이 직접 스캔하여 실제 촬영 시각 추출
+  DateTime? _parseExifDateTimeFromJpeg(Uint8List bytes) {
+    try {
+      if (bytes.length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) {
+        return null;
+      }
+      
+      int offset = 2;
+      while (offset < bytes.length - 4) {
+        if (bytes[offset] == 0xFF) {
+          final marker = bytes[offset + 1];
+          final length = (bytes[offset + 2] << 8) + bytes[offset + 3];
+          
+          if (marker == 0xE1) { // APP1 EXIF 영역
+            final app1Offset = offset + 4;
+            if (app1Offset + 6 < bytes.length &&
+                bytes[app1Offset] == 0x45 &&
+                bytes[app1Offset + 1] == 0x78 &&
+                bytes[app1Offset + 2] == 0x69 &&
+                bytes[app1Offset + 3] == 0x66 &&
+                bytes[app1Offset + 4] == 0x00) {
+              
+              final tiffOffset = app1Offset + 6;
+              final isLittleEndian = bytes[tiffOffset] == 0x49 && bytes[tiffOffset + 1] == 0x49;
+              
+              int readUint16(int o) {
+                return isLittleEndian
+                    ? bytes[o] + (bytes[o + 1] << 8)
+                    : (bytes[o] << 8) + bytes[o + 1];
+              }
+              
+              int readUint32(int o) {
+                return isLittleEndian
+                    ? bytes[o] + (bytes[o + 1] << 8) + (bytes[o + 2] << 16) + (bytes[o + 3] << 24)
+                    : (bytes[o] << 24) + (bytes[o + 1] << 16) + (bytes[o + 2] << 8) + bytes[o + 3];
+              }
+              
+              if (readUint16(tiffOffset + 2) != 0x002A) {
+                return null;
+              }
+              
+              final int ifd0Offset = readUint32(tiffOffset + 4);
+              final int dirStart = tiffOffset + ifd0Offset;
+              
+              if (dirStart >= bytes.length) return null;
+              
+              final numEntries = readUint16(dirStart);
+              int exifSubIfdOffset = 0;
+              
+              for (int i = 0; i < numEntries; i++) {
+                final entryOffset = dirStart + 2 + (i * 12);
+                if (entryOffset + 12 > bytes.length) break;
+                
+                final tag = readUint16(entryOffset);
+                if (tag == 0x8769) {
+                  exifSubIfdOffset = readUint32(entryOffset + 8);
+                  break;
+                }
+              }
+              
+              if (exifSubIfdOffset > 0) {
+                final subDirStart = tiffOffset + exifSubIfdOffset;
+                if (subDirStart < bytes.length) {
+                  final numSubEntries = readUint16(subDirStart);
+                  for (int i = 0; i < numSubEntries; i++) {
+                    final entryOffset = subDirStart + 2 + (i * 12);
+                    if (entryOffset + 12 > bytes.length) break;
+                    
+                    final tag = readUint16(entryOffset);
+                    if (tag == 0x9003) { // DateTimeOriginal
+                      final valOffset = readUint32(entryOffset + 8);
+                      final int dataStart = tiffOffset + valOffset;
+                      
+                      if (dataStart + 19 < bytes.length) {
+                        final dateStr = String.fromCharCodes(bytes.sublist(dataStart, dataStart + 19));
+                        final parts = dateStr.trim().split(' ');
+                        if (parts.length == 2) {
+                          final dateParts = parts[0].split(':');
+                          final timeParts = parts[1].split(':');
+                          if (dateParts.length == 3 && timeParts.length == 3) {
+                            return DateTime(
+                              int.parse(dateParts[0]),
+                              int.parse(dateParts[1]),
+                              int.parse(dateParts[2]),
+                              int.parse(timeParts[0]),
+                              int.parse(timeParts[1]),
+                              int.parse(timeParts[2]),
+                            );
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          offset += 2 + length;
+        } else {
+          offset++;
+        }
+      }
+    } catch (e) {
+      debugPrint("🚩 Pure EXIF Parser error: $e");
+    }
+    return null;
+  }
+
+  // IfdDirectory 및 하위 서브 디렉토리를 재귀적으로 검색하여 EXIF 태그 탐색
+  img.IfdValue? _findTagRecursively(img.IfdDirectory dir, int tag) {
+    if (dir.containsKey(tag)) {
+      return dir[tag];
+    }
+    for (final subDir in dir.sub.values) {
+      final val = _findTagRecursively(subDir, tag);
+      if (val != null) return val;
+    }
+    return null;
+  }
+
+  // 이미지 바이트의 EXIF 메타데이터에서 실제 촬영 일자 추출 (서브 디렉토리 재귀 탐색 포함)
+  DateTime? _getExifDateTime(Uint8List bytes) {
+    // 1. 순수 바이너리 직접 스캔 (가장 가볍고 컴파일 에러 걱정 없음)
+    DateTime? parsedDate = _parseExifDateTimeFromJpeg(bytes);
+    if (parsedDate != null) return parsedDate;
+
+    // 2. 실패 시 이미지 라이브러리를 통한 exif 탐색 시도
+    try {
+      final decoded = img.decodeImage(bytes);
+      if (decoded != null && decoded.exif != null) {
+        img.IfdValue? val;
+        
+        // 최상위 및 서브 디렉토리(exif 등) 재귀 탐색으로 DateTimeOriginal(0x9003) 조회
+        for (final dir in decoded.exif.directories.values) {
+          val = _findTagRecursively(dir, 0x9003);
+          if (val != null) break;
+        }
+        
+        // 실패 시 DateTime(0x0132) 조회
+        if (val == null) {
+          for (final dir in decoded.exif.directories.values) {
+            val = _findTagRecursively(dir, 0x0132);
+            if (val != null) break;
+          }
+        }
+        
+        if (val != null) {
+          final String exifDateStr = val.toString().trim();
+          if (exifDateStr.isNotEmpty) {
+            // EXIF 표준 시간 포맷: "YYYY:MM:DD HH:MM:SS"
+            final parts = exifDateStr.split(' ');
+            if (parts.length == 2) {
+              final dateParts = parts[0].split(':');
+              final timeParts = parts[1].split(':');
+              if (dateParts.length == 3 && timeParts.length == 3) {
+                return DateTime(
+                  int.parse(dateParts[0]),
+                  int.parse(dateParts[1]),
+                  int.parse(dateParts[2]),
+                  int.parse(timeParts[0]),
+                  int.parse(timeParts[1]),
+                  int.parse(timeParts[2]),
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("🚩 Failed to parse EXIF date via library: $e");
+    }
+    return null;
+  }
+
+  // 파일명 기반 날짜 유추 정규식 스캐너 (예: KakaoTalk_20260618_xxx, 2026-06-18_xxx 등)
+  DateTime? _parseDateTimeFromFileName(String fileName) {
+    try {
+      // 2000년~2099년 사이 연도, 월, 일 매칭 정규식
+      final regExp = RegExp(r'(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])');
+      final match = regExp.firstMatch(fileName);
+      
+      if (match != null) {
+        final year = int.parse(match.group(1)!);
+        final month = int.parse(match.group(2)!);
+        final day = int.parse(match.group(3)!);
+        
+        final date = DateTime(year, month, day);
+        // 달력 범위의 실제 존재하는 날짜 검증
+        if (date.year == year && date.month == month && date.day == day) {
+          return date;
+        }
+      }
+    } catch (e) {
+      debugPrint("🚩 Failed to parse date from filename: $e");
+    }
+    return null;
+  }
+
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
+    // 원본 파일명 및 EXIF 메타데이터 유실을 방지하기 위해 리사이징 옵션들을 해제합니다.
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 70,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
       final ext = image.name.split('.').last;
       
-      DateTime? imgDate;
-      try {
-        imgDate = await image.lastModified();
-      } catch (_) {}
+      // 1. 파일명 기반 날짜 유추 시도
+      DateTime? imgDate = _parseDateTimeFromFileName(image.name);
+      
+      // 2. 실패 시 EXIF 촬영일 파싱 시도
+      if (imgDate == null) {
+        imgDate = _getExifDateTime(bytes);
+      }
+      
+      // 3. EXIF 실패 시 파일 수정일 획득 시도
+      if (imgDate == null) {
+        try {
+          imgDate = await image.lastModified();
+        } catch (_) {}
+      }
 
       setState(() {
         _imageBytes = bytes;
