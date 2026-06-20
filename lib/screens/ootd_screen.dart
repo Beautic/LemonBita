@@ -15,6 +15,8 @@ import 'friends_ootd_feed_screen.dart';
 class OotdScreen extends StatefulWidget {
   const OotdScreen({super.key});
 
+  static final ValueNotifier<bool> refreshNotifier = ValueNotifier<bool>(false);
+
   @override
   State<OotdScreen> createState() => _OotdScreenState();
 }
@@ -41,12 +43,21 @@ class _OotdScreenState extends State<OotdScreen> {
     _loadOotds();
     _loadPlannedOotds();
     _scrollController.addListener(_onScroll);
+    OotdScreen.refreshNotifier.addListener(_onGlobalRefresh);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    OotdScreen.refreshNotifier.removeListener(_onGlobalRefresh);
     super.dispose();
+  }
+
+  void _onGlobalRefresh() {
+    if (mounted) {
+      _loadOotds(refresh: true);
+      _loadPlannedOotds(refresh: true);
+    }
   }
 
   Future<void> _loadOotds({bool refresh = false}) async {
@@ -631,7 +642,12 @@ class _OotdScreenState extends State<OotdScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
-            ).then((_) => _loadPlannedOotds(refresh: true));
+            ).then((val) {
+              _loadPlannedOotds(refresh: true);
+              if (val == true) {
+                _loadOotds(refresh: true);
+              }
+            });
           },
           onLongPress: () => _showFolderMoveDialog(doc.id, data['folderId']),
           child: Stack(

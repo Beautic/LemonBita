@@ -69,13 +69,19 @@ class _MainScreenState extends State<MainScreen> {
                   title: const Text('오늘의 OOTD 기록하기', style: TextStyle(fontWeight: FontWeight.w600)),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(
+                    Navigator.push<bool>(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UploadOotdScreen(),
                         fullscreenDialog: true,
                       ),
-                    );
+                    ).then((uploaded) {
+                      if (uploaded == true && mounted) {
+                        setState(() {
+                          _currentIndex = 1; // OOTD 탭으로 전환
+                        });
+                      }
+                    });
                   },
                 ),
                 ListTile(

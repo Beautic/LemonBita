@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-06-20 (v5.2) — OOTD 등록 즉시 반영 및 세탁 필요 메인 가시성 확보, 배포 규칙 지정
+
+### 1. OOTD 등록 후 즉시 갱신 및 자동 탭 이동
+- **구현 내용**:
+  - `UploadOotdScreen`에서 저장 완료 시 `Navigator.pop(context, true)`으로 성공 여부를 반환하고, `OotdScreen`에 스태틱 `refreshNotifier`(`ValueNotifier<bool>`)를 선언하여 화면 리프레시 이벤트를 전역 수신하도록 리팩토링했습니다.
+  - OOTD 복귀 시점에 `tagCounts` 및 목록이 즉각 갱신되며, `MainScreen`에서 OOTD를 추가한 경우 등록 완료와 함께 자동으로 OOTD 탭(Index 1)으로 화면을 전환시켜 사용자 편의성을 높였습니다.
+  - 코디 아이디어 화면([PlannedOotdDetailScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/planned_ootd_detail_screen.dart))에서 OOTD로 전환해 등록할 때도 이전 화면 복귀와 동시에 최신 OOTD 리스트가 즉각 반영됩니다.
+
+### 2. 메인 옷장 내 세탁 필요 🧼 미니 뱃지 추가 및 날씨 추천 필터링
+- **구현 내용**:
+  - 메인 옷장 그리드([home_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/home_screen.dart))의 개별 아이템 카드에서 `washInterval`과 `lastWashedCount`, `tagCount` 데이터를 기반으로 세탁 주기가 도과했는지 판정하는 로직을 추가했습니다.
+  - 세탁이 필요한 경우 이미지 우측 상단 횟수 뱃지 왼쪽에 파란색 `[🧼 세탁 필요]` 미니 뱃지가 나란히 표시되도록 가시성을 확보했습니다.
+  - 또한, 스마트 날씨 추천 카드에서도 세탁이 필요한 옷이 오늘 입을 옷으로 추천되지 않도록 추천 스코어링 단계에서 세탁 필요 의류를 필터링하여 제외시키는 스마트 보완을 적용했습니다.
+  - Firestore의 숫자 데이터가 double로 넘어와 런타임 타입 에러가 생기지 않도록 `(value as num?)?.toInt()` 안전 형변환으로 보완했습니다.
+  - `home_screen.dart`에서 OOTD 스트림이 로드될 때까지 명시적인 로딩 상태(`ConnectionState.waiting`)를 대기하게 하여, 데이터 비동기 지연으로 인한 횟수 누락 및 캐싱 오작동 문제를 근원적으로 방지했습니다.
+
+### 3. 인공지능 배포 및 환경 분리 절대 룰 추가
+- **구현 내용**:
+  - 개발계 검증 우선 원칙을 확실히 규정하기 위해 프로젝트 절대 룰 파일인 `.cursorrules`를 수정하여, 사용자가 명시적으로 *"운영계 배포해줘"* 혹은 *"prod 배포해줘"* 라고 직접 언급하기 전까지는 배포 시 무조건 개발계 배포 스크립트(`deploy_dev.sh`)만 사용하도록 명시적인 환경 분리 정책을 굳혔습니다.
+
+---
+
 ## 2026-06-19 (v5.1) — 스마트 코디 추천, 대시보드, 세탁 케어, 소셜 피드백 및 날짜 감지 고도화
 
 ### 1. 날씨 맞춤형 스마트 코디 제안

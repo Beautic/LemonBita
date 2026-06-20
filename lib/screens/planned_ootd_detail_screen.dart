@@ -251,7 +251,11 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                             initialTaggedClothes: taggedIds,
                           ),
                         ),
-                      );
+                      ).then((uploaded) {
+                        if (uploaded == true && mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,

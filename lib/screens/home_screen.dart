@@ -103,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _ootdStream,
         builder: (context, ootdSnapshot) {
+          if (ootdSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.black));
+          }
           // 태그 횟수 계산
           Map<String, int> tagCounts = {};
           if (ootdSnapshot.hasData) {
@@ -275,6 +278,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 피드 그리드 아이템
   Widget _buildClothingGridItem(String docId, Map<String, dynamic> item, int tagCount) {
+    final int washInterval = (item['washInterval'] as num?)?.toInt() ?? 0;
+    final int lastWashedCount = (item['lastWashedCount'] as num?)?.toInt() ?? 0;
+    final int washedSince = tagCount - lastWashedCount;
+    final bool isWashRequired = washInterval > 0 && washedSince >= washInterval;
+
     // 색상, 패턴 조합으로 임시 타이틀 생성
     String color = item['color'] ?? '';
     String pattern = item['pattern'] ?? '';
@@ -317,29 +325,55 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                if (tagCount > 0)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.bookmark, size: 10, color: Colors.white),
-                          const SizedBox(width: 3),
-                          Text(
-                            '$tagCount',
-                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isWashRequired) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ],
-                      ),
-                    ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.local_laundry_service, size: 9, color: Colors.white),
+                              SizedBox(width: 2),
+                              Text(
+                                '🧼 세탁 필요',
+                                style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (tagCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.bookmark, size: 9, color: Colors.white),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$tagCount',
+                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
@@ -406,6 +440,15 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var doc in clothes) {
       final data = doc.data() as Map<String, dynamic>;
       final String docId = doc.id;
+      
+      // 세탁이 필요한 의류는 추천에서 제외
+      final int washInterval = (data['washInterval'] as num?)?.toInt() ?? 0;
+      final int lastWashedCount = (data['lastWashedCount'] as num?)?.toInt() ?? 0;
+      final int tagCount = tagCounts[docId] ?? 0;
+      final int washedSince = tagCount - lastWashedCount;
+      final bool isWashRequired = washInterval > 0 && washedSince >= washInterval;
+      if (isWashRequired) continue;
+
       final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
       
       int score = 0;

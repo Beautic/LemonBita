@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/firebase_service.dart';
 import 'search_clothes_screen.dart';
 import 'package:image/image.dart' as img;
+import 'ootd_screen.dart';
 
 class UploadOotdScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -346,8 +347,11 @@ class _UploadOotdScreenState extends State<UploadOotdScreen> {
         date: _selectedDate,
       );
 
+      // 글로벌 새로고침 알림 트리거
+      OotdScreen.refreshNotifier.value = !OotdScreen.refreshNotifier.value;
+
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('OOTD가 성공적으로 업로드되었습니다!')),
         );
