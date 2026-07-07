@@ -7,10 +7,22 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // 1. 유저 프로필: 누구나 읽을 수 있지만, 수정은 본인만 가능
+    // 1. 유저 프로필
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // 본인이 수정하거나, 친구 수락 시 상대방이 내 friends 리스트에 자신을 추가할 수 있도록 허용 (friends 필드만 수정하는 것만 타인에게 허용)
+      allow update: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends'])
+      );
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // 친구 요청: 생성은 로그인한 사용자 누구나, 읽기/삭제는 수신자(userId) 본인만
+      match /friend_requests/{requestId} {
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null;
+      }
       
       // 알림: 알림 생성은 누구나(좋아요/댓글 등), 수정/삭제는 본인만
       match /notifications/{notiId} {

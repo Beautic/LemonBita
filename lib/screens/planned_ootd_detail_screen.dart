@@ -18,10 +18,41 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
   Map<String, dynamic>? _data;
   bool _isLoading = true;
 
+  // 피드백 입력을 위한 멤버 변수 추가
+  double _selectedRating = 5.0;
+  late TextEditingController _feedbackController;
+  final FocusNode _feedbackFocusNode = FocusNode();
+  
+  // 피드백 수정 상태 관리 변수 추가
+  bool _isEditingFeedback = false;
+
   @override
   void initState() {
     super.initState();
+    _feedbackController = TextEditingController();
     _loadData();
+
+    // 포커스가 잡힐 때 텍스트 필드가 잘 보이도록 보정 스크롤
+    _feedbackFocusNode.addListener(() {
+      if (_feedbackFocusNode.hasFocus) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Scrollable.ensureVisible(
+              _feedbackFocusNode.context!,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _feedbackController.dispose();
+    _feedbackFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -145,6 +176,13 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
     final data = _data!;
     final suggestedBy = data['suggestedBy'];
 
+    // 키보드가 활성화되었는지 감지
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    // 키보드가 켜지면 이미지 높이를 줄여 입력 공간 확보
+    final imageHeight = isKeyboardOpen 
+        ? MediaQuery.of(context).size.width * 0.45 
+        : MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -162,11 +200,15 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Image.network(
-              data['imageUrl'] ?? '',
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
               width: double.infinity,
-              height: MediaQuery.of(context).size.width,
-              fit: BoxFit.contain,
+              height: imageHeight,
+              child: Image.network(
+                data['imageUrl'] ?? '',
+                fit: BoxFit.contain,
+              ),
             ),
             if (suggestedBy != null)
               Container(
@@ -287,7 +329,8 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
     final double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
     final String currentFeedback = data['feedback'] ?? '';
 
-    if (currentRating > 0.0) {
+    // 피드백이 존재하고 수정 모드가 아닌 경우 -> 보낸 피드백 카드 노출
+    if (currentRating > 0.0 && !_isEditingFeedback) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         padding: const EdgeInsets.all(16),
@@ -300,12 +343,33 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.feedback_outlined, color: Colors.purpleAccent, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  '$suggestedBy님에게 보낸 피드백 💬',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                Row(
+                  children: [
+                    const Icon(Icons.feedback_outlined, color: Colors.purpleAccent, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$suggestedBy님에게 보낸 피드백 💬',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                    ),
+                  ],
+                ),
+                // 수정 아이콘 버튼 추가 (호환성 높은 Icons.edit로 변경)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.purple, size: 18),
+                  onPressed: () {
+                    setState(() {
+                      _isEditingFeedback = true;
+                      _selectedRating = currentRating;
+                      _feedbackController.text = currentFeedback;
+                    });
+                    // 입력 포커스 활성화
+                    _feedbackFocusNode.requestFocus();
+                  },
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  tooltip: '피드백 수정하기',
                 ),
               ],
             ),
@@ -331,101 +395,133 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
       );
     }
 
-    double selectedRating = 5.0;
-    final feedbackController = TextEditingController();
-
-    return StatefulBuilder(
-      builder: (context, setSectionState) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
-            ],
+    // 피드백이 없거나 수정 모드인 경우 -> 입력/수정 폼 노출
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isEditingFeedback 
+                ? '💡 $suggestedBy님에게 보낸 피드백 수정하기' 
+                : '💡 $suggestedBy님의 코디 추천은 어떠셨나요?',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(5, (index) {
+              final score = index + 1.0;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedRating = score;
+                  });
+                },
+                child: Icon(
+                  _selectedRating >= score ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 28,
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _feedbackController,
+            focusNode: _feedbackFocusNode,
+            style: const TextStyle(fontSize: 13),
+            onTapOutside: (event) {
+              // 외부 터치나 스크롤 터치 시 포커스(커서)가 자동으로 꺼지지 않도록 방어
+            },
+            decoration: InputDecoration(
+              hintText: '친구에게 피드백 한 줄 남기기 (예: 오늘 입을게!)',
+              hintStyle: const TextStyle(fontSize: 12),
+              filled: true,
+              fillColor: Colors.grey[50],
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
             children: [
-              Text(
-                '💡 $suggestedBy님의 코디 추천은 어떠셨나요?',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: List.generate(5, (index) {
-                  final score = index + 1.0;
-                  return GestureDetector(
-                    onTap: () {
-                      setSectionState(() {
-                        selectedRating = score;
+              if (_isEditingFeedback) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isEditingFeedback = false;
+                        _feedbackController.clear();
                       });
                     },
-                    child: Icon(
-                      selectedRating >= score ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 28,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.black26),
+                      minimumSize: const Size.fromHeight(38),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: feedbackController,
-                style: const TextStyle(fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: '친구에게 피드백 한 줄 남기기 (예: 오늘 입을게!)',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: const Text('취소', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () async {
-                  final text = feedbackController.text.trim();
-                  try {
-                    await FirebaseFirestore.instance.collection('planned_ootds').doc(widget.plannedOotdId).update({
-                      'rating': selectedRating,
-                      'feedback': text,
-                      'feedbackAt': FieldValue.serverTimestamp(),
-                    });
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: () async {
+                    final text = _feedbackController.text.trim();
+                    try {
+                      await FirebaseFirestore.instance.collection('planned_ootds').doc(widget.plannedOotdId).update({
+                        'rating': _selectedRating,
+                        'feedback': text,
+                        'feedbackAt': FieldValue.serverTimestamp(),
+                      });
 
-                    if (suggestedById != null) {
-                      final myDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
-                      final myNickname = myDoc.data()?['nickname'] ?? '친구';
-                      
-                      await _firebaseService.sendNotification(
-                        recipientId: suggestedById,
-                        type: 'outfit_feedback',
-                        message: '$myNickname님이 내 코디 추천에 피드백을 남겼습니다!',
-                        targetId: widget.plannedOotdId,
-                      );
-                    }
+                      if (suggestedById != null) {
+                        final myDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+                        final myNickname = myDoc.data()?['nickname'] ?? '친구';
+                        
+                        await _firebaseService.sendNotification(
+                          recipientId: suggestedById,
+                          type: 'outfit_feedback',
+                          message: '$myNickname님이 내 코디 추천에 피드백을 남겼습니다!',
+                          targetId: widget.plannedOotdId,
+                        );
+                      }
 
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('피드백이 전달되었습니다.')));
-                      _loadData();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('피드백이 전달되었습니다.')));
+                        setState(() {
+                          _isEditingFeedback = false;
+                        });
+                        _loadData();
+                      }
+                    } catch (e) {
+                      debugPrint('🚩 Failed to submit feedback: $e');
                     }
-                  } catch (e) {
-                    debugPrint('🚩 Failed to submit feedback: $e');
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  minimumSize: const Size.fromHeight(38),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    minimumSize: const Size.fromHeight(38),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text(
+                    _isEditingFeedback ? '수정 완료 💬' : '피드백 보내기 💬', 
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)
+                  ),
                 ),
-                child: const Text('피드백 보내기 💬', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

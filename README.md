@@ -25,6 +25,12 @@
 | 🟢 개발(dev) | `main` | `digital-closet-dev` | https://digital-closet-dev.web.app |
 | 🔴 운영(prod) | `prod` | `digital-closet-32c43` | https://digital-closet-32c43.web.app |
 
+### 🔑 개발계 테스트용 공용 계정
+개발(dev) 환경 검증을 위한 공용 테스트 계정 정보입니다.
+* **이메일**: `test@gmail.com`
+* **비밀번호**: `test123`
+
+
 ```bash
 # 개발: main 브랜치에서 작업 → 커밋 → 개발계 배포 후 dev 링크에서 검증
 ./deploy_dev.sh
