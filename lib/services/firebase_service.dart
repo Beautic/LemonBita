@@ -258,10 +258,11 @@ class FirebaseService {
     required String subCategory,
     required String tags,
     String? color,
+    List<String>? folderIds,
   }) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
 
-    await _firestore.collection('clothes').add({
+    final Map<String, dynamic> data = {
       'userId': currentUserId,
       'imageUrl': imageUrl,
       'category': category,
@@ -269,7 +270,10 @@ class FirebaseService {
       'tags': tags,
       'color': color ?? '',
       'createdAt': FieldValue.serverTimestamp(),
-    });
+      'folderIds': folderIds ?? [],
+    };
+
+    await _firestore.collection('clothes').add(data);
   }
 
   // 3. 실시간으로 '내' 옷장 데이터만 가져오기 (Stream)
@@ -577,13 +581,20 @@ class FirebaseService {
       if (folderId == 'unclassified') {
         docs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          final fid = data['folderId'];
-          return fid == null || fid.toString().isEmpty;
+          final List<dynamic>? folderIds = data['folderIds'];
+          final oldFolderId = data['folderId'];
+          final hasNoFolderIds = folderIds == null || folderIds.isEmpty;
+          final hasNoOldFolderId = oldFolderId == null || oldFolderId.toString().isEmpty;
+          return hasNoFolderIds && hasNoOldFolderId;
         }).toList();
       } else if (folderId != 'all') {
         docs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['folderId'] == folderId;
+          final List<dynamic>? folderIds = data['folderIds'];
+          final oldFolderId = data['folderId'];
+          final inNewFolderIds = folderIds != null && folderIds.contains(folderId);
+          final inOldFolderId = oldFolderId == folderId;
+          return inNewFolderIds || inOldFolderId;
         }).toList();
       }
     }
@@ -670,15 +681,17 @@ class FirebaseService {
     // 폴더 삭제
     batch.delete(_firestore.collection('planned_folders').doc(folderId));
     
-    // 해당 폴더의 코디 아이디어들의 folderId를 null로 업데이트하기 위해 먼저 조회
+    // 해당 폴더의 코디 아이디어들의 folderIds 배열에서 이 폴더 ID를 제거
     final ootdsSnapshot = await _firestore
         .collection('planned_ootds')
         .where('userId', isEqualTo: currentUserId)
-        .where('folderId', isEqualTo: folderId)
+        .where('folderIds', arrayContains: folderId)
         .get();
         
     for (var doc in ootdsSnapshot.docs) {
-      batch.update(doc.reference, {'folderId': FieldValue.delete()});
+      batch.update(doc.reference, {
+        'folderIds': FieldValue.arrayRemove([folderId])
+      });
     }
     
     await batch.commit();
@@ -692,15 +705,30 @@ class FirebaseService {
     });
   }
 
-  // 코디 아이디어를 특정 폴더로 이동
-  Future<void> updatePlannedOotdFolder(String ootdId, String? folderId) async {
+  // 코디 아이디어를 여러 폴더로 이동 (또는 미분류)
+  Future<void> updatePlannedOotdFolders(String ootdId, List<String>? folderIds) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     final ref = _firestore.collection('planned_ootds').doc(ootdId);
-    if (folderId == null || folderId.isEmpty) {
-      await ref.update({'folderId': FieldValue.delete()});
+    if (folderIds == null || folderIds.isEmpty) {
+      await ref.update({'folderIds': []});
     } else {
-      await ref.update({'folderId': folderId});
+      await ref.update({'folderIds': folderIds});
     }
+  }
+
+  // 코디 N개 일괄 폴더(들)에 추가 (arrayUnion)
+  Future<void> addPlannedOotdsToFolders(List<String> ootdIds, List<String> folderIds) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    if (ootdIds.isEmpty || folderIds.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (var id in ootdIds) {
+      final ref = _firestore.collection('planned_ootds').doc(id);
+      batch.update(ref, {
+        'folderIds': FieldValue.arrayUnion(folderIds)
+      });
+    }
+    await batch.commit();
   }
 
   // ==== 마이크로 소셜 (친구, 알림, 댓글) ====
@@ -907,5 +935,106 @@ class FirebaseService {
         .get();
         
     return snapshot.docs;
+  }
+
+  // ==== 옷장 폴더(closet_folders) 관련 로직 ====
+
+  // 폴더 생성
+  Future<String> createClosetFolder(String name) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final doc = await _firestore.collection('closet_folders').add({
+      'userId': currentUserId,
+      'name': name,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return doc.id;
+  }
+
+  // 폴더 목록 조회 (실시간 Stream)
+  Stream<List<Map<String, dynamic>>> getClosetFoldersStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore
+        .collection('closet_folders')
+        .where('userId', isEqualTo: currentUserId)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'] ?? '',
+              'createdAt': data['createdAt'],
+            };
+          }).toList();
+          
+          list.sort((a, b) {
+            final aTime = a['createdAt'] as Timestamp?;
+            final bTime = b['createdAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return aTime.compareTo(bTime);
+          });
+          return list;
+        });
+  }
+
+  // 폴더 삭제
+  Future<void> deleteClosetFolder(String folderId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    
+    final batch = _firestore.batch();
+    
+    // 폴더 문서 삭제
+    batch.delete(_firestore.collection('closet_folders').doc(folderId));
+    
+    // 해당 폴더에 연결된 옷들의 folderIds 배열에서 이 폴더 ID를 제거
+    final clothesSnapshot = await _firestore
+        .collection('clothes')
+        .where('userId', isEqualTo: currentUserId)
+        .where('folderIds', arrayContains: folderId)
+        .get();
+        
+    for (var doc in clothesSnapshot.docs) {
+      batch.update(doc.reference, {
+        'folderIds': FieldValue.arrayRemove([folderId])
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  // 폴더 이름 수정
+  Future<void> updateClosetFolder(String folderId, String newName) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('closet_folders').doc(folderId).update({
+      'name': newName,
+    });
+  }
+
+  // 특정 옷을 여러 폴더로 이동 (또는 미분류)
+  Future<void> updateClothingFolders(String clothingId, List<String>? folderIds) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final ref = _firestore.collection('clothes').doc(clothingId);
+    if (folderIds == null || folderIds.isEmpty) {
+      await ref.update({'folderIds': []});
+    } else {
+      await ref.update({'folderIds': folderIds});
+    }
+  }
+
+  // 옷 N개 일괄 폴더(들)에 추가 (arrayUnion)
+  Future<void> addClothesToFolders(List<String> clothingIds, List<String> folderIds) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    if (clothingIds.isEmpty || folderIds.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (var id in clothingIds) {
+      final ref = _firestore.collection('clothes').doc(id);
+      batch.update(ref, {
+        'folderIds': FieldValue.arrayUnion(folderIds)
+      });
+    }
+    await batch.commit();
   }
 }

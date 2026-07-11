@@ -75,17 +75,24 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
   }
 
   void _showFolderMoveDialog() {
+    final List<dynamic>? rawFolderIds = _data!['folderIds'];
+    List<String> currentFolderIds = [];
+    if (rawFolderIds != null) {
+      currentFolderIds = List<String>.from(rawFolderIds);
+    } else if (_data!['folderId'] != null && _data!['folderId'].toString().isNotEmpty) {
+      currentFolderIds = [_data!['folderId'].toString()];
+    }
+
     showDialog(
       context: context,
       builder: (context) {
-        String? currentFolderId = _data!['folderId'];
-        String tempSelectedId = currentFolderId ?? 'unclassified';
+        List<String> tempSelectedIds = List<String>.from(currentFolderIds);
         
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: Colors.white,
-              title: const Text('폴더 이동', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              title: const Text('코디 폴더 지정 (중복 가능)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               content: SizedBox(
                 width: double.maxFinite,
                 child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -96,35 +103,36 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                     }
                     
                     final folders = snapshot.data!;
+                    if (folders.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Text(
+                          '생성된 OOTD 폴더가 없습니다. 폴더를 먼저 생성해 주세요.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                      );
+                    }
                     
                     return ListView(
                       shrinkWrap: true,
-                      children: [
-                        RadioListTile<String>(
-                          title: const Text('미분류'),
-                          value: 'unclassified',
-                          groupValue: tempSelectedId,
+                      children: folders.map((folder) {
+                        final String id = folder['id'] as String;
+                        final isChecked = tempSelectedIds.contains(id);
+                        return CheckboxListTile(
+                          title: Text(folder['name'] as String),
+                          value: isChecked,
                           activeColor: Colors.black,
                           onChanged: (val) {
                             setDialogState(() {
-                              tempSelectedId = val!;
+                              if (val == true) {
+                                tempSelectedIds.add(id);
+                              } else {
+                                tempSelectedIds.remove(id);
+                              }
                             });
                           },
-                        ),
-                        ...folders.map((folder) {
-                          return RadioListTile<String>(
-                            title: Text(folder['name'] as String),
-                            value: folder['id'] as String,
-                            groupValue: tempSelectedId,
-                            activeColor: Colors.black,
-                            onChanged: (val) {
-                              setDialogState(() {
-                                tempSelectedId = val!;
-                              });
-                            },
-                          );
-                        }),
-                      ],
+                        );
+                      }).toList(),
                     );
                   },
                 ),
@@ -137,16 +145,15 @@ class _PlannedOotdDetailScreenState extends State<PlannedOotdDetailScreen> {
                 TextButton(
                   onPressed: () async {
                     Navigator.pop(context);
-                    final targetFolderId = tempSelectedId == 'unclassified' ? null : tempSelectedId;
                     try {
-                      await _firebaseService.updatePlannedOotdFolder(widget.plannedOotdId, targetFolderId);
+                      await _firebaseService.updatePlannedOotdFolders(widget.plannedOotdId, tempSelectedIds);
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('폴더가 변경되었습니다.')));
                       _loadData();
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('폴더 변경 실패: $e')));
                     }
                   },
-                  child: const Text('이동', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: const Text('적용', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ],
             );

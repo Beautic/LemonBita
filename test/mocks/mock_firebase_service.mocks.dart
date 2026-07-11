@@ -6,10 +6,10 @@
 import 'dart:async' as _i3;
 import 'dart:typed_data' as _i4;
 
-import 'package:cloud_firestore/cloud_firestore.dart' as _i6;
+import 'package:cloud_firestore/cloud_firestore.dart' as _i5;
 import 'package:dress/services/firebase_service.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -74,6 +74,64 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Future<_i2.AuthUser>);
 
   @override
+  _i3.Future<void> signUpWithDetails({
+    required String? email,
+    required String? password,
+    required String? realName,
+    required String? phoneNumber,
+    required String? nickname,
+    required bool? agreedToTerms,
+    _i4.Uint8List? profileImageBytes,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #signUpWithDetails,
+          [],
+          {
+            #email: email,
+            #password: password,
+            #realName: realName,
+            #phoneNumber: phoneNumber,
+            #nickname: nickname,
+            #agreedToTerms: agreedToTerms,
+            #profileImageBytes: profileImageBytes,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateUserProfile({
+    required String? nickname,
+    _i4.Uint8List? profileImageBytes,
+    String? existingImageUrl,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateUserProfile,
+          [],
+          {
+            #nickname: nickname,
+            #profileImageBytes: profileImageBytes,
+            #existingImageUrl: existingImageUrl,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.DocumentSnapshot<Object?>> getUserProfileStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUserProfileStream,
+          [],
+        ),
+        returnValue: _i3.Stream<_i5.DocumentSnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.DocumentSnapshot<Object?>>);
+
+  @override
   _i3.Future<_i2.AuthUser> loginWithEmail(
     String? email,
     String? password,
@@ -121,7 +179,7 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
             extension,
           ],
         ),
-        returnValue: _i3.Future<String>.value(_i5.dummyValue<String>(
+        returnValue: _i3.Future<String>.value(_i6.dummyValue<String>(
           this,
           Invocation.method(
             #uploadImage,
@@ -134,10 +192,22 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Future<String>);
 
   @override
+  _i3.Future<_i4.Uint8List?> downloadImage(String? url) => (super.noSuchMethod(
+        Invocation.method(
+          #downloadImage,
+          [url],
+        ),
+        returnValue: _i3.Future<_i4.Uint8List?>.value(),
+      ) as _i3.Future<_i4.Uint8List?>);
+
+  @override
   _i3.Future<void> saveClothingData({
     required String? imageUrl,
     required String? category,
+    required String? subCategory,
     required String? tags,
+    String? color,
+    List<String>? folderIds,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -146,7 +216,10 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
           {
             #imageUrl: imageUrl,
             #category: category,
+            #subCategory: subCategory,
             #tags: tags,
+            #color: color,
+            #folderIds: folderIds,
           },
         ),
         returnValue: _i3.Future<void>.value(),
@@ -154,14 +227,14 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Future<void>);
 
   @override
-  _i3.Stream<_i6.QuerySnapshot<Object?>> getClothesStream() =>
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getClothesStream() =>
       (super.noSuchMethod(
         Invocation.method(
           #getClothesStream,
           [],
         ),
-        returnValue: _i3.Stream<_i6.QuerySnapshot<Object?>>.empty(),
-      ) as _i3.Stream<_i6.QuerySnapshot<Object?>>);
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
 
   @override
   _i3.Future<void> updateClothingData({
@@ -192,10 +265,33 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Future<void>);
 
   @override
+  _i3.Future<void> updateOOTDClothesTags({
+    required String? clothingId,
+    required Map<String, dynamic>? clothingItemData,
+    required List<String>? selectedOotdIds,
+    required List<String>? originalOotdIds,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateOOTDClothesTags,
+          [],
+          {
+            #clothingId: clothingId,
+            #clothingItemData: clothingItemData,
+            #selectedOotdIds: selectedOotdIds,
+            #originalOotdIds: originalOotdIds,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
   _i3.Future<void> saveOOTDData({
     required String? imageUrl,
     required String? description,
     required List<Map<String, dynamic>>? taggedClothes,
+    DateTime? date,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -205,6 +301,7 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
             #imageUrl: imageUrl,
             #description: description,
             #taggedClothes: taggedClothes,
+            #date: date,
           },
         ),
         returnValue: _i3.Future<void>.value(),
@@ -212,19 +309,493 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Future<void>);
 
   @override
-  _i3.Stream<_i6.QuerySnapshot<Object?>> getOOTDStream() => (super.noSuchMethod(
+  _i3.Future<void> updateOOTDDate(
+    String? docId,
+    DateTime? newDate,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateOOTDDate,
+          [
+            docId,
+            newDate,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateOOTDTags(
+    String? docId,
+    List<Map<String, dynamic>>? newTaggedClothes,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateOOTDTags,
+          [
+            docId,
+            newTaggedClothes,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getOOTDStream() => (super.noSuchMethod(
         Invocation.method(
           #getOOTDStream,
           [],
         ),
-        returnValue: _i3.Stream<_i6.QuerySnapshot<Object?>>.empty(),
-      ) as _i3.Stream<_i6.QuerySnapshot<Object?>>);
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
 
   @override
   _i3.Future<void> deleteOOTDData(String? docId) => (super.noSuchMethod(
         Invocation.method(
           #deleteOOTDData,
           [docId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>> getOOTDPage({
+    _i5.DocumentSnapshot<Object?>? lastDoc,
+    int? limit = 10,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOOTDPage,
+          [],
+          {
+            #lastDoc: lastDoc,
+            #limit: limit,
+          },
+        ),
+        returnValue: _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>.value(
+            <_i5.QueryDocumentSnapshot<Object?>>[]),
+      ) as _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>);
+
+  @override
+  _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>> getOOTDsByMonth(
+    int? year,
+    int? month,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOOTDsByMonth,
+          [
+            year,
+            month,
+          ],
+        ),
+        returnValue: _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>.value(
+            <_i5.QueryDocumentSnapshot<Object?>>[]),
+      ) as _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>);
+
+  @override
+  _i3.Future<void> savePlannedOOTDData({
+    required _i4.Uint8List? imageBytes,
+    required List<Map<String, dynamic>>? taggedClothes,
+    required List<Map<String, dynamic>>? canvasItems,
+    String? targetUserId,
+    String? docId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #savePlannedOOTDData,
+          [],
+          {
+            #imageBytes: imageBytes,
+            #taggedClothes: taggedClothes,
+            #canvasItems: canvasItems,
+            #targetUserId: targetUserId,
+            #docId: docId,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>> getPlannedOOTDPage({
+    String? targetUserId,
+    String? folderId,
+    _i5.DocumentSnapshot<Object?>? lastDoc,
+    int? limit = 10,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPlannedOOTDPage,
+          [],
+          {
+            #targetUserId: targetUserId,
+            #folderId: folderId,
+            #lastDoc: lastDoc,
+            #limit: limit,
+          },
+        ),
+        returnValue: _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>.value(
+            <_i5.QueryDocumentSnapshot<Object?>>[]),
+      ) as _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>);
+
+  @override
+  _i3.Future<void> deletePlannedOOTDData(String? docId) => (super.noSuchMethod(
+        Invocation.method(
+          #deletePlannedOOTDData,
+          [docId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<String> createPlannedFolder(String? name) => (super.noSuchMethod(
+        Invocation.method(
+          #createPlannedFolder,
+          [name],
+        ),
+        returnValue: _i3.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #createPlannedFolder,
+            [name],
+          ),
+        )),
+      ) as _i3.Future<String>);
+
+  @override
+  _i3.Stream<List<Map<String, dynamic>>> getPlannedFoldersStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPlannedFoldersStream,
+          [],
+        ),
+        returnValue: _i3.Stream<List<Map<String, dynamic>>>.empty(),
+      ) as _i3.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Future<void> deletePlannedFolder(String? folderId) => (super.noSuchMethod(
+        Invocation.method(
+          #deletePlannedFolder,
+          [folderId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updatePlannedFolder(
+    String? folderId,
+    String? newName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updatePlannedFolder,
+          [
+            folderId,
+            newName,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updatePlannedOotdFolders(
+    String? ootdId,
+    List<String>? folderIds,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updatePlannedOotdFolders,
+          [
+            ootdId,
+            folderIds,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addPlannedOotdsToFolders(
+    List<String>? ootdIds,
+    List<String>? folderIds,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addPlannedOotdsToFolders,
+          [
+            ootdIds,
+            folderIds,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<List<Map<String, dynamic>>> searchUsers(String? query) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #searchUsers,
+          [query],
+        ),
+        returnValue: _i3.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i3.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Future<void> sendFriendRequest(String? toUserId) => (super.noSuchMethod(
+        Invocation.method(
+          #sendFriendRequest,
+          [toUserId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> acceptFriendRequest(String? fromUserId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #acceptFriendRequest,
+          [fromUserId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> rejectFriendRequest(String? fromUserId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #rejectFriendRequest,
+          [fromUserId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<List<Map<String, dynamic>>> getFriends() => (super.noSuchMethod(
+        Invocation.method(
+          #getFriends,
+          [],
+        ),
+        returnValue: _i3.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i3.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getFriendRequestsStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getFriendRequestsStream,
+          [],
+        ),
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
+
+  @override
+  _i3.Future<void> sendNotification({
+    required String? recipientId,
+    required String? type,
+    required String? message,
+    required String? targetId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendNotification,
+          [],
+          {
+            #recipientId: recipientId,
+            #type: type,
+            #message: message,
+            #targetId: targetId,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getNotificationsStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getNotificationsStream,
+          [],
+        ),
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
+
+  @override
+  _i3.Future<void> markNotificationAsRead(String? notifId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #markNotificationAsRead,
+          [notifId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> toggleLike(
+    String? collection,
+    String? docId,
+    String? ownerId,
+    bool? isCurrentlyLiked,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #toggleLike,
+          [
+            collection,
+            docId,
+            ownerId,
+            isCurrentlyLiked,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addComment(
+    String? collection,
+    String? docId,
+    String? ownerId,
+    String? text, {
+    String? parentId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addComment,
+          [
+            collection,
+            docId,
+            ownerId,
+            text,
+          ],
+          {#parentId: parentId},
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getCommentsStream(
+    String? collection,
+    String? docId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getCommentsStream,
+          [
+            collection,
+            docId,
+          ],
+        ),
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
+
+  @override
+  _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>> getFriendsOotdFeed() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getFriendsOotdFeed,
+          [],
+        ),
+        returnValue: _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>.value(
+            <_i5.QueryDocumentSnapshot<Object?>>[]),
+      ) as _i3.Future<List<_i5.QueryDocumentSnapshot<Object?>>>);
+
+  @override
+  _i3.Future<String> createClosetFolder(String? name) => (super.noSuchMethod(
+        Invocation.method(
+          #createClosetFolder,
+          [name],
+        ),
+        returnValue: _i3.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #createClosetFolder,
+            [name],
+          ),
+        )),
+      ) as _i3.Future<String>);
+
+  @override
+  _i3.Stream<List<Map<String, dynamic>>> getClosetFoldersStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getClosetFoldersStream,
+          [],
+        ),
+        returnValue: _i3.Stream<List<Map<String, dynamic>>>.empty(),
+      ) as _i3.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Future<void> deleteClosetFolder(String? folderId) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteClosetFolder,
+          [folderId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateClosetFolder(
+    String? folderId,
+    String? newName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateClosetFolder,
+          [
+            folderId,
+            newName,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateClothingFolders(
+    String? clothingId,
+    List<String>? folderIds,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateClothingFolders,
+          [
+            clothingId,
+            folderIds,
+          ],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addClothesToFolders(
+    List<String>? clothingIds,
+    List<String>? folderIds,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addClothesToFolders,
+          [
+            clothingIds,
+            folderIds,
+          ],
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),

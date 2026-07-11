@@ -63,6 +63,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
   List<CanvasItem> _items = [];
   int? _selectedIndex;
   bool _isSaving = false;
+  String _currentTemplate = 'none'; // 'none', 'editorial', 'catalog', 'polaroid'
+  double _lastCanvasWidth = 320.0;
+  double _lastCanvasHeight = 400.0;
 
   double _baseScale = 1.0;
   double _baseRotation = 0.0;
@@ -431,6 +434,16 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
       appBar: AppBar(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.collections_bookmark_outlined, color: Colors.black87),
+            tooltip: '저장된 코디 아이디어',
+            onPressed: _showSavedOotdsBottomSheet,
+          ),
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.black87),
+            tooltip: '룩북 자동 배치',
+            onPressed: _autoArrangeCanvasItems,
+          ),
           TextButton(
             onPressed: _isSaving ? null : _saveCanvas,
             child: _isSaving
@@ -440,43 +453,241 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() { _selectedIndex = null; });
-              },
-              onScaleStart: (details) {
-                if (_selectedIndex != null) {
-                  setState(() {
-                    final item = _items[_selectedIndex!];
-                    _baseScale = item.scale;
-                    _baseRotation = item.rotation;
-                  });
-                }
-              },
-              onScaleUpdate: (details) {
-                if (_selectedIndex != null) {
-                  setState(() {
-                    final item = _items[_selectedIndex!];
-                    item.offset += details.focalPointDelta;
-                    item.scale = (_baseScale * details.scale).clamp(0.2, 5.0);
-                    item.rotation = _baseRotation + details.rotation;
-                  });
-                }
-              },
-              child: RepaintBoundary(
-                key: _canvasKey,
-                child: Container(
-                  width: double.infinity,
-                  color: const Color(0xFFF8F9FA), // 연한 회색 배경
-                  child: Stack(
-                    children: [
-                      // 그리드 무늬 (선택 사항)
-                      Positioned.fill(
-                        child: CustomPaint(painter: GridPainter()),
-                      ),
+      body: Container(
+        color: const Color(0xFFF1F3F5), // 연한 회색 배경으로 9:16 캔버스 카드를 부각시킴
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() { _selectedIndex = null; });
+                },
+                onScaleStart: (details) {
+                  if (_selectedIndex != null) {
+                    setState(() {
+                      final item = _items[_selectedIndex!];
+                      _baseScale = item.scale;
+                      _baseRotation = item.rotation;
+                    });
+                  }
+                },
+                onScaleUpdate: (details) {
+                  if (_selectedIndex != null) {
+                    setState(() {
+                      final item = _items[_selectedIndex!];
+                      item.offset += details.focalPointDelta;
+                      item.scale = (_baseScale * details.scale).clamp(0.2, 5.0);
+                      item.rotation = _baseRotation + details.rotation;
+                    });
+                  }
+                },
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                    child: AspectRatio(
+                      aspectRatio: 4 / 5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: RepaintBoundary(
+                            key: _canvasKey,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final double canvasW = constraints.maxWidth;
+                                final double canvasH = constraints.maxHeight;
+                                
+                                // 화면 크기 변경 시 치수 캐싱
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted && (_lastCanvasWidth != canvasW || _lastCanvasHeight != canvasH)) {
+                                    setState(() {
+                                      _lastCanvasWidth = canvasW;
+                                      _lastCanvasHeight = canvasH;
+                                    });
+                                  }
+                                });
+                                
+                                return Container(
+                                  width: double.infinity,
+                                  color: Colors.white,
+                                  child: Stack(
+                                    children: [
+                      // 템플릿 별 배경 및 오버레이 적용
+                      if (_currentTemplate == 'editorial') ...[
+                        // 베이지색 배경
+                        Positioned.fill(
+                          child: Container(color: const Color(0xFFF2ECE4)),
+                        ),
+                        // 얇은 내부 선 테두리
+                        Positioned.fill(
+                          child: Container(
+                            margin: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black26, width: 0.8),
+                            ),
+                          ),
+                        ),
+                        // 상단 럭셔리 타이틀
+                        Positioned(
+                          top: 28,
+                          left: 0,
+                          right: 0,
+                          child: Column(
+                            children: [
+                              Text(
+                                'E S S E N T I A L S',
+                                style: TextStyle(
+                                  fontFamily: 'Serif',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w300,
+                                  letterSpacing: 4.0,
+                                  color: Colors.black.withOpacity(0.75),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'STYLE DIARY & ARCHIVE',
+                                style: TextStyle(
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 2.0,
+                                  color: Colors.black.withOpacity(0.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 하단 정보 텍스트
+                        Positioned(
+                          bottom: 24,
+                          left: 20,
+                          right: 20,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'DAILY LOOKBOOK',
+                                style: TextStyle(fontSize: 8, letterSpacing: 1.5, color: Colors.black.withOpacity(0.6), fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'VOL. 01 / ${DateTime.now().year}.${DateTime.now().month.toString().padLeft(2, '0')}',
+                                style: TextStyle(fontSize: 8, letterSpacing: 1.0, color: Colors.black.withOpacity(0.6)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_currentTemplate == 'catalog') ...[
+                        // 카탈로그 회색 배경
+                        Positioned.fill(
+                          child: Container(color: const Color(0xFFECEFF1)),
+                        ),
+                        // 모눈그리드
+                        Positioned.fill(
+                          child: CustomPaint(painter: GridPainter(color: Colors.black.withOpacity(0.04), spacing: 25)),
+                        ),
+                        // 사이드 라벨 바
+                        Positioned(
+                          top: 20,
+                          left: 20,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'SELECTED ITEMS',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Colors.black87),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                width: 80,
+                                height: 1.5,
+                                color: Colors.black87,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 우측 하단 제품 일련번호 연출
+                        Positioned(
+                          bottom: 20,
+                          right: 20,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'CLOSET CAT. NO. ${_items.length}',
+                                style: const TextStyle(fontSize: 8, fontFamily: 'monospace', color: Colors.black54),
+                              ),
+                              Text(
+                                'TEMP: ${widget.friendNickname != null ? "SUGGESTED" : "MY OOTD"}',
+                                style: const TextStyle(fontSize: 7, color: Colors.black45),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_currentTemplate == 'polaroid') ...[
+                        // 따뜻한 린넨 배경
+                        Positioned.fill(
+                          child: Container(color: const Color(0xFFF9F5F0)),
+                        ),
+                        // 대형 폴라로이드 형태의 흰색 여백 마스킹
+                        Positioned.fill(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 64),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                        // 폴라로이드 하단 넓은 흰색 영역에 손글씨 텍스트
+                        Positioned(
+                          bottom: 24,
+                          left: 0,
+                          right: 0,
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Today\'s Mood Board',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${DateTime.now().year}.${DateTime.now().month}.${DateTime.now().day}',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.black45,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        // 템플릿 없을 때 기본 그라데이션 또는 깔끔 연회색 배경
+                        Positioned.fill(
+                          child: Container(color: const Color(0xFFF8F9FA)),
+                        ),
+                        Positioned.fill(
+                          child: CustomPaint(painter: GridPainter()),
+                        ),
+                      ],
                       
                       // 캔버스 아이템들
                       ..._items.asMap().entries.map((entry) {
@@ -499,41 +710,37 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                             onTap: () {}, // 부모 onTap을 막기 위한 빈 핸들러
                             child: Transform.rotate(
                               angle: item.rotation,
-                              child: Transform.scale(
-                                scale: item.scale,
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Container(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 150,
-                                        maxHeight: 150,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
-                                      ),
-                                      child: item.imageBytes != null
-                                          ? Image.memory(
-                                              item.imageBytes!,
-                                              fit: BoxFit.contain,
-                                            )
-                                          : (item.isLoadingBytes
-                                              ? const Center(
-                                                  child: SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.black,
-                                                    ),
-                                                  ),
-                                                )
-                                              : Image.network(
-                                                  _getProxyImageUrl(item.imageUrl),
-                                                  fit: BoxFit.contain,
-                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
-                                                )),
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    width: 150.0 * item.scale,
+                                    height: 150.0 * item.scale,
+                                    decoration: BoxDecoration(
+                                      border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
                                     ),
+                                    child: item.imageBytes != null
+                                        ? Image.memory(
+                                            item.imageBytes!,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : (item.isLoadingBytes
+                                            ? const Center(
+                                                child: SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.black,
+                                                  ),
+                                                ),
+                                              )
+                                            : Image.network(
+                                                _getProxyImageUrl(item.imageUrl),
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                                              )),
+                                  ),
                                     if (isSelected)
                                       Positioned(
                                         right: -10,
@@ -559,77 +766,51 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                                 ),
                               ),
                             ),
-                          ),
-                        );
+                          );
                       }).toList(),
                     ],
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
+        ),
+      ),
+    ),
+  ),
+),
+),
+),
           
-          // 1. 코디 추천 섹션 추가
-          _buildRecommendationSection(),
-
-          // 2. 하단 코디 아이디어 리스트 영역
+          // 1. 코디 추천 섹션 추가 (하단에 상시 노출)
+          _buildRecommendationSection(isBottomSheet: false),
+          
+          // 2. 룩북 템플릿 칩 바
           Container(
-            height: 130,
+            height: 55,
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
-              ],
+              border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text('저장된 코디 아이디어', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
-                Expanded(
-                  child: _isLoadingOotds
-                      ? const Center(child: CircularProgressIndicator(color: Colors.black))
-                      : _plannedOotds.isEmpty
-                          ? const Center(child: Text('저장된 코디 아이디어가 없습니다.', style: TextStyle(fontSize: 12, color: Colors.grey)))
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              itemCount: _plannedOotds.length,
-                              itemBuilder: (context, index) {
-                                final doc = _plannedOotds[index];
-                                final data = doc.data() as Map<String, dynamic>;
-                                return GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
-                                    );
-                                  },
-                                  child: Container(
-                                    width: 80,
-                                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: Colors.grey[100],
-                                      image: DecorationImage(
-                                        image: NetworkImage(data['imageUrl'] ?? ''),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                ),
+                _buildTemplateChip('none', '기본 캔버스'),
+                const SizedBox(width: 8),
+                _buildTemplateChip('editorial', '에디토리얼'),
+                const SizedBox(width: 8),
+                _buildTemplateChip('catalog', '카탈로그'),
+                const SizedBox(width: 8),
+                _buildTemplateChip('polaroid', '폴라로이드'),
               ],
             ),
           ),
         ],
       ),
+    ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 350), // 추천 섹션 (220px) + 코디 아이디어 리스트 (130px) 높이만큼 올림
+        padding: const EdgeInsets.only(bottom: 285), // 룩북 바 (55px) + 추천 바 (220px) + 여백 높이만큼 올림
         child: FloatingActionButton.extended(
           onPressed: _showClothesBottomSheet,
           backgroundColor: Colors.black,
@@ -640,13 +821,459 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     );
   }
 
-  Widget _buildRecommendationSection() {
+  void _autoArrangeCanvasItems() {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('캔버스에 옷이 없어서 정렬할 수 없습니다.')),
+      );
+      return;
+    }
+
+    setState(() {
+      final double baseW = _lastCanvasWidth;
+      final double baseH = _lastCanvasHeight;
+
+      // 1. 카테고리 구성 상세 집계
+      final Map<String, List<CanvasItem>> categorizedItems = {
+        'outer': [],
+        'top': [],
+        'bottom': [],
+        'shoes': [],
+        'bag': [],
+        'accessory': [],
+      };
+
+      for (var item in _items) {
+        final cat = item.category.toLowerCase();
+        if (cat.contains('아우터') || cat.contains('자켓') || cat.contains('코트') || cat.contains('가디건') || cat.contains('outer') || cat.contains('jacket')) {
+          categorizedItems['outer']!.add(item);
+        } else if (cat.contains('상의') || cat.contains('셔츠') || cat.contains('티셔츠') || cat.contains('니트') || cat.contains('top') || cat.contains('shirt')) {
+          categorizedItems['top']!.add(item);
+        } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
+          categorizedItems['bottom']!.add(item);
+        } else if (cat.contains('신발') || cat.contains('슈즈') || cat.contains('shoes') || cat.contains('sneakers')) {
+          categorizedItems['shoes']!.add(item);
+        } else if (cat.contains('가방') || cat.contains('백') || cat.contains('bag')) {
+          categorizedItems['bag']!.add(item);
+        } else {
+          categorizedItems['accessory']!.add(item);
+        }
+      }
+
+      // 2. 가변형 레이아웃 분기 판단
+      // 캔버스 내 메인 의류들이 각각 1개 이하이고 총 개수가 3개 이하인 경우 '단일 1열 착장 세트 모드'로 분류
+      final bool isSingleOutfitSet = _items.length <= 3 &&
+                                    categorizedItems['top']!.length <= 1 &&
+                                    categorizedItems['bottom']!.length <= 1 &&
+                                    categorizedItems['outer']!.length <= 1 &&
+                                    categorizedItems['shoes']!.length <= 1;
+
+      final Map<String, int> categoryCount = {};
+
+      for (var item in _items) {
+        final cat = item.category.toLowerCase();
+        String type = 'accessory';
+        if (cat.contains('아우터') || cat.contains('자켓') || cat.contains('코트') || cat.contains('가디건') || cat.contains('outer') || cat.contains('jacket')) {
+          type = 'outer';
+        } else if (cat.contains('상의') || cat.contains('셔츠') || cat.contains('티셔츠') || cat.contains('니트') || cat.contains('top') || cat.contains('shirt')) {
+          type = 'top';
+        } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
+          type = 'bottom';
+        } else if (cat.contains('신발') || cat.contains('슈즈') || cat.contains('shoes') || cat.contains('sneakers')) {
+          type = 'shoes';
+        } else if (cat.contains('가방') || cat.contains('백') || cat.contains('bag')) {
+          type = 'bag';
+        }
+
+        categoryCount[type] = (categoryCount[type] ?? 0) + 1;
+        final int index = categoryCount[type]! - 1;
+
+        double scale = 0.70;
+        double rotation = 0.0;
+        Offset center = Offset(baseW * 0.5, baseH * 0.5);
+
+        if (isSingleOutfitSet) {
+          // [수직 1열 단일 코디 모드] - 템플릿별로 Y축을 유연하게 조정하여 텍스트 겹침 차단
+          if (_currentTemplate == 'polaroid') {
+            // 폴라로이드는 하단 64px의 텍스트/여백을 침범하지 않도록 Y축 오프셋을 상향 밀착 정렬하며, 옷 크기를 축소하여 겹침 방지
+            switch (type) {
+              case 'outer':
+                scale = 0.58;
+                center = Offset(baseW * 0.16 + (index * 12.0), baseH * 0.24 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.58;
+                center = Offset(baseW * 0.50, baseH * 0.22 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.58;
+                center = Offset(baseW * 0.50, baseH * 0.48 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.50;
+                center = Offset(baseW * 0.50, baseH * 0.72 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.50;
+                center = Offset(baseW * 0.82, baseH * 0.45 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.42;
+                center = Offset(baseW * 0.18, baseH * 0.45 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else if (_currentTemplate == 'editorial') {
+            // 에디토리얼은 상단 에센셜 밑의 작은 글자("STYLE DIARY & ARCHIVE" 약 90px 점유)를 침범하지 않도록 Y축 시작점을 대폭 하향 조정하고, 상하/좌우 겹침을 완전 제거
+            switch (type) {
+              case 'outer':
+                scale = 0.70;
+                center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.38 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.38 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.68 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.55;
+                center = Offset(baseW * 0.50, baseH * 0.90 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.55;
+                center = Offset(baseW * 0.82, baseH * 0.60 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.45;
+                center = Offset(baseW * 0.18, baseH * 0.60 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else if (_currentTemplate == 'catalog') {
+            // 카탈로그는 좌상단 블랙 타이틀 바 높이를 회피하여 정렬하며, 겹침 제거
+            switch (type) {
+              case 'outer':
+                scale = 0.70;
+                center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.35 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.35 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.66 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.55;
+                center = Offset(baseW * 0.50, baseH * 0.88 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.55;
+                center = Offset(baseW * 0.82, baseH * 0.58 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.45;
+                center = Offset(baseW * 0.18, baseH * 0.58 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else {
+            // 기본 캔버스는 가득 차게 밸런스 배치하되 겹침 제거
+            switch (type) {
+              case 'outer':
+                scale = 0.70;
+                center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.26 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.26 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, baseH * 0.60 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.55;
+                center = Offset(baseW * 0.50, baseH * 0.86 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.55;
+                center = Offset(baseW * 0.82, baseH * 0.50 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.45;
+                center = Offset(baseW * 0.18, baseH * 0.50 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          }
+        } else {
+          // [다중 격자 콜라주 모드] - 템플릿별로 Y축과 scale을 유연하게 조정하여 겹침 차단
+          if (_currentTemplate == 'polaroid') {
+            // 폴라로이드는 아래쪽 64px 마진을 감안하여 Y축 위치를 상향 축소 조절하며 모든 스케일을 55%로 줄임
+            switch (type) {
+              case 'outer':
+                scale = 0.55;
+                center = Offset(baseW * 0.22 + (index * 12.0), baseH * 0.20 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.55;
+                center = Offset(baseW * 0.78 + (index * 12.0), baseH * 0.20 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.55;
+                center = Offset(baseW * 0.22 + (index * 12.0), baseH * 0.54 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.55;
+                center = Offset(baseW * 0.78 + (index * 15.0), baseH * 0.54 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.50;
+                center = Offset(baseW * 0.50 + (index * 15.0), baseH * 0.38 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.40;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.10 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else if (_currentTemplate == 'editorial') {
+            // 에디토리얼 상단 글귀와 하단 라인 간섭을 피해 Y축을 위아래로 넓히고 겹침 완전 차단
+            switch (type) {
+              case 'outer':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.38 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.65;
+                center = Offset(baseW * 0.76 + (index * 12.0), baseH * 0.38 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.72 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.60;
+                center = Offset(baseW * 0.76 + (index * 15.0), baseH * 0.72 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.52;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.55 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.42;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.25 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else if (_currentTemplate == 'catalog') {
+            // 카탈로그는 좌상단 검은색 띠 헤더 높이만큼 Y축을 6%씩 하향 조정하고 가로/세로 분산
+            switch (type) {
+              case 'outer':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.35 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.65;
+                center = Offset(baseW * 0.76 + (index * 12.0), baseH * 0.35 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.70 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.60;
+                center = Offset(baseW * 0.76 + (index * 15.0), baseH * 0.70 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.52;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.52 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.42;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.22 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          } else {
+            // 기본 캔버스는 노멀 분할 구도로 비겹침 배열
+            switch (type) {
+              case 'outer':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.26 + (index * 10.0));
+                break;
+              case 'top':
+                scale = 0.65;
+                center = Offset(baseW * 0.76 + (index * 12.0), baseH * 0.26 + (index * 10.0));
+                break;
+              case 'bottom':
+                scale = 0.65;
+                center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.66 + (index * 15.0));
+                break;
+              case 'shoes':
+                scale = 0.60;
+                center = Offset(baseW * 0.76 + (index * 15.0), baseH * 0.66 + (index * 10.0));
+                break;
+              case 'bag':
+                scale = 0.52;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.46 + (index * 15.0));
+                rotation = -0.10;
+                break;
+              case 'accessory':
+                scale = 0.42;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.15 + (index * 15.0));
+                rotation = 0.08;
+                break;
+            }
+          }
+        }
+
+        final double itemSize = 150.0 * scale;
+        final double dx = center.dx - (itemSize * 0.5);
+        final double dy = center.dy - (itemSize * 0.5);
+
+        item.offset = Offset(dx, dy);
+        item.scale = scale;
+        item.rotation = rotation;
+      }
+
+      // 레이어 순서(Z-Index) 정렬
+      _items.sort((a, b) {
+        final aType = _getArrangementRank(a.category);
+        final bType = _getArrangementRank(b.category);
+        return aType.compareTo(bType);
+      });
+
+      _selectedIndex = null; // 선택 해제
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('코디 아이템들이 기하학적으로 자동 정렬되었습니다! ✨'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  int _getArrangementRank(String category) {
+    final cat = category.toLowerCase();
+    if (cat.contains('아우터') || cat.contains('자켓') || cat.contains('코트') || cat.contains('가디건') || cat.contains('outer') || cat.contains('jacket')) {
+      return 0; // 맨 뒤
+    } else if (cat.contains('상의') || cat.contains('셔츠') || cat.contains('티셔츠') || cat.contains('니트') || cat.contains('top') || cat.contains('shirt')) {
+      return 1;
+    } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
+      return 2;
+    } else if (cat.contains('신발') || cat.contains('슈즈') || cat.contains('shoes') || cat.contains('sneakers')) {
+      return 3;
+    } else if (cat.contains('가방') || cat.contains('백') || cat.contains('bag')) {
+      return 4;
+    }
+    return 5; // 액세서리는 맨 앞
+  }
+
+  void _showSavedOotdsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.only(top: 16, bottom: 24),
+          height: 350,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.collections_bookmark_outlined, color: Colors.black87, size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          '저장된 코디 아이디어',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: _isLoadingOotds
+                    ? const Center(child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                    : _plannedOotds.isEmpty
+                        ? const Center(child: Text('저장된 코디 아이디어가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.grey)))
+                        : GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.8,
+                            ),
+                            itemCount: _plannedOotds.length,
+                            itemBuilder: (context, index) {
+                              final doc = _plannedOotds[index];
+                              final data = doc.data() as Map<String, dynamic>;
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => PlannedOotdDetailScreen(plannedOotdId: doc.id)),
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.grey[100],
+                                    border: Border.all(color: Colors.grey[200]!),
+                                    image: DecorationImage(
+                                      image: NetworkImage(data['imageUrl'] ?? ''),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecommendationSection({bool isBottomSheet = false}) {
     if (_items.isEmpty) {
       return Container(
-        height: 220,
+        height: isBottomSheet ? double.infinity : 220,
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+          border: isBottomSheet ? null : Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
         ),
         alignment: Alignment.center,
         child: const Text(
@@ -674,10 +1301,10 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     }
 
     return Container(
-      height: 220,
+      height: isBottomSheet ? double.infinity : 220,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+        border: isBottomSheet ? null : Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -854,6 +1481,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
 
                     return GestureDetector(
                       onTap: () {
+                        if (isBottomSheet) {
+                          Navigator.pop(context);
+                        }
                         // 추천 옷 탭 시 캔버스에 추가
                         final newItem = CanvasItem(
                           docId: doc.id,
@@ -938,18 +1568,68 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     }
     return url;
   }
+
+  Widget _buildTemplateChip(String templateId, String name) {
+    final isSelected = _currentTemplate == templateId;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentTemplate = templateId;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              templateId == 'none'
+                  ? Icons.dashboard_customize_outlined
+                  : templateId == 'editorial'
+                      ? Icons.menu_book_rounded
+                      : templateId == 'catalog'
+                          ? Icons.grid_view_rounded
+                          : Icons.filter_frames_rounded,
+              size: 14,
+              color: isSelected ? Colors.white : Colors.black54,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // 점선 그리드 배경 그리기
 class GridPainter extends CustomPainter {
+  final Color? color;
+  final double spacing;
+
+  GridPainter({this.color, this.spacing = 20.0});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = color ?? Colors.grey.withOpacity(0.2)
       ..strokeWidth = 1;
 
-    const double spacing = 20.0;
-    
     for (double i = 0; i < size.width; i += spacing) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
     }

@@ -26,6 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _temperature;
   int? _weatherLevel;
   bool _isWeatherLoading = true;
+  bool _isWeatherExpanded = false; // 기본값 접힘
+
+  // 옷장 폴더용 변수 추가
+  String _selectedFolderId = 'all';
+  bool _isEditMode = false;
+  final Set<String> _selectedClothingIds = {};
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'ALL', 'icon': Icons.all_inclusive_rounded},
@@ -74,6 +80,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: (_isEditMode && _selectedClothingIds.isNotEmpty)
+          ? SafeArea(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_selectedClothingIds.length}개 선택됨',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    TextButton.icon(
+                      onPressed: _showBulkFolderAssignDialog,
+                      icon: const Icon(Icons.folder_open_rounded, color: Colors.white, size: 18),
+                      label: const Text('폴더에 담기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
       appBar: AppBar(
         title: const Text(
           'MY CLOSET',
@@ -180,30 +224,80 @@ class _HomeScreenState extends State<HomeScreen> {
 
           final clothes = snapshot.data?.docs ?? [];
           
-          final filteredClothes = _selectedCategory == 'ALL' 
-            ? clothes 
-            : clothes.where((doc) {
+          // 1. 폴더 및 카테고리 필터링 (다중 편집 모드일 때는 폴더 필터링을 임시 해제하여 전체 옷 중에서 골라 담을 수 있게 합니다)
+          var filteredClothes = clothes;
+          if (!_isEditMode) {
+            if (_selectedFolderId == 'unclassified') {
+              filteredClothes = filteredClothes.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
-                return data['category'] == _selectedCategory;
+                final List<dynamic>? folderIds = data['folderIds'];
+                final oldFolderId = data['folderId'];
+                final hasNoFolderIds = folderIds == null || folderIds.isEmpty;
+                final hasNoOldFolderId = oldFolderId == null || oldFolderId.toString().isEmpty;
+                return hasNoFolderIds && hasNoOldFolderId;
               }).toList();
+            } else if (_selectedFolderId != 'all') {
+              filteredClothes = filteredClothes.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final List<dynamic>? folderIds = data['folderIds'];
+                final oldFolderId = data['folderId'];
+                final inNewFolderIds = folderIds != null && folderIds.contains(_selectedFolderId);
+                final inOldFolderId = oldFolderId == _selectedFolderId;
+                return inNewFolderIds || inOldFolderId;
+              }).toList();
+            }
+          }
+
+          if (_selectedCategory != 'ALL') {
+            filteredClothes = filteredClothes.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return data['category'] == _selectedCategory;
+            }).toList();
+          }
 
           return Column(
             children: [
               _buildWeatherRecommendationCard(clothes, tagCounts),
+              _buildFolderBar(), // 옷장 폴더 바 추가
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0, bottom: 4.0),
+                padding: const EdgeInsets.only(left: 16.0, top: 8.0, right: 16.0, bottom: 4.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       _selectedCategory == 'ALL' ? 'All Items' : _selectedCategory,
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(width: 6),
                     Text(
-                      _selectedCategory == 'ALL'
-                          ? '${clothes.length} items · ${_categories.length - 1} categories'
-                          : '${filteredClothes.length} items',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      '(${filteredClothes.length})',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _isEditMode = !_isEditMode;
+                          _selectedClothingIds.clear();
+                        });
+                      },
+                      icon: Icon(
+                        _isEditMode ? Icons.close_rounded : Icons.check_box_outlined,
+                        size: 16,
+                        color: _isEditMode ? Colors.redAccent : Colors.black87,
+                      ),
+                      label: Text(
+                        _isEditMode ? '선택 취소' : '옷 다중 선택',
+                        style: TextStyle(
+                          color: _isEditMode ? Colors.redAccent : Colors.black87,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
                   ],
                 ),
@@ -339,14 +433,26 @@ class _HomeScreenState extends State<HomeScreen> {
     String subCategory = item['subCategory'] ?? '';
     String subtitle = subCategory.isNotEmpty ? '$category · $subCategory' : category;
 
+    final bool isSelected = _selectedClothingIds.contains(docId);
+
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ClothingDetailScreen(docId: docId, item: item),
-          ),
-        );
+        if (_isEditMode) {
+          setState(() {
+            if (isSelected) {
+              _selectedClothingIds.remove(docId);
+            } else {
+              _selectedClothingIds.add(docId);
+            }
+          });
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ClothingDetailScreen(docId: docId, item: item),
+            ),
+          );
+        }
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,6 +525,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                if (_isEditMode)
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white70,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        color: isSelected ? Colors.black : Colors.black45,
+                        size: 20,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -548,170 +670,582 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          '오늘의 기온: ${_temperature!.toStringAsFixed(1)}°C',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '지금 날씨는 $label',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    '스마트 추천 💡',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Colors.white10),
-          if (scoredItems.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              child: Center(
-                child: Text(
-                  '이 날씨에 추천할 수 있는 의류가 아직 없습니다.\n새로운 옷과 OOTD를 더 등록해 보세요!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
-                ),
-              ),
-            )
-          else
-            Container(
-              height: 145,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: scoredItems.length,
-                itemBuilder: (context, index) {
-                  final item = scoredItems[index];
-                  final data = item['data'] as Map<String, dynamic>;
-                  final String docId = item['docId'];
-                  final int score = item['score'];
-
-                  String color = data['color'] ?? '';
-                  String pattern = data['pattern'] ?? '';
-                  String title = '$color $pattern'.trim();
-                  if (title.isEmpty) title = data['brand'] ?? '';
-                  if (title.isEmpty) title = data['category'] ?? '옷';
-
-                  final isBest = score >= 10;
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ClothingDetailScreen(docId: docId, item: data),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 90,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isWeatherExpanded = !_isWeatherExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Expanded(
-                            child: Stack(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                    image: DecorationImage(
-                                      image: NetworkImage(data['imageUrl'] ?? ''),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  left: 4,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isBest ? Colors.redAccent : Colors.blueAccent,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      isBest ? 'Best 🔥' : '추천 ⭐',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
+                          const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 18),
+                          const SizedBox(width: 6),
                           Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            '오늘의 기온: ${_temperature!.toStringAsFixed(1)}°C',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            data['category'] ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 9,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
+                      const SizedBox(height: 4),
+                      Text(
+                        '지금 날씨는 $label',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          '스마트 추천 💡',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isWeatherExpanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: !_isWeatherExpanded
+                ? const SizedBox.shrink()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(height: 1, color: Colors.white10),
+                      if (scoredItems.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                          child: Center(
+                            child: Text(
+                              '이 날씨에 추천할 수 있는 의류가 아직 없습니다.\n새로운 옷과 OOTD를 더 등록해 보세요!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 145,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: scoredItems.length,
+                            itemBuilder: (context, index) {
+                              final item = scoredItems[index];
+                              final data = item['data'] as Map<String, dynamic>;
+                              final String docId = item['docId'];
+                              final int score = item['score'];
+
+                              String color = data['color'] ?? '';
+                              String pattern = data['pattern'] ?? '';
+                              String title = '$color $pattern'.trim();
+                              if (title.isEmpty) title = data['brand'] ?? '';
+                              if (title.isEmpty) title = data['category'] ?? '옷';
+
+                              final isBest = score >= 10;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ClothingDetailScreen(docId: docId, item: data),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 90,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(10),
+                                                image: DecorationImage(
+                                                  image: NetworkImage(data['imageUrl'] ?? ''),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              left: 4,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: isBest ? Colors.redAccent : Colors.blueAccent,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  isBest ? 'Best 🔥' : '추천 ⭐',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        data['category'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+          ),
         ],
       ),
+    );
+  }
+
+  // ==== 옷장 폴더 UI 로직 추가 ====
+
+  Widget _buildFolderBar() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firebaseService.getClosetFoldersStream(),
+      builder: (context, snapshot) {
+        final folders = snapshot.data ?? [];
+        
+        return Container(
+          height: 60,
+          color: Colors.white,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            children: [
+              _buildFolderChip(id: 'all', name: '전체'),
+              const SizedBox(width: 8),
+              _buildFolderChip(id: 'unclassified', name: '미분류'),
+              const SizedBox(width: 8),
+              ...folders.map((folder) => Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: _buildFolderChip(
+                  id: folder['id'] as String,
+                  name: folder['name'] as String,
+                  isDeletable: true,
+                ),
+              )),
+              IconButton(
+                icon: const Icon(
+                  Icons.create_new_folder_outlined,
+                  color: Colors.black54,
+                  size: 20,
+                ),
+                onPressed: _showCreateFolderDialog,
+                tooltip: '폴더 만들기',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFolderChip({required String id, required String name, bool isDeletable = false}) {
+    final isSelected = _selectedFolderId == id;
+    return GestureDetector(
+      onTap: () {
+        if (_selectedFolderId != id) {
+          setState(() {
+            _selectedFolderId = id;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDeletable)
+              Icon(Icons.folder_outlined, size: 14, color: isSelected ? Colors.white70 : Colors.grey),
+            if (isDeletable)
+              const SizedBox(width: 4),
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
+            ),
+            if (isDeletable && isSelected) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showFolderManageOptions(id, name),
+                child: Icon(
+                  Icons.settings_outlined,
+                  size: 14,
+                  color: isSelected ? Colors.white : Colors.black54,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateFolderDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('새 옷장 폴더 만들기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: '폴더 이름을 입력하세요 (예: 여름 셔츠)',
+              hintStyle: TextStyle(fontSize: 14),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  try {
+                    await _firebaseService.createClosetFolder(name);
+                    if (mounted) Navigator.pop(context);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('폴더 생성 실패: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('만들기', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFolderManageOptions(String folderId, String name) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                  '폴더 관리: $name',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.black87),
+                title: const Text('이름 변경하기'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRenameFolderDialog(folderId, name);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                title: const Text('삭제하기', style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteFolderConfirmDialog(folderId, name);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRenameFolderDialog(String folderId, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('폴더 이름 변경', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: '새 폴더 이름을 입력하세요',
+              hintStyle: TextStyle(fontSize: 14),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final newName = controller.text.trim();
+                if (newName.isNotEmpty && newName != currentName) {
+                  try {
+                    await _firebaseService.updateClosetFolder(folderId, newName);
+                    if (mounted) Navigator.pop(context);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('이름 변경 실패: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('변경', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteFolderConfirmDialog(String folderId, String name) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('폴더 삭제', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: Text(
+            '\'$name\' 폴더를 삭제하시겠습니까?\n폴더를 삭제해도 옷장 안의 옷들은 삭제되지 않고 [미분류] 상태로 보관됩니다.',
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await _firebaseService.deleteClosetFolder(folderId);
+                  setState(() {
+                    if (_selectedFolderId == folderId) {
+                      _selectedFolderId = 'all';
+                    }
+                  });
+                  if (mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('폴더 삭제 실패: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('삭제', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBulkFolderAssignDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        List<String> tempSelectedFolderIds = [];
+        if (_selectedFolderId != 'all' && _selectedFolderId != 'unclassified') {
+          tempSelectedFolderIds.add(_selectedFolderId);
+        }
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text('선택한 옷 폴더 담기 (중복 가능)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _firebaseService.getClosetFoldersStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.black));
+                    }
+                    final folders = snapshot.data ?? [];
+                    if (folders.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Text(
+                          '생성된 옷장 폴더가 없습니다. 폴더를 먼저 생성해 주세요.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                      );
+                    }
+                    
+                    return ListView(
+                      shrinkWrap: true,
+                      children: folders.map((folder) {
+                        final String id = folder['id'] as String;
+                        final isChecked = tempSelectedFolderIds.contains(id);
+                        return CheckboxListTile(
+                          title: Text(folder['name'] as String),
+                          value: isChecked,
+                          activeColor: Colors.black,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              if (val == true) {
+                                tempSelectedFolderIds.add(id);
+                              } else {
+                                tempSelectedFolderIds.remove(id);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (tempSelectedFolderIds.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('폴더를 1개 이상 선택해 주세요.')),
+                      );
+                      return;
+                    }
+                    try {
+                      await _firebaseService.addClothesToFolders(
+                        _selectedClothingIds.toList(),
+                        tempSelectedFolderIds,
+                      );
+                      setState(() {
+                        _isEditMode = false;
+                        _selectedClothingIds.clear();
+                      });
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('선택한 옷들이 폴더에 추가되었습니다.')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('일괄 담기 실패: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('추가', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

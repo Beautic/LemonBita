@@ -52,6 +52,9 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   int _washInterval = 0;
   int _lastWashedCount = 0;
 
+  // 옷장 폴더 상태 변수 추가
+  List<String> _selectedFolderIds = [];
+
   final ImagePicker _picker = ImagePicker();
   Uint8List? _localImageBytes;
   Uint8List? _originalLocalImageBytes;
@@ -119,6 +122,15 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
 
     _washInterval = widget.item['washInterval'] ?? 0;
     _lastWashedCount = widget.item['lastWashedCount'] ?? 0;
+    
+    final List<dynamic>? rawFolderIds = widget.item['folderIds'];
+    if (rawFolderIds != null) {
+      _selectedFolderIds = List<String>.from(rawFolderIds);
+    } else if (widget.item['folderId'] != null && widget.item['folderId'].toString().isNotEmpty) {
+      _selectedFolderIds = [widget.item['folderId'].toString()];
+    } else {
+      _selectedFolderIds = [];
+    }
     
   }
 
@@ -206,24 +218,28 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
         imageUrlToSave = await _firebaseService.uploadImage(_localImageBytes!, 'png');
       }
 
+      final Map<String, dynamic> updateData = {
+        'imageUrl': imageUrlToSave,
+        'brand': _brandController.text,
+        'size': _sizeController.text,
+        'tags': _tagsController.text,
+        'memo': _memoController.text,
+        'color': _colorController.text,
+        'pattern': _patternController.text,
+        'material': _materialController.text,
+        'fit': _fitController.text,
+        'length': _lengthController.text,
+        'category': _selectedCategory,
+        'subCategory': _selectedSubCategory,
+        'washInterval': _washInterval,
+        'lastWashedCount': _lastWashedCount,
+        'folderIds': _selectedFolderIds,
+        'folderId': FieldValue.delete(), // 이전 단일 folderId 필드 제거
+      };
+
       await _firebaseService.updateClothingData(
         docId: widget.docId,
-        updatedData: {
-          'imageUrl': imageUrlToSave,
-          'brand': _brandController.text,
-          'size': _sizeController.text,
-          'tags': _tagsController.text,
-          'memo': _memoController.text,
-          'color': _colorController.text,
-          'pattern': _patternController.text,
-          'material': _materialController.text,
-          'fit': _fitController.text,
-          'length': _lengthController.text,
-          'category': _selectedCategory,
-          'subCategory': _selectedSubCategory,
-          'washInterval': _washInterval,
-          'lastWashedCount': _lastWashedCount,
-        },
+        updatedData: updateData,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -277,12 +293,105 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     }
   }
 
+  void _showFolderMoveDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        List<String> tempSelectedIds = List<String>.from(_selectedFolderIds);
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text('옷장 폴더 지정 (중복 가능)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _firebaseService.getClosetFoldersStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.black));
+                    }
+                    final folders = snapshot.data ?? [];
+                    if (folders.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Text(
+                          '생성된 옷장 폴더가 없습니다. 홈 화면에서 폴더를 먼저 생성해 주세요.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                      );
+                    }
+                    
+                    return ListView(
+                      shrinkWrap: true,
+                      children: folders.map((folder) {
+                        final String id = folder['id'] as String;
+                        final isChecked = tempSelectedIds.contains(id);
+                        return CheckboxListTile(
+                          title: Text(folder['name'] as String),
+                          value: isChecked,
+                          activeColor: Colors.black,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              if (val == true) {
+                                tempSelectedIds.add(id);
+                              } else {
+                                tempSelectedIds.remove(id);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      await _firebaseService.updateClothingFolders(widget.docId, tempSelectedIds);
+                      setState(() {
+                        _selectedFolderIds = tempSelectedIds;
+                      });
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('옷의 폴더가 변경되었습니다.')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('폴더 이동 실패: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('적용', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('옷 정보 정리', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_open, color: Colors.black87),
+            onPressed: _showFolderMoveDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
             onPressed: _deleteItem,

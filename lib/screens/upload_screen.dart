@@ -21,6 +21,7 @@ class _UploadScreenState extends State<UploadScreen> {
   String _selectedCategory = '상의';
   String _selectedSubCategory = '';
   bool _isLoading = false;
+  List<String> _selectedFolderIds = [];
   
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -482,6 +483,54 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
             ],
 
+            const SizedBox(height: 24),
+
+            // 5. 폴더 선택
+            const Text('보관할 폴더 (중복 선택 가능)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _firebaseService.getClosetFoldersStream(),
+              builder: (context, snapshot) {
+                final folders = snapshot.data ?? [];
+                if (folders.isEmpty) {
+                  return Text(
+                    '생성된 폴더가 없습니다. 홈 화면에서 폴더를 먼저 생성해 보세요.',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  );
+                }
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: folders.map((folder) {
+                    final String id = folder['id'];
+                    final String name = folder['name'];
+                    final isSelected = _selectedFolderIds.contains(id);
+                    return FilterChip(
+                      label: Text(name),
+                      selected: isSelected,
+                      selectedColor: Colors.black,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: Colors.grey[200],
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedFolderIds.add(id);
+                          } else {
+                            _selectedFolderIds.remove(id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
             const SizedBox(height: 48),
 
             // 3. 저장 버튼
@@ -514,6 +563,7 @@ class _UploadScreenState extends State<UploadScreen> {
                           subCategory: _selectedSubCategory,
                           tags: '#$_selectedCategory',
                           color: _colorController.text,
+                          folderIds: _selectedFolderIds,
                         );
 
                         if (mounted) {
