@@ -155,6 +155,32 @@ class FirebaseService {
     return _firestore.collection('users').doc(currentUserId).snapshots();
   }
 
+  // 유저별 선호 카테고리 필터 목록 가져오기 (기본값은 모든 카테고리 노출)
+  Future<List<String>> getActiveCategories() async {
+    if (currentUserId == null) return const [];
+    try {
+      final doc = await _firestore.collection('users').doc(currentUserId).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['activeCategories'] != null) {
+          return List<String>.from(data['activeCategories']);
+        }
+      }
+    } catch (e) {
+      debugPrint("Failed to fetch active categories: $e");
+    }
+    // 기본 설정: 모든 카테고리 노출
+    return ['상의', '원피스', '바지', '치마', '아우터', '신발', '가방', '모자', '악세서리', '기타'];
+  }
+
+  // 유저별 선호 카테고리 필터 목록 업데이트
+  Future<void> updateActiveCategories(List<String> categories) async {
+    if (currentUserId == null) return;
+    await _firestore.collection('users').doc(currentUserId).set({
+      'activeCategories': categories,
+    }, SetOptions(merge: true));
+  }
+
   // 이메일 로그인
   Future<AuthUser> loginWithEmail(String email, String password) async {
     try {

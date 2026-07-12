@@ -47,12 +47,24 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': '기타', 'icon': Icons.more_horiz_rounded},
   ];
 
+  List<String> _activeCategories = ['상의', '원피스', '바지', '치마', '아우터', '신발', '가방', '모자', '악세서리', '기타'];
+
   @override
   void initState() {
     super.initState();
     _clothesStream = _firebaseService.getClothesStream();
     _ootdStream = _firebaseService.getOOTDStream();
     _loadWeather();
+    _loadActiveCategories();
+  }
+
+  Future<void> _loadActiveCategories() async {
+    final list = await _firebaseService.getActiveCategories();
+    if (mounted) {
+      setState(() {
+        _activeCategories = list;
+      });
+    }
   }
 
   Future<void> _loadWeather() async {
@@ -263,8 +275,10 @@ class _HomeScreenState extends State<HomeScreen> {
             categoryCounts[catName] = (categoryCounts[catName] ?? 0) + 1;
           }
 
-          // ALL 칩을 제외한 카테고리 복사본 정렬
-          final dynamicCategories = _categories.where((cat) => cat['name'] != 'ALL').toList();
+          // ALL 칩을 제외하고, 유저가 선택한 activeCategories 에 포함되는 카테고리만 동적 노출
+          final dynamicCategories = _categories.where((cat) {
+            return cat['name'] != 'ALL' && _activeCategories.contains(cat['name']);
+          }).toList();
           dynamicCategories.sort((a, b) {
             final countA = categoryCounts[a['name']] ?? 0;
             final countB = categoryCounts[b['name']] ?? 0;
@@ -370,6 +384,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 상단 인스타 스토리 형태의 카테고리
   Widget _buildStoryCategories(List<Map<String, dynamic>> finalCategories) {
+    // 설정 칩을 덧붙인 최종 렌더링 리스트
+    final List<Map<String, dynamic>> renderedCategories = [
+      ...finalCategories,
+      {'name': '설정', 'icon': Icons.settings_rounded, 'isSettingChip': true},
+    ];
+
     return Container(
       height: 100,
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -377,13 +397,20 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: finalCategories.length,
+        itemCount: renderedCategories.length,
         itemBuilder: (context, index) {
-          final category = finalCategories[index];
+          final category = renderedCategories[index];
+          final isSetting = category['isSettingChip'] == true;
           final isSelected = _selectedCategory == category['name'];
           
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = category['name']),
+            onTap: () {
+              if (isSetting) {
+                _showCategoryCustomizerBottomSheet();
+              } else {
+                setState(() => _selectedCategory = category['name']);
+              }
+            },
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Column(
@@ -394,30 +421,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? Colors.black : Colors.grey[300]!,
+                        color: isSetting 
+                            ? Colors.grey[300]! 
+                            : (isSelected ? Colors.black : Colors.grey[300]!),
                         width: isSelected ? 2.5 : 1.0,
                       ),
-                      color: Colors.white,
+                      color: isSetting ? const Color(0xFFF1F3F5) : Colors.white,
                     ),
-                    child: category.containsKey('imageAsset')
-                        ? Center(
-                            child: Image.asset(
-                              category['imageAsset'],
-                              width: 32,
-                              height: 32,
-                              color: isSelected ? Colors.black : Colors.grey[600],
-                              errorBuilder: (context, error, stackTrace) => Icon(
-                                Icons.category_rounded,
+                    child: isSetting
+                        ? Icon(
+                            category['icon'],
+                            color: Colors.grey[700],
+                            size: 22,
+                          )
+                        : (category.containsKey('imageAsset')
+                            ? Center(
+                                child: Image.asset(
+                                  category['imageAsset'],
+                                  width: 32,
+                                  height: 32,
+                                  color: isSelected ? Colors.black : Colors.grey[600],
+                                  errorBuilder: (context, error, stackTrace) => Icon(
+                                    Icons.category_rounded,
+                                    color: isSelected ? Colors.black : Colors.grey[600],
+                                    size: 24,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                category['icon'],
                                 color: isSelected ? Colors.black : Colors.grey[600],
                                 size: 24,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            category['icon'],
-                            color: isSelected ? Colors.black : Colors.grey[600],
-                            size: 24,
-                          ),
+                              )),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -434,6 +469,128 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
+    );
+  }
+
+  // 선호 카테고리 커스터마이저 바텀시트
+  void _showCategoryCustomizerBottomSheet() {
+    final List<String> allPresetNames = ['상의', '원피스', '바지', '치마', '아우터', '신발', '가방', '모자', '악세서리', '기타'];
+    List<String> tempSelected = List<String>.from(_activeCategories);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '카테고리 칩 설정 ⚙️',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(context),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '자주 쓰는 카테고리만 골라서 메인 화면에 노출할 수 있습니다.',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        itemCount: allPresetNames.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 3.5,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemBuilder: (context, index) {
+                          final name = allPresetNames[index];
+                          final isChecked = tempSelected.contains(name);
+                          return CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              name,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                            value: isChecked,
+                            activeColor: Colors.black,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (bool? value) {
+                              setSheetState(() {
+                                if (value == true) {
+                                  if (!tempSelected.contains(name)) {
+                                    tempSelected.add(name);
+                                  }
+                                } else {
+                                  if (tempSelected.length > 1) {
+                                    tempSelected.remove(name);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('최소 하나의 카테고리는 선택되어야 합니다.')),
+                                    );
+                                  }
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        onPressed: () async {
+                          await _firebaseService.updateActiveCategories(tempSelected);
+                          if (mounted) {
+                            setState(() {
+                              _activeCategories = tempSelected;
+                              if (!_activeCategories.contains(_selectedCategory) && _selectedCategory != 'ALL') {
+                                _selectedCategory = 'ALL';
+                              }
+                            });
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('카테고리 노출 설정이 저장되었습니다.')),
+                            );
+                          }
+                        },
+                        child: const Text('설정 저장하기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
