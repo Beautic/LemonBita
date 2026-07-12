@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v5.3.3] - 2026-07-12
+
+### Added
+- **원피스 카테고리 자동 정렬 및 레이어드 매칭 고도화**:
+  - 원피스(`onepiece` / `dress` / `드레스`)가 캔버스에 올려졌을 때 기타 액세서리로 오분류되는 알고리즘 오류를 해결하여 독자 코디 항목으로 신설.
+  - 여성들이 원피스 밑에 바지(하의)를 함께 입는 레이어드 코디 믹스매치 시나리오를 자동 정렬에 유기적으로 병합. 원피스 Y축을 위쪽(약 30%), 바지 Y축을 중간 아래쪽(약 60%)으로 상호 겹침 조절하여 원피스 단 밑으로 바지가 흘러나오도록 보정.
+  - Z-Index 랭킹 재배치를 통해 원피스가 바지 위쪽으로 레이어로 덮이도록 `bottom`(랭크 2)보다 `onepiece`(랭크 3)를 높여 그려지게 고도화.
+- **아이폰(iOS Safari) 아이콘 깨짐/미노출 예외 패치**:
+  - Flutter CanvasKit 렌더러가 Safari에서 Google Web Fonts 리소스(Material Icons)를 간헐적으로 차단하거나 로드에 실패하는 버그를 원천 봉쇄.
+  - Flutter Web 빌드 렌더러를 모바일에 최적화된 `--web-renderer html` 로 전면 고정 전환하고, `web/index.html`에 Google Fonts Material Icons 링크 및 강제 CSS font-family 클래스를 매핑하여 100% 정상 노출 유도 완료.
+
 ## [v5.3.2] - 2026-07-12
 
 ### Changed

@@ -848,6 +848,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         'outer': [],
         'top': [],
         'bottom': [],
+        'onepiece': [],
         'shoes': [],
         'bag': [],
         'accessory': [],
@@ -857,6 +858,8 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         final cat = item.category.toLowerCase();
         if (cat.contains('아우터') || cat.contains('자켓') || cat.contains('코트') || cat.contains('가디건') || cat.contains('outer') || cat.contains('jacket')) {
           categorizedItems['outer']!.add(item);
+        } else if (cat.contains('원피스') || cat.contains('드레스') || cat.contains('onepiece') || cat.contains('one-piece') || cat.contains('dress')) {
+          categorizedItems['onepiece']!.add(item);
         } else if (cat.contains('상의') || cat.contains('셔츠') || cat.contains('티셔츠') || cat.contains('니트') || cat.contains('top') || cat.contains('shirt')) {
           categorizedItems['top']!.add(item);
         } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
@@ -871,10 +874,11 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
       }
 
       // 2. 가변형 레이아웃 분기 판단
-      // 캔버스 내 메인 의류들이 각각 1개 이하이고 총 개수가 3개 이하인 경우 '단일 1열 착장 세트 모드'로 분류
-      final bool isSingleOutfitSet = _items.length <= 3 &&
+      // 캔버스 내 메인 의류들이 각각 1개 이하이고 총 개수가 4개 이하인 경우 '단일 1열 착장 세트 모드'로 분류
+      final bool isSingleOutfitSet = _items.length <= 4 &&
                                     categorizedItems['top']!.length <= 1 &&
                                     categorizedItems['bottom']!.length <= 1 &&
+                                    categorizedItems['onepiece']!.length <= 1 &&
                                     categorizedItems['outer']!.length <= 1 &&
                                     categorizedItems['shoes']!.length <= 1;
 
@@ -885,6 +889,8 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         String type = 'accessory';
         if (cat.contains('아우터') || cat.contains('자켓') || cat.contains('코트') || cat.contains('가디건') || cat.contains('outer') || cat.contains('jacket')) {
           type = 'outer';
+        } else if (cat.contains('원피스') || cat.contains('드레스') || cat.contains('onepiece') || cat.contains('one-piece') || cat.contains('dress')) {
+          type = 'onepiece';
         } else if (cat.contains('상의') || cat.contains('셔츠') || cat.contains('티셔츠') || cat.contains('니트') || cat.contains('top') || cat.contains('shirt')) {
           type = 'top';
         } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
@@ -905,11 +911,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         if (isSingleOutfitSet) {
           // [수직 1열 단일 코디 모드] - 템플릿별로 Y축을 유연하게 조정하여 텍스트 겹침 차단
           if (_currentTemplate == 'polaroid') {
-            // 폴라로이드는 하단 64px의 텍스트/여백을 침범하지 않도록 Y축 오프셋을 상향 밀착 정렬하며, 옷 크기를 축소하여 겹침 방지
+            final hasOnepieceAndBottom = categorizedItems['onepiece']!.isNotEmpty && categorizedItems['bottom']!.isNotEmpty;
             switch (type) {
               case 'outer':
                 scale = 0.58;
                 center = Offset(baseW * 0.16 + (index * 12.0), baseH * 0.24 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.58;
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.28 : baseH * 0.35 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.58;
@@ -917,7 +927,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bottom':
                 scale = 0.58;
-                center = Offset(baseW * 0.50, baseH * 0.48 + (index * 15.0));
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.54 : baseH * 0.48 + (index * 15.0));
                 break;
               case 'shoes':
                 scale = 0.50;
@@ -935,11 +945,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else if (_currentTemplate == 'editorial') {
-            // 에디토리얼은 상단 에센셜 밑의 작은 글자("STYLE DIARY & ARCHIVE" 약 90px 점유)를 침범하지 않도록 Y축 시작점을 대폭 하향 조정하고, 상하/좌우 겹침을 완전 제거
+            final hasOnepieceAndBottom = categorizedItems['onepiece']!.isNotEmpty && categorizedItems['bottom']!.isNotEmpty;
             switch (type) {
               case 'outer':
                 scale = 0.70;
                 center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.38 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.42 : baseH * 0.48 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.70;
@@ -947,7 +961,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bottom':
                 scale = 0.70;
-                center = Offset(baseW * 0.50, baseH * 0.68 + (index * 15.0));
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.72 : baseH * 0.68 + (index * 15.0));
                 break;
               case 'shoes':
                 scale = 0.55;
@@ -965,11 +979,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else if (_currentTemplate == 'catalog') {
-            // 카탈로그는 좌상단 블랙 타이틀 바 높이를 회피하여 정렬하며, 겹침 제거
+            final hasOnepieceAndBottom = categorizedItems['onepiece']!.isNotEmpty && categorizedItems['bottom']!.isNotEmpty;
             switch (type) {
               case 'outer':
                 scale = 0.70;
                 center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.35 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.40 : baseH * 0.46 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.70;
@@ -977,7 +995,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bottom':
                 scale = 0.70;
-                center = Offset(baseW * 0.50, baseH * 0.66 + (index * 15.0));
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.70 : baseH * 0.66 + (index * 15.0));
                 break;
               case 'shoes':
                 scale = 0.55;
@@ -995,11 +1013,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else {
-            // 기본 캔버스는 가득 차게 밸런스 배치하되 겹침 제거
+            final hasOnepieceAndBottom = categorizedItems['onepiece']!.isNotEmpty && categorizedItems['bottom']!.isNotEmpty;
             switch (type) {
               case 'outer':
                 scale = 0.70;
                 center = Offset(baseW * 0.18 + (index * 12.0), baseH * 0.26 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.70;
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.36 : baseH * 0.40 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.70;
@@ -1007,7 +1029,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bottom':
                 scale = 0.70;
-                center = Offset(baseW * 0.50, baseH * 0.60 + (index * 15.0));
+                center = Offset(baseW * 0.50, hasOnepieceAndBottom ? baseH * 0.65 : baseH * 0.60 + (index * 15.0));
                 break;
               case 'shoes':
                 scale = 0.55;
@@ -1028,11 +1050,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         } else {
           // [다중 격자 콜라주 모드] - 템플릿별로 Y축과 scale을 유연하게 조정하여 겹침 차단
           if (_currentTemplate == 'polaroid') {
-            // 폴라로이드는 아래쪽 64px 마진을 감안하여 Y축 위치를 상향 축소 조절하며 모든 스케일을 55%로 줄임
             switch (type) {
               case 'outer':
                 scale = 0.55;
                 center = Offset(baseW * 0.22 + (index * 12.0), baseH * 0.20 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.55;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.32 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.55;
@@ -1048,7 +1073,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bag':
                 scale = 0.50;
-                center = Offset(baseW * 0.50 + (index * 15.0), baseH * 0.38 + (index * 15.0));
+                center = Offset(baseW * 0.50 + (index * 15.0), baseH * 0.44 + (index * 15.0));
                 rotation = -0.10;
                 break;
               case 'accessory':
@@ -1058,11 +1083,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else if (_currentTemplate == 'editorial') {
-            // 에디토리얼 상단 글귀와 하단 라인 간섭을 피해 Y축을 위아래로 넓히고 겹침 완전 차단
             switch (type) {
               case 'outer':
                 scale = 0.65;
                 center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.38 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.65;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.48 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.65;
@@ -1078,7 +1106,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bag':
                 scale = 0.52;
-                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.55 + (index * 15.0));
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.58 + (index * 15.0));
                 rotation = -0.10;
                 break;
               case 'accessory':
@@ -1088,11 +1116,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else if (_currentTemplate == 'catalog') {
-            // 카탈로그는 좌상단 검은색 띠 헤더 높이만큼 Y축을 6%씩 하향 조정하고 가로/세로 분산
             switch (type) {
               case 'outer':
                 scale = 0.65;
                 center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.35 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.65;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.45 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.65;
@@ -1108,7 +1139,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bag':
                 scale = 0.52;
-                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.52 + (index * 15.0));
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.55 + (index * 15.0));
                 rotation = -0.10;
                 break;
               case 'accessory':
@@ -1118,11 +1149,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
             }
           } else {
-            // 기본 캔버스는 노멀 분할 구도로 비겹침 배열
             switch (type) {
               case 'outer':
                 scale = 0.65;
                 center = Offset(baseW * 0.24 + (index * 12.0), baseH * 0.26 + (index * 10.0));
+                break;
+              case 'onepiece':
+                scale = 0.65;
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.38 + (index * 10.0));
                 break;
               case 'top':
                 scale = 0.65;
@@ -1138,7 +1172,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 break;
               case 'bag':
                 scale = 0.52;
-                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.46 + (index * 15.0));
+                center = Offset(baseW * 0.50 + (index * 12.0), baseH * 0.48 + (index * 15.0));
                 rotation = -0.10;
                 break;
               case 'accessory':
@@ -1185,12 +1219,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
       return 1;
     } else if (cat.contains('하의') || cat.contains('바지') || cat.contains('팬츠') || cat.contains('스커트') || cat.contains('bottom') || cat.contains('pants')) {
       return 2;
+    } else if (cat.contains('원피스') || cat.contains('드레스') || cat.contains('onepiece') || cat.contains('one-piece') || cat.contains('dress')) {
+      return 3; // 하의보다 위, 신발보다 아래
     } else if (cat.contains('신발') || cat.contains('슈즈') || cat.contains('shoes') || cat.contains('sneakers')) {
-      return 3;
-    } else if (cat.contains('가방') || cat.contains('백') || cat.contains('bag')) {
       return 4;
+    } else if (cat.contains('가방') || cat.contains('백') || cat.contains('bag')) {
+      return 5;
     }
-    return 5; // 액세서리는 맨 앞
+    return 6; // 액세서리는 맨 앞
   }
 
   void _showSavedOotdsBottomSheet() {
