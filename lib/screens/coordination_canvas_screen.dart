@@ -110,7 +110,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
     final list = await _firebaseService.getUserCustomCategories();
     if (mounted) {
       setState(() {
-        _userCustomCategories = list;
+        _userCustomCategories = List<String>.from(list);
       });
     }
   }

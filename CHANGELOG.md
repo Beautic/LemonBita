@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - 사용자 신설 커스텀 카테고리에 속하는 의류는 '옷이 아닌 소품/잡화/특수복'으로 간주하여, **날씨 기온 코디 추천 카드**와 **실시간 스마트 코디 추천 패널** 전체 추천 풀에서 자동으로 필터링 제외 처리 완비.
   - 카테고리 칩 설정 바텀 시트 내부에 해당 추천 제외 작동 안내 가이드를 명시 기입.
   - 바텀시트 안에서 신규 카테고리 생성 단추 클릭 시 백엔드 쓰기 대기 지연(Latency) 없이 화면에 즉각 렌더링되도록 `setSheetState` 동기 우선 호출 방식으로 반응속도 0ms 초정밀 튜닝 완료.
+- **런타임 불변 리스트(Unmodifiable List) 수정**:
+  - FirebaseService의 빈 리스트 반환 시 생기는 `unmodifiable list` 런타임 크래시를 전면 방지하기 위해, 사용자 정의 카테고리를 로드하는 모든 화면([HomeScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/home_screen.dart), [UploadScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_screen.dart), [ClothingDetailScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/clothing_detail_screen.dart), [SearchClothesScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/search_clothes_screen.dart), [CoordinationCanvasScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/coordination_canvas_screen.dart))에서 반환값을 항상 `List<String>.from(...)`으로 감싸 가변(Mutable) 리스트로의 안전한 다운캐스팅 보장.
 
 ### Changed
 - **4:5 인스타그램 피드 종횡비 개편**: 기존 9:16에서 **4:5 비율(`aspectRatio: 4 / 5`)** 카드로 전환하고 그레이 외부 배경 및 카드 드롭 섀도우를 가미해 잡지 화보 감성으로 개편.

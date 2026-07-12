@@ -64,8 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final customList = await _firebaseService.getUserCustomCategories();
     if (mounted) {
       setState(() {
-        _activeCategories = list;
-        _userCustomCategories = customList;
+        _activeCategories = List<String>.from(list);
+        _userCustomCategories = List<String>.from(customList);
       });
     }
   }

@@ -61,6 +61,12 @@
   - **인스턴트 추가 피드백**: 설정 바텀시트 안에서 신규 카테고리 추가 시, 백엔드 Firestore의 쓰기 완료가 대기 지연되는 현상을 완전히 극복하기 위해 `setSheetState` 와 상위 `setState` 를 동기적으로 즉시 선반영하도록 수정하여 체감 지연 속도를 0ms로 튜닝했습니다.
   - **안내 가이드 추가**: 바텀시트 가이드라인 부분에 '커스텀 카테고리 등록 옷은 코디/날씨 추천 대상에서 자동 제외된다'는 명시적 정책 가이드를 보완 기재했습니다.
 
+### 10. 런타임 불변 리스트(Unmodifiable List) 크래시 방지 및 가변화 보장
+- **구현 내용**:
+  - Firebase DB에서 받아오는 카테고리 데이터(`activeCategories`, `userCustomCategories`)가 빈 목록(`const []` 또는 unmodifiable 리스트) 형태일 때, 사용자가 카테고리를 새로 신설(`.add()`)하거나 해제(`.remove()`)할 경우 `Unsupported operation: Cannot add/modify to an unmodifiable list` 예외가 발생하며 버튼 조작이 먹통이 되는 런타임 장애 현상을 식별했습니다.
+  - 이를 원천 차단하기 위해, 해당 데이터를 로드하여 상태 관리를 진행하는 모든 핵심 화면인 **메인 홈 화면**(`home_screen.dart`), **의류 추가 화면**(`upload_screen.dart`), **의류 수정/상세 화면**(`clothing_detail_screen.dart`), **의류 검색 화면**(`search_clothes_screen.dart`), **코디 캔버스 화면**(`coordination_canvas_screen.dart`) 전체에 걸쳐 수집된 리스트 목록을 항상 가변 생성자(`List<String>.from(...)`)로 감싸 완전히 독립된 Mutable 메모리 리스트로 이식하도록 조치했습니다.
+  - 이를 통해 신규 등록이나 삭제, 리스트 재정렬 시 어떠한 상황에서도 런타임 에러 없이 유연하고 안전하게 동작하도록 구조적 안정성을 향상시켰습니다.
+
 ---
 
 ## 2026-06-20 (v5.2) — OOTD 등록 즉시 반영 및 세탁 필요 메인 가시성 확보, 배포 규칙 지정

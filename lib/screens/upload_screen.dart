@@ -63,7 +63,7 @@ class _UploadScreenState extends State<UploadScreen> {
     final list = await _firebaseService.getUserCustomCategories();
     if (mounted) {
       setState(() {
-        _customCategories = list;
+        _customCategories = List<String>.from(list);
       });
     }
   }
