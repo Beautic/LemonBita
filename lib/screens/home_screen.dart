@@ -529,8 +529,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '자주 쓰는 카테고리만 골라 칩을 구성하고, 직접 새로운 카테고리를 추가할 수 있습니다.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      '자주 쓰는 카테고리만 골라 칩을 구성하고, 직접 새로운 카테고리를 추가할 수 있습니다.\n*직접 추가한 커스텀 카테고리(옷이 아닌 아이템)는 OOTD 코디 및 날씨 추천 대상에서 자동으로 제외됩니다.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -575,18 +575,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return;
                               }
 
-                              setState(() {
+                              setSheetState(() {
                                 _userCustomCategories.add(text);
                                 _activeCategories.add(text);
                                 tempSelected.add(text);
                               });
+                              setState(() {});
 
-                              await _firebaseService.updateUserCustomCategories(_userCustomCategories);
-                              await _firebaseService.updateActiveCategories(_activeCategories);
+                              _firebaseService.updateUserCustomCategories(_userCustomCategories);
+                              _firebaseService.updateActiveCategories(_activeCategories);
 
                               customController.clear();
-                              setSheetState(() {});
-                              
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text("'$text' 카테고리가 신설되었습니다.")),
                               );
@@ -899,6 +898,11 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var doc in clothes) {
       final data = doc.data() as Map<String, dynamic>;
       final String docId = doc.id;
+      
+      // 사용자 정의 커스텀 카테고리 의류는 날씨 추천에서 제외
+      if (_userCustomCategories.contains(data['category'])) {
+        continue;
+      }
       
       // 세탁이 필요한 의류는 추천에서 제외
       final int washInterval = (data['washInterval'] as num?)?.toInt() ?? 0;

@@ -75,12 +75,14 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
 
   int _selectedTemperatureLevel = 3; // 기본값: 선선한 날 (17~22°C)
   bool _isLoadingWeather = false;
+  List<String> _userCustomCategories = [];
 
   @override
   void initState() {
     super.initState();
     _loadPlannedOotds();
     _initializeTodayWeather();
+    _loadCustomCategories();
 
     if (widget.initialCanvasItems != null) {
       for (var item in widget.initialCanvasItems!) {
@@ -101,6 +103,15 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
         _items.add(canvasItem);
         _loadImageBytesFor(canvasItem);
       }
+    }
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final list = await _firebaseService.getUserCustomCategories();
+    if (mounted) {
+      setState(() {
+        _userCustomCategories = list;
+      });
     }
   }
 
@@ -1389,6 +1400,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   // 이미 캔버스에 추가된 카테고리의 옷도 추천에서 제외
                   if (existingCategories.contains(itemCategory)) return false;
 
+                  // 사용자 정의 커스텀 카테고리 의류는 추천에서 제외
+                  if (_userCustomCategories.contains(itemCategory)) return false;
+
                   // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                   final suitableLevels = WeatherHelper.getSuitableLevels(
                     category: itemCategory,
@@ -1423,6 +1437,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
 
+                    // 사용자 정의 커스텀 카테고리 의류는 추천에서 제외
+                    if (_userCustomCategories.contains(itemCategory)) return false;
+
                     // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                     final suitableLevels = WeatherHelper.getSuitableLevels(
                       category: itemCategory,
@@ -1448,6 +1465,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                     
                     if (_items.any((item) => item.docId == doc.id)) return false;
                     if (existingCategories.contains(itemCategory)) return false;
+
+                    // 사용자 정의 커스텀 카테고리 의류는 추천에서 제외
+                    if (_userCustomCategories.contains(itemCategory)) return false;
 
                     // 날씨/기온 레벨 호환성 검사 (유추 기온 레벨 + 실제 OOTD 착용 이력 합집합)
                     final suitableLevels = WeatherHelper.getSuitableLevels(

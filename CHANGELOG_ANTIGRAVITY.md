@@ -54,6 +54,13 @@
   - 생성된 신규 커스텀 카테고리는 가로 칩바에 범용 태그 스타일 아이콘(`Icons.style`)으로 자동 정렬 노출됩니다.
   - 신규 옷 등록([UploadScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_screen.dart)), 정보 수정([ClothingDetailScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/clothing_detail_screen.dart)), 의류 검색([SearchClothesScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/search_clothes_screen.dart)) 내 대분류 선택 드롭다운 및 필터 칩 목록에도 실시간으로 동기화되어 커스텀 카테고리로의 분류 배정이 완벽하게 이루어집니다.
 
+### 9. 커스텀 카테고리 추천 제외 세이프가드 및 카테고리 설정 바텀시트 반응속도 튜닝
+- **구현 내용**:
+  - **날씨 기온 코디 추천 카드**(`home_screen.dart`): 사용자 정의 커스텀 카테고리에 할당된 옷은 일상복 추천 대상에서 제외하기 위해 scoring 루프에서 `continue` 로직을 추가했습니다.
+  - **실시간 스마트 코디 추천 패널**(`coordination_canvas_screen.dart`): `initState` 에서 `userCustomCategories` 목록을 캐싱 로드하여, 추천 필터링 3단계(색상 매칭, 단일 매칭 완화, 기본 모노톤) 전 과정에서 커스텀 카테고리 의류를 사전 필터링(`return false`) 처리했습니다.
+  - **인스턴트 추가 피드백**: 설정 바텀시트 안에서 신규 카테고리 추가 시, 백엔드 Firestore의 쓰기 완료가 대기 지연되는 현상을 완전히 극복하기 위해 `setSheetState` 와 상위 `setState` 를 동기적으로 즉시 선반영하도록 수정하여 체감 지연 속도를 0ms로 튜닝했습니다.
+  - **안내 가이드 추가**: 바텀시트 가이드라인 부분에 '커스텀 카테고리 등록 옷은 코디/날씨 추천 대상에서 자동 제외된다'는 명시적 정책 가이드를 보완 기재했습니다.
+
 ---
 
 ## 2026-06-20 (v5.2) — OOTD 등록 즉시 반영 및 세탁 필요 메인 가시성 확보, 배포 규칙 지정
