@@ -9,6 +9,6 @@ echo "🏗  Building web (ENV=prod)..."
 /Users/a421104/fvm/versions/3.16.9/bin/flutter build web --release --web-renderer canvaskit --dart-define=ENV=prod --no-tree-shake-icons
 
 echo "🚀 Deploying to PROD hosting..."
-npx -y firebase-tools deploy --only hosting -P prod
+npx -y firebase-tools deploy --only hosting,firestore,storage -P prod
 
 echo "✅ 운영계 배포 완료: https://digital-closet-32c43.web.app"
