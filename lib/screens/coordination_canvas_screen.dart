@@ -1171,7 +1171,7 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('코디 아이템들이 기하학적으로 자동 정렬되었습니다! ✨'),
+        content: Text('코디 아이템들이 자동 정렬되었습니다.'),
         duration: Duration(seconds: 1),
       ),
     );

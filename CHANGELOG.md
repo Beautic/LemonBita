@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v5.3.2] - 2026-07-12
+
+### Changed
+- **자동정렬 스낵바 문구 변경**: 코디 캔버스에서 마법봉 자동 정렬 수행 시 하단에 노출되는 완료 안내 문구 내 불필요한 공학적 표현인 '기하학적으로' 멘트를 전면 삭제하고, `'코디 아이템들이 자동 정렬되었습니다.'` 로 직관적이고 깔끔하게 순화 및 변경 완료.
+
 ## [v5.3] - 2026-07-12
 
 룩북 에디토리얼 & 폴라로이드 감성 4:5 캔버스 최적화 및 스마트 겹침 회피 자동 정렬 릴리스.
