@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="cyber-bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#241443" />
+      <stop offset="60%" stop-color="#0F061D" />
+      <stop offset="100%" stop-color="#05010B" />
+    </radialGradient>
+    <linearGradient id="chest-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="50%" stop-color="#7000FF" />
+      <stop offset="100%" stop-color="#FF007B" />
+    </linearGradient>
+    <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="108" fill="url(#cyber-bg)"/>
+
+  <circle cx="256" cy="270" r="140" fill="#00F0FF" opacity="0.15" filter="url(#neon-glow)"/>
+  <circle cx="256" cy="220" r="100" fill="#FF007B" opacity="0.15" filter="url(#neon-glow)"/>
+
+  <g filter="url(#neon-glow)">
+    <polygon points="256,120 180,260 332,260" fill="#FFF600" opacity="0.6"/>
+    <circle cx="256" cy="150" r="12" fill="#FFF600"/>
+    <circle cx="210" cy="190" r="8" fill="#FFFFFF"/>
+    <circle cx="300" cy="170" r="10" fill="#FF007B"/>
+    <circle cx="230" cy="220" r="6" fill="#00F0FF"/>
+    <polygon points="280,120 286,132 298,132 288,140 292,152 280,144 268,152 272,140 262,132 274,132" fill="#FFFFFF"/>
+  </g>
+
+  <g stroke="#05010B" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="120,200 392,200 422,140 90,140" fill="url(#chest-metal)"/>
+    <polygon points="135,190 377,190 402,150 110,150" fill="#1C093A" opacity="0.9"/>
+    <rect x="130" y="240" width="252" height="30" rx="8" fill="#FFF600"/>
+    <polygon points="120,250 392,250 362,380 150,380" fill="url(#chest-metal)"/>
+    <polygon points="150,270 362,270 342,360 170,360" fill="#0B0315" opacity="0.75"/>
+    <rect x="236" y="235" width="40" height="50" rx="8" fill="#00F0FF" filter="url(#neon-glow)"/>
+    <circle cx="256" cy="255" r="8" fill="#FFFFFF"/>
+    <path d="M256 263 V278" stroke="#FFFFFF" stroke-width="4"/>
+  </g>
+</svg>

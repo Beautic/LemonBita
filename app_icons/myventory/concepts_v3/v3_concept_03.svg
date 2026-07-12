@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- 트레이 메인 바운더리 -->
+  <rect x="110" y="110" width="292" height="292" rx="40" fill="none" stroke="#ECEFF4" stroke-width="20"/>
+  
+  <!-- 내부 3분할 파티션 -->
+  <g stroke="#ECEFF4" stroke-width="14" stroke-linecap="round">
+    <line x1="256" y1="110" x2="256" y2="402"/>
+    <line x1="256" y1="256" x2="402" y2="256"/>
+  </g>
+  
+  <!-- 좌측 큰 칸에 수집된 메인 오브제 (Signal Red 단색 서클) -->
+  <circle cx="183" cy="256" r="30" fill="#DE3B26"/>
+  
+  <!-- 우상단 수집 데코 -->
+  <circle cx="329" cy="183" r="16" fill="#ECEFF4"/>
+</svg>

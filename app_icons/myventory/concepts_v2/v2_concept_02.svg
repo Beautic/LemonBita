@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" shape-rendering="crispEdges">
+  <rect width="512" height="512" rx="108" fill="#18181C"/>
+  <rect x="76" y="76" width="360" height="360" rx="20" fill="#292A35" stroke="#0E0F14" stroke-width="16"/>
+  <rect x="96" y="96" width="320" height="320" rx="10" fill="#3D3E4F"/>
+
+  <g fill="#333443">
+    <rect x="96" y="96" width="320" height="10"/>
+    <rect x="96" y="136" width="320" height="10"/>
+    <rect x="96" y="176" width="320" height="10"/>
+    <rect x="96" y="216" width="320" height="10"/>
+    <rect x="96" y="256" width="320" height="10"/>
+    <rect x="96" y="296" width="320" height="10"/>
+    <rect x="96" y="336" width="320" height="10"/>
+    <rect x="96" y="376" width="320" height="10"/>
+
+    <rect x="96" y="96" width="10" height="320"/>
+    <rect x="136" y="96" width="10" height="320"/>
+    <rect x="176" y="96" width="10" height="320"/>
+    <rect x="216" y="96" width="10" height="320"/>
+    <rect x="256" y="96" width="10" height="320"/>
+    <rect x="296" y="96" width="10" height="320"/>
+    <rect x="336" y="96" width="10" height="320"/>
+    <rect x="376" y="96" width="10" height="320"/>
+  </g>
+
+  <g fill="#DE3B26" transform="translate(136, 136)">
+    <path d="
+      M40,20 h40 v20 h-40 Z
+      M120,20 h40 v20 h-40 Z
+      M20,40 h80 v20 h-80 Z
+      M100,40 h80 v20 h-80 Z
+      M0,60 h200 v20 h-200 Z
+      M0,80 h200 v20 h-200 Z
+      M0,100 h200 v20 h-200 Z
+      M20,120 h160 v20 h-160 Z
+      M40,140 h120 v20 h-120 Z
+      M60,160 h80 v20 h-80 Z
+      M80,180 h40 v20 h-40 Z
+    "/>
+    <path d="
+      M80,40 h20 v20 h-20 Z
+      M160,40 h20 v20 h-20 Z
+      M180,60 h20 v60 h-20 Z
+      M160,120 h20 v20 h-20 Z
+      M140,140 h20 v20 h-20 Z
+      M120,160 h20 v20 h-20 Z
+      M100,180 h20 v20 h-20 Z
+    " fill="#8C1D10"/>
+    <path d="
+      M40,40 h20 v20 h-20 Z
+      M20,60 h20 v40 h-20 Z
+      M120,40 h20 v20 h-20 Z
+    " fill="#FFFFFF"/>
+  </g>
+</svg>

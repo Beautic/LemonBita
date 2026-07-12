@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- 아치 게이트들 (안쪽으로 들어갈수록 얇아지는 평면 투시) -->
+  <g fill="none" stroke="#ECEFF4" stroke-linecap="round">
+    <!-- 바깥 아치 -->
+    <path d="M140 380 V240 A116 116 0 0 1 372 240 V380" stroke-width="20"/>
+    <!-- 중간 아치 -->
+    <path d="M190 380 V240 A66 66 0 0 1 322 240 V380" stroke-width="12" stroke-opacity="0.6"/>
+  </g>
+  
+  <!-- 전시대의 핵심 수집품 (Signal Red #DE3B26 세모 다이아몬드) -->
+  <polygon points="256,200 286,250 256,300 226,250" fill="#DE3B26"/>
+</svg>

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 배경: 깊고 단단한 블랙 티타늄 질감 -->
+    <linearGradient id="vault-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F2026" />
+      <stop offset="100%" stop-color="#090A0D" />
+    </linearGradient>
+
+    <!-- 샴페인 골드 그라디언트 -->
+    <linearGradient id="vault-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3D1" />
+      <stop offset="30%" stop-color="#E5BA69" />
+      <stop offset="70%" stop-color="#C29438" />
+      <stop offset="100%" stop-color="#805C12" />
+    </linearGradient>
+
+    <!-- 링 크롬 반사광 -->
+    <linearGradient id="vault-metal" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2D303B" />
+      <stop offset="50%" stop-color="#8A93A6" />
+      <stop offset="100%" stop-color="#DFE4EE" />
+    </linearGradient>
+
+    <filter id="vault-glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="108" fill="url(#vault-bg)"/>
+
+  <!-- 골드 서클 프레임 (금고 게이트) -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#vault-gold)" stroke-width="24" filter="url(#vault-glow)"/>
+
+  <!-- 내부 기어 서클 -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#vault-metal)" stroke-width="12" stroke-dasharray="24 16"/>
+
+  <!-- 3. 다이어그램 크로스 암 (금고 안전 바 잠금 해제 휠) -->
+  <g stroke="url(#vault-gold)" stroke-width="20" stroke-linecap="round">
+    <line x1="256" y1="130" x2="256" y2="382"/>
+    <line x1="130" y1="256" x2="382" y2="256"/>
+    <!-- 대각선 핸들 암 -->
+    <line x1="167" y1="167" x2="345" y2="345" stroke="url(#vault-metal)" stroke-width="12"/>
+    <line x1="345" y1="167" x2="167" y2="345" stroke="url(#vault-metal)" stroke-width="12"/>
+  </g>
+
+  <!-- 핸들 암 끝 부분 구체들 -->
+  <g fill="url(#vault-gold)">
+    <circle cx="256" cy="130" r="18"/>
+    <circle cx="256" cy="382" r="18"/>
+    <circle cx="130" cy="256" r="18"/>
+    <circle cx="382" cy="256" r="18"/>
+  </g>
+
+  <!-- 중앙 하이라이트 코어 (Signal Red #DE3B26) -->
+  <circle cx="256" cy="256" r="54" fill="#0D0E12" stroke="url(#vault-gold)" stroke-width="6"/>
+  <circle cx="256" cy="256" r="32" fill="#DE3B26" filter="url(#vault-glow)"/>
+  <!-- 액센트 락 코어 도트 -->
+  <circle cx="256" cy="256" r="10" fill="#FFFFFF"/>
+</svg>

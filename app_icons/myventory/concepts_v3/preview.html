@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Myventory — v3 App Icon Concept Gallery (Minimalist Edition)</title>
+  <style>
+    /* ─────────── TOKENS & RESET ─────────── */
+    :root {
+      --bg:         #0F111A;
+      --card-bg:    #161922;
+      --border:     #222735;
+      --border-lit: #3E475E;
+      --text:       #ECEFF4;
+      --muted:      #7A869A;
+      --accent:     #DE3B26; /* Signal Red */
+      
+      --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-kr: "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+      --step: 8px;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-kr);
+      margin: 0;
+      padding: calc(var(--step) * 8) calc(var(--step) * 4);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ─────────── HEADER ─────────── */
+    header {
+      margin-bottom: calc(var(--step) * 8);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: calc(var(--step) * 4);
+    }
+
+    .eyebrow {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: var(--step);
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 900;
+      margin: 0 0 calc(var(--step) * 2);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .desc {
+      font-size: 16px;
+      max-width: 760px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* ─────────── GALLERY GRID ─────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: calc(var(--step) * 4);
+      margin-bottom: calc(var(--step) * 8);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: calc(var(--step) * 3);
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--step) * 2.5);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-lit);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon-container {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background-color: #0A0B10;
+    }
+
+    .icon-container img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .num {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .concept-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0;
+      height: 72px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    /* ─────────── PANELS ─────────── */
+    .specs-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: calc(var(--step) * 4);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: calc(var(--step) * 4);
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--step);
+    }
+
+    .spec-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-left: 3px solid var(--accent);
+      padding-left: 8px;
+    }
+
+    .spec-val {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">Minimalist Sandbox v3</div>
+    <h1>Myventory App Icon Concepts — Modern Minimalist</h1>
+    <p class="desc">
+      화려한 3D 기법과 입체 섀도우를 배제하고, 스마트폰 화면에서 가장 눈이 편안하고 격조 높은 2D 플랫 미니멀리즘으로 다듬어낸 <strong>마이벤토리(Myventory)</strong>의 아이콘 후보 10종입니다. 직관적인 그리드, 정돈(Sort), 이니셜 M의 매끄러운 융합을 조화시켰습니다.
+    </p>
+  </header>
+
+  <main class="grid">
+    <!-- Card 01 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_01.svg" alt="Concept 01 M Grid">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 01</span>
+        <h3 class="title">M + Grid Glyph</h3>
+        <p class="concept-desc">이니셜 'M'의 획을 세련된 인벤토리 격자 틀과 수직 정렬선으로 융합한 타이포그래픽 마크입니다. 상단에 뜬 Signal Red 획득 도트가 극강의 세련됨을 보장합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 02 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_02.svg" alt="Concept 02 Bracket">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 02</span>
+        <h3 class="title">Double Slot Bracket</h3>
+        <p class="concept-desc">오버랩되어 반듯하게 겹쳐진 두 개의 수납 박스 테두리를 플랫하게 구현했습니다. 교차점에 수집 완성의 의미인 Signal Red 앵커 도트가 찍혀 있습니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 03 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_03.svg" alt="Concept 03 Tray">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 03</span>
+        <h3 class="title">Minimalist Collector Tray</h3>
+        <p class="concept-desc">소중한 소장품들을 정돈해 올려놓는 트레이/보관대를 위에서 내려다본 플랫 뷰입니다. 세밀한 파티션 분할과 Signal Red 메인 수집 앵커 서클의 균형감이 돋보입니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 04 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_04.svg" alt="Concept 04 Arch">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 04</span>
+        <h3 class="title">Arch Gallery Vault</h3>
+        <p class="concept-desc">안쪽으로 뻗어 들어가는 깊이감 있는 2D 아치 라인과 중심의 다이아몬드 형상입니다. 아끼는 수집품들이 갤러리 아치 아래 전시된 듯한 가치를 나타냅니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 05 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_05.svg" alt="Concept 05 Infinity">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 05</span>
+        <h3 class="title">Infinity Collection Slot</h3>
+        <p class="concept-desc">무한대 기호(∞)와 분할 슬롯이 유기적으로 이어진 현대적 루프 마크입니다. 한계 없이 수집하고 아카이빙하는 모던 라이프를 형상화했습니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 06 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_06.svg" alt="Concept 06 Fold">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 06</span>
+        <h3 class="title">Aligned 절곡 Grid</h3>
+        <p class="concept-desc">종이가 반듯하게 정돈되어 접힌 기하학 패턴으로 파티션 분할의 정리감을 표현했습니다. 우측에 배치된 Signal Red 획득 도트가 포인트 리듬을 형성합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 07 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_07.svg" alt="Concept 07 Pocket">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 07</span>
+        <h3 class="title">M-Pocket Diagonal</h3>
+        <p class="concept-desc">사선 면 분할을 통한 서랍의 은유와 이니셜 'M'의 경계를 부드러운 수납 포켓 형태로 융합했습니다. 깊이감 있는 세련된 2D 플랫 아이콘입니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 08 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_08.svg" alt="Concept 08 Diamond">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 08</span>
+        <h3 class="title">Diamond Frame Grid</h3>
+        <p class="concept-desc">마름모꼴의 4분할 격자 프레임입니다. 보석 및 고가치 컬렉션을 반듯하게 분류하여 보관하는 소유의 아름다움을 정제된 면과 선으로 나타냅니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 09 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_09.svg" alt="Concept 09 Gate">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 09</span>
+        <h3 class="title">Segmented Arch Gates</h3>
+        <p class="concept-desc">나란히 늘어선 3개의 미니멀 아치 게이트 실루엣입니다. 중앙 활성화된 아치 위로 Signal Red 수집 핀과 흰색 소장품 데코가 감각적으로 매칭되어 있습니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 10 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v3_concept_10.svg" alt="Concept 10 Dot">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 10</span>
+        <h3 class="title">Swiss Intersection Dot</h3>
+        <p class="concept-desc">스위스 타이포그래피 스타일의 극도로 절제된 세로 가로 정렬 라인 격자입니다. 교차 지점에 안착된 커다란 Signal Red 획득 스팟이 극치의 소장 가치를 대변합니다.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="specs-panel">
+    <div class="spec-item">
+      <div class="spec-title">디자인 조율 방향</div>
+      <p class="spec-val">
+        화려한 3D 입체감, 네온, 다채로운 색감에서 벗어나 차분한 미드나잇 네이비 배경 위에 화이트 라인과 Signal Red 단 한 포인트만 사용하여 극강의 플랫 미니멀 모던 아이콘으로 회귀했습니다.
+      </p>
+    </div>
+    <div class="spec-item">
+      <div class="spec-title">소장과 소유의 미학</div>
+      <p class="spec-val">
+        M 타이포그래피, 이중 박스 겹침, 위에서 본 정돈 트레이, 정제된 전시 아치, 다이아몬드 프레임 등 평면적이지만 확실한 질서와 수집의 뉘앙스를 담은 상징적 형태만을 이식했습니다.
+      </p>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>

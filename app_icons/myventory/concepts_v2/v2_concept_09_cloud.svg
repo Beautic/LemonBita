@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 심연의 스페이스 테크 배경 -->
+    <radialGradient id="space-bg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#141124" />
+      <stop offset="100%" stop-color="#05040A" />
+    </radialGradient>
+
+    <!-- 성운(Nebula) 그라디언트 -->
+    <linearGradient id="nebula-aura" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9E00FF" />
+      <stop offset="50%" stop-color="#FF007B" />
+      <stop offset="100%" stop-color="#FF9E00" />
+    </linearGradient>
+
+    <filter id="nebula-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="108" fill="url(#space-bg)"/>
+
+  <!-- 뒤편 우주 안개 글로우 -->
+  <ellipse cx="256" cy="240" rx="160" ry="120" fill="url(#nebula-aura)" opacity="0.3" filter="url(#nebula-glow)"/>
+
+  <!-- 떠 있는 수집품: 마법 별 (Signal Red 코어) -->
+  <g transform="translate(256, 170)" filter="url(#nebula-glow)">
+    <polygon points="0,-48 14,-14 46,-14 20,8 30,42 0,22 -30,42 -20,8 -46,-14 -14,-14" fill="#FFC700" stroke="#FFFFFF" stroke-width="4"/>
+    <circle cx="0" cy="0" r="14" fill="#DE3B26" />
+    <!-- 미니 스파클들 -->
+    <circle cx="-60" cy="-30" r="6" fill="#FFFFFF"/>
+    <circle cx="70" cy="20" r="4" fill="#FF007B"/>
+    <circle cx="-50" cy="60" r="5" fill="#00F0FF"/>
+  </g>
+
+  <!-- 보관함 서랍 (3D 입체 투시) -->
+  <g stroke="#05040A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- 서랍 외부 하우징 케이스 -->
+    <polygon points="120,320 392,320 362,390 150,390" fill="#242132"/>
+    <polygon points="120,320 150,390 150,420 120,350" fill="#15131F"/>
+    
+    <!-- 2. 앞으로 인출된 서랍 서랍통 (Drawer Box) -->
+    <polygon points="130,340 382,340 362,410 150,410" fill="#423B5A" stroke="#242132" stroke-width="4"/>
+    <!-- 서랍 전면 플레이트 -->
+    <polygon points="130,360 382,360 382,420 130,420" fill="#2E2842"/>
+    <!-- 서랍 손잡이 (골드 링) -->
+    <circle cx="256" cy="390" r="14" fill="none" stroke="#FFC700" stroke-width="6"/>
+  </g>
+
+  <!-- 서랍 내부로부터 피어오르는 빛 오라 효과 -->
+  <path d="M160,340 Q256,230 352,340 Z" fill="url(#nebula-aura)" opacity="0.45" filter="url(#nebula-glow)"/>
+</svg>

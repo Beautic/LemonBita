@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Myventory — v2 App Icon Concept Gallery</title>
+  <style>
+    /* ─────────── TOKENS & RESET ─────────── */
+    :root {
+      --bg-dark:    #0B0C10;
+      --card-bg:    #161A24;
+      --border:     #252C3D;
+      --border-lit: #4F5E80;
+      --text:       #F2F1ED;
+      --muted:      #8F9CB3;
+      --accent:     #DE3B26;
+      --accent-glow:#FF634F;
+      --gold:       #E2B14C;
+      
+      --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-kr: "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+      --step: 8px;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      font-family: var(--font-kr);
+      margin: 0;
+      padding: calc(var(--step) * 8) calc(var(--step) * 4);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ─────────── HEADER ─────────── */
+    header {
+      margin-bottom: calc(var(--step) * 8);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: calc(var(--step) * 5);
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -1.5px;
+      left: 0;
+      width: 120px;
+      height: 3px;
+      background-color: var(--accent);
+    }
+
+    .eyebrow {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: var(--step);
+    }
+
+    h1 {
+      font-size: clamp(32px, 5.5vw, 56px);
+      font-weight: 900;
+      margin: 0 0 calc(var(--step) * 2.5);
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .desc {
+      font-size: 16.5px;
+      max-width: 760px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* ─────────── GALLERY GRID ─────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: calc(var(--step) * 4);
+      margin-bottom: calc(var(--step) * 8);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: calc(var(--step) * 3);
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--step) * 3);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at top left, rgba(222, 59, 38, 0.08), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      border-color: var(--border-lit);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(222, 59, 38, 0.08);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .icon-container {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background-color: #0A0A0E;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .icon-container img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .card:hover .icon-container img {
+      transform: scale(1.03);
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .num {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+    }
+
+    .title {
+      font-size: 19px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .concept-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0;
+      height: 72px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      line-height: 1.6;
+    }
+
+    /* ─────────── HIGHLIGHT SPECS ─────────── */
+    .footer-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: calc(var(--step) * 5);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: calc(var(--step) * 4);
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--step);
+    }
+
+    .spec-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+
+    .spec-val {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">Creative Sandbox v2</div>
+    <h1>Myventory App Icon Concepts — Unlimited Edition</h1>
+    <p class="desc">
+      이전의 미니멀리즘과 3색 제약 조건을 전면적으로 봉인 해제하여, <strong>"내가 아끼는 모든 아이템을 게임 인벤토리처럼 소장/정리하는 앱"</strong>의 성격에 초점을 맞추어 디자인된 10종의 자유형 화려한 앱 아이콘 시안입니다. 입체감(3D/2.5D), 그라디언트, 영롱한 빛 번짐, 보석과 도감 등 다양한 게임적 연출이 다채롭게 녹아있습니다.
+    </p>
+  </header>
+
+  <main class="grid">
+    <!-- Card 01 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_01.svg" alt="Concept 01 Showbox">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 01</span>
+        <h3 class="title">Glassmorphism Showbox</h3>
+        <p class="concept-desc">투명 아크릴 쇼케이스 박스 내부에서 빨갛게 타오르는 루비 보석을 투영시켰습니다. 빛 반사 외벽과 3D 밑받침대를 겹겹이 구현하여 프리미엄 소장의 기쁨을 제공합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 02 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_02.svg" alt="Concept 02 Retro">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 02</span>
+        <h3 class="title">Retro Pixel Heart</h3>
+        <p class="concept-desc">아케이드 8비트 인벤토리 슬롯 격자판과 영롱한 픽셀 하트 아이템을 결합했습니다. 소유하는 것 자체로 레트로 게임을 하는 듯한 키치하고 즐거운 무드를 뿜어냅니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 03 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_03.svg" alt="Concept 03 Chest">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 03</span>
+        <h3 class="title">Neon Cyber Chest</h3>
+        <p class="concept-desc">사이버네틱 네온 그라디언트를 두른 장비 상자에서 보석 같은 수집가루들이 피어오르는 다이나믹한 형상입니다. 미지의 아이템을 아카이빙하는 짜릿함을 보여줍니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 04 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_04.svg" alt="Concept 04 Card">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 04</span>
+        <h3 class="title">Holographic Card Holder</h3>
+        <p class="concept-desc">트레이딩 카드 수집가를 상징하는 홀로그램 카드 슬롯입니다. 비스듬히 공중에 뜬 무지개빛 카드와 Signal Red 별빛 각인이 소유의 쾌감을 최대로 끌어올립니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 05 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_05_sword.svg" alt="Concept 05 RPG">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 05</span>
+        <h3 class="title">Technical RPG Slot</h3>
+        <p class="concept-desc">게임 도감의 무기와 물약 보관함을 정교한 2.5D 일러스트로 그렸습니다. 에메랄드 전설 검과 붉은 영약 병을 조합하여 종류 불문 아끼는 수집품의 은유를 충실히 따릅니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 06 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_06_gold.svg" alt="Concept 06 Gold">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 06</span>
+        <h3 class="title">Luxury Collection Vault</h3>
+        <p class="concept-desc">귀중품을 가장 안전하게 지키는 중세 금고와 현대식 다이얼 게이트를 결합했습니다. 리치한 골드 반사광과 Signal Red 액센트 락 다이얼로 보관 가치의 품격을 높입니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 07 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_07_cube.svg" alt="Concept 07 Cube">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 07</span>
+        <h3 class="title">Rubik's Sorting Cube</h3>
+        <p class="concept-desc">3D 아이소메트릭 큐브 블록 중 완벽하게 정렬을 맞춰 활성화된 3개의 슬롯을 Signal Red로 발광시킨 테크니컬 디자인입니다. 정리를 완성하는 성취감을 형상화했습니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 08 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_08_seal.svg" alt="Concept 08 Seal">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 08</span>
+        <h3 class="title">Wax Seal Collector</h3>
+        <p class="concept-desc">앤티크한 붉은 왁스 실(인장) 도장 위에 이니셜 'M'과 인벤토리 기호가 깊은 입체감으로 음양각된 형태입니다. 나만의 컬렉션을 승인하고 인증한다는 고급스러운 메타포입니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 09 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_09_cloud.svg" alt="Concept 09 Nebula">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 09</span>
+        <h3 class="title">Nebula Drawer Space</h3>
+        <p class="concept-desc">앞으로 인출된 서랍에서 우주적인 성운 빛 안개와 별빛 수집품이 몽환적으로 떠오르는 신비한 구도입니다. 마음속으로 깊이 사랑하는 보물들을 담는 신비로움을 의미합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 10 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="v2_concept_10_trophy.svg" alt="Concept 10 Trophy">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 10</span>
+        <h3 class="title">Victory Trophy Stand</h3>
+        <p class="concept-desc">원형 단상 위에 위풍당당하게 얹혀 있는 샴페인 골드빛 트로피와 Signal Red 수집 별빛입니다. 격자 정렬선 배경 아래에서 수집의 끝판왕이자 완성을 보여줍니다.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer-panel">
+    <div class="spec-item">
+      <div class="spec-title">디자인 쇄신 방안</div>
+      <p class="spec-val">
+        기존의 Flat 3색 구조에서 나아가 다채로운 그라디언트 반사광, 2.5D 일러스트, 네온 입체 글로우를 도입하여 모바일 디바이스 홈화면 어디에서나 입체감 있게 눈에 띄도록 완성도를 높였습니다.
+      </p>
+    </div>
+    <div class="spec-item">
+      <div class="spec-title">게임 인벤토리 은유의 확장</div>
+      <p class="spec-val">
+        픽셀아트 하트, 전설의 검, 신비한 포션, 열린 보물상자, 왁스 인장, 소장용 트레이딩 카드 등 다양한 오락성과 명품 소장의 비주얼적 정수를 조화롭게 녹여냈습니다.
+      </p>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>

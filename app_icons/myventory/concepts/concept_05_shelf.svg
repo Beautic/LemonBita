@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  <!-- 선반 라인들 -->
+  <g fill="none" stroke="#121213" stroke-width="16" stroke-linecap="round">
+    <line x1="100" y1="180" x2="412" y2="180"/>
+    <line x1="100" y1="290" x2="412" y2="290"/>
+    <line x1="100" y1="400" x2="412" y2="400"/>
+  </g>
+  
+  <!-- 아이템 실루엣들 -->
+  <!-- 1단 (상단) -->
+  <circle cx="160" cy="130" r="26" fill="#121213"/>
+  <rect x="290" y="104" width="52" height="52" rx="8" fill="#121213"/>
+  
+  <!-- 2단 (중단) -->
+  <rect x="134" y="214" width="52" height="52" rx="8" fill="#121213"/>
+  <!-- 액센트 수집품: Signal (#DE3B26) 세모 도형 -->
+  <polygon points="316,214 286,266 346,266" fill="#DE3B26"/>
+  
+  <!-- 3단 (하단) -->
+  <circle cx="160" cy="350" r="26" fill="#121213"/>
+  <circle cx="270" cy="350" r="26" fill="#121213"/>
+  <circle cx="346" cy="350" r="16" fill="none" stroke="#121213" stroke-width="8"/>
+</svg>

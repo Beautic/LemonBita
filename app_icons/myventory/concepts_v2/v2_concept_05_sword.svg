@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 판타지풍 다크 딥 블루 퍼플 그라디언트 -->
+    <radialGradient id="rpg-bg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#231F35" />
+      <stop offset="100%" stop-color="#0E0D14" />
+    </radialGradient>
+    <filter id="rpg-glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="108" fill="url(#rpg-bg)"/>
+
+  <!-- RPG 인벤토리 4분할 슬롯 가이드라인 -->
+  <g stroke="#1F1C2E" stroke-width="12" stroke-linecap="round">
+    <line x1="256" y1="80" x2="256" y2="432"/>
+    <line x1="80" y1="256" x2="432" y2="256"/>
+    <!-- 슬롯 코너 데코 -->
+    <rect x="76" y="76" width="360" height="360" rx="20" fill="none" stroke="#2D2942" stroke-width="10"/>
+  </g>
+
+  <!-- 1. 좌상단 슬롯: 전설의 에메랄드 검 (Sword Item) -->
+  <g transform="translate(160, 160) rotate(-45)">
+    <!-- 검의 섀도우 -->
+    <rect x="-8" y="-70" width="16" height="110" rx="4" fill="#000000" opacity="0.4" filter="url(#rpg-glow)"/>
+    <!-- 검날 (실버) -->
+    <polygon points="-8,-60 8,-60 8,30 -8,30" fill="#E2E5F0" stroke="#0E0D14" stroke-width="4"/>
+    <line x1="0" y1="-50" x2="0" y2="25" stroke="#FFFFFF" stroke-width="2"/>
+    <!-- 코가드 (황금색) -->
+    <rect x="-24" y="30" width="48" height="12" rx="3" fill="#FFC700" stroke="#0E0D14" stroke-width="4"/>
+    <!-- 손잡이 & 그립 -->
+    <rect x="-6" y="42" width="12" height="24" fill="#6B3A1C" stroke="#0E0D14" stroke-width="3"/>
+    <!-- 검 손잡이 끝 보석 (Signal Red) -->
+    <circle cx="0" cy="72" r="8" fill="#DE3B26" stroke="#0E0D14" stroke-width="3" filter="url(#rpg-glow)"/>
+  </g>
+
+  <!-- 2. 우하단 슬롯: 영롱하게 빛나는 수집 하트 물약 (Potion Item - Signal Red) -->
+  <g transform="translate(356, 356)">
+    <!-- 물약병 섀도우 -->
+    <ellipse cx="0" cy="40" rx="36" ry="12" fill="#000000" opacity="0.4" filter="url(#rpg-glow)"/>
+    
+    <!-- 병 본체 (투명 유리) -->
+    <path d="M-14,-36 H14 V-20 L32,10 A36,36 0 1,1 -32,10 L-14,-20 Z" fill="#FFFFFF" fill-opacity="0.15" stroke="#E2E5F0" stroke-width="6" stroke-linejoin="round"/>
+    
+    <!-- 물약 액체 (Signal Red #DE3B26) -->
+    <path d="M-28,14 A30,30 0 1,0 28,14 Q0,26 -28,14 Z" fill="#DE3B26" filter="url(#rpg-glow)"/>
+    <!-- 물약 윗면 밝은 액체 레이어 -->
+    <path d="M-28,14 Q0,26 28,14 Q0,10 -28,14 Z" fill="#FF7D6B"/>
+
+    <!-- 마개 (코르크) -->
+    <polygon points="-10,-36 10,-36 8,-48 -8,-48" fill="#99603D" stroke="#0E0D14" stroke-width="4"/>
+    
+    <!-- 하트 모양 병 라벨 -->
+    <path d="M0,-2 L6,4 L12,-2 A6,6 0 0,0 2,-10 L0,-7 L-2,-10 A6,6 0 0,0 -12,-2 Z" fill="#FFC700" transform="translate(0, 10) scale(1.2)"/>
+  </g>
+</svg>

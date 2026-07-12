@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  <g fill="none" stroke="#121213" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 대형 슬롯 -->
+    <rect x="110" y="110" width="130" height="130" rx="20"/>
+    
+    <!-- 중형 슬롯들 -->
+    <rect x="270" y="110" width="90" height="90" rx="16"/>
+    <rect x="110" y="270" width="90" height="90" rx="16"/>
+    
+    <!-- 소형 슬롯 -->
+    <rect x="230" y="230" width="60" height="60" rx="10" stroke-dasharray="1 14"/>
+    
+    <!-- 액센트 슬롯: Signal (#DE3B26) -->
+    <rect x="230" y="320" width="130" height="80" rx="16" fill="#DE3B26" stroke="#DE3B26"/>
+  </g>
+</svg>

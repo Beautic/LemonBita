@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- 무한 루프 슬롯 마크 -->
+  <path d="M190 190 H322 A66 66 0 0 1 322 322 H190 A66 66 0 0 1 190 190 Z" fill="none" stroke="#ECEFF4" stroke-width="24" stroke-linejoin="round" stroke-linecap="round"/>
+  
+  <!-- 중앙 교차 가이드선 및 분할 슬롯 핀 -->
+  <line x1="256" y1="190" x2="256" y2="322" stroke="#141824" stroke-width="26"/>
+  <line x1="256" y1="190" x2="256" y2="322" stroke="#ECEFF4" stroke-width="12" stroke-dasharray="8 8"/>
+  
+  <!-- 소장 완료 활성 핀 (Signal Red #DE3B26) -->
+  <circle cx="256" cy="256" r="16" fill="#DE3B26" stroke="#141824" stroke-width="6"/>
+</svg>

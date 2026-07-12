@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  
+  <!-- 십자 가이드라인 -->
+  <line x1="256" y1="90" x2="256" y2="422" stroke="#121213" stroke-width="16" stroke-linecap="round"/>
+  <line x1="90" y1="256" x2="422" y2="256" stroke="#121213" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- 격자 보조 라인 / 코너 브래킷들 -->
+  <g fill="none" stroke="#121213" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 160 H160 V120"/>
+    <path d="M392 160 H352 V120"/>
+    <path d="M120 352 H160 V392"/>
+    <!-- 액센트 Signal (#DE3B26) 코너 -->
+    <path d="M392 352 H352 V392" stroke="#DE3B26" stroke-width="16"/>
+  </g>
+  
+  <!-- 중앙의 앵커링 링 -->
+  <circle cx="256" cy="256" r="32" fill="#F2F1ED" stroke="#121213" stroke-width="16"/>
+</svg>

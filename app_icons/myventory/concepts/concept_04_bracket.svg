@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  <!-- 코너 브래킷 (인벤토리 조준/격자 앵글) -->
+  <g fill="none" stroke="#121213" stroke-width="24" stroke-linecap="square">
+    <!-- 좌상단 -->
+    <path d="M120 190 V120 H190"/>
+    <!-- 우상단 -->
+    <path d="M322 120 H392 V190"/>
+    <!-- 좌하단 -->
+    <path d="M120 322 V392 H190"/>
+    <!-- 우하단: 액센트 코너 브래킷 (Signal #DE3B26) -->
+    <path d="M322 392 H392 V322" stroke="#DE3B26"/>
+  </g>
+  <!-- 중앙의 상징적 타겟 슬롯 -->
+  <rect x="206" y="206" width="100" height="100" rx="16" fill="none" stroke="#121213" stroke-width="16"/>
+</svg>

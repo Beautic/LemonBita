@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 차분하고 깊이감 있는 미드나잇 네이비 배경 -->
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- M 형상과 그리드가 결합된 현대적 플랫 마크 -->
+  <g fill="none" stroke="#ECEFF4" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 인벤토리 외각 바운딩 박스 (상단은 열려 수집되는 형태) -->
+    <path d="M120 180 V372 H392 V180"/>
+    
+    <!-- M 기하학적 그리드 라인 -->
+    <path d="M120 220 L256 320 L392 220"/>
+    
+    <!-- 수직 분할 기둥 격자선 -->
+    <line x1="256" y1="320" x2="256" y2="372"/>
+  </g>
+  
+  <!-- 포인트 획득 도트 (Signal Red 활용하여 극소 포인트 강조) -->
+  <circle cx="256" cy="200" r="16" fill="#DE3B26"/>
+</svg>

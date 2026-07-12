@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- 스위스/바우하우스 스타일의 미니멀 그리드 교차 라인들 -->
+  <g stroke="#ECEFF4" stroke-width="16" stroke-linecap="round">
+    <!-- 가로 분할선 -->
+    <line x1="120" y1="210" x2="392" y2="210"/>
+    <line x1="120" y1="310" x2="392" y2="310"/>
+    
+    <!-- 세로 분할선 -->
+    <line x1="210" y1="120" x2="210" y2="392" stroke-opacity="0.3"/>
+    <line x1="310" y1="120" x2="310" y2="392" stroke-opacity="0.3"/>
+  </g>
+  
+  <!-- 핵심 교차 오프셋 지점의 Signal Red 획득 스팟 -->
+  <circle cx="210" cy="210" r="22" fill="#DE3B26" stroke="#141824" stroke-width="6"/>
+  <!-- 보조 수집 도트 -->
+  <circle cx="310" cy="310" r="12" fill="#ECEFF4"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  
+  <g fill="none" stroke="#121213" stroke-width="20" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Back Slot -->
+    <path d="M120 180 H392 V260 H120 Z"/>
+    
+    <!-- Mid Slot -->
+    <path d="M120 250 H392 V330 H120 Z" fill="#F2F1ED"/>
+    
+    <!-- Front Slot (Signal Accent #DE3B26) -->
+    <path d="M120 320 H392 V400 H120 Z" fill="#DE3B26" stroke="#DE3B26"/>
+    
+    <!-- 수집 인덱스 마커 -->
+    <circle cx="160" cy="215" r="10" fill="#121213"/>
+    <circle cx="160" cy="290" r="10" fill="#121213"/>
+    <circle cx="160" cy="360" r="10" fill="#F2F1ED"/>
+  </g>
+</svg>

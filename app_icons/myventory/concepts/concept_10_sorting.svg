@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  
+  <g fill="#121213">
+    <!-- 정렬 막대들 -->
+    <rect x="110" y="216" width="30" height="80" rx="15"/>
+    <rect x="160" y="176" width="30" height="160" rx="15"/>
+    <rect x="210" y="116" width="30" height="280" rx="15"/>
+    <!-- 액센트 막대: Signal (#DE3B26) -->
+    <rect x="260" y="196" width="30" height="200" rx="15" fill="#DE3B26"/>
+    <rect x="310" y="156" width="30" height="200" rx="15"/>
+    <rect x="360" y="236" width="30" height="80" rx="15"/>
+  </g>
+  
+  <!-- 전체 아우트라인 바인딩 라인 -->
+  <path d="M90 320 H422" stroke="#121213" stroke-width="16" stroke-linecap="round"/>
+</svg>

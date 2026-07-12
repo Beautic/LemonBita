@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#F2F1ED"/>
+  
+  <!-- 육각 슬롯들 -->
+  <g fill="none" stroke="#121213" stroke-width="18" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Left Top -->
+    <polygon points="176,140 256,94 336,140 336,232 256,278 176,232"/>
+    
+    <!-- Left Bottom -->
+    <polygon points="96,278 176,232 256,278 256,370 176,416 96,370"/>
+    
+    <!-- Right Bottom (Signal Accent #DE3B26) -->
+    <polygon points="256,278 336,232 416,278 416,370 336,416 256,370" fill="#DE3B26" stroke="#DE3B26"/>
+  </g>
+  
+  <!-- 셀 센터 데코 -->
+  <circle cx="256" cy="186" r="12" fill="#121213"/>
+  <circle cx="176" cy="324" r="12" fill="#121213"/>
+  <circle cx="336" cy="324" r="12" fill="#F2F1ED"/>
+</svg>

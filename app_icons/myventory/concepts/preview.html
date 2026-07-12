@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Myventory — App Icon Concept Gallery</title>
+  <style>
+    /* ─────────── TOKENS ─────────── */
+    :root {
+      --paper:      #F2F1ED; /* Bone */
+      --ink:        #121213;  /* Ink */
+      --accent:     #DE3B26;  /* Signal Accent */
+      --surface:    #FFFFFF;
+      --line:       #D7D4CB;
+      --muted:      #77746B;
+      --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-kr: "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+      --step: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:      #121213;
+        --ink:        #F2F1ED;
+        --surface:    #1B1B19;
+        --line:       #32322D;
+        --muted:      #939087;
+      }
+    }
+
+    /* ─────────── BASE STYLE ─────────── */
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-kr);
+      margin: 0;
+      padding: calc(var(--step) * 6) calc(var(--step) * 3);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: calc(var(--step) * 8);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: calc(var(--step) * 4);
+    }
+
+    .eyebrow {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: var(--step);
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 900;
+      margin: 0 0 calc(var(--step) * 2);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .desc {
+      font-size: 16px;
+      max-width: 720px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* ─────────── ICON GRID ─────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: calc(var(--step) * 4);
+      margin-bottom: calc(var(--step) * 8);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: calc(var(--step) * 3);
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--step) * 2.5);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--ink);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .icon-container {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background-color: var(--paper);
+    }
+
+    .icon-container img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .num {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .concept-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0;
+      height: 64px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    /* ─────────── SPECS FOOTER ─────────── */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: calc(var(--step) * 3);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: calc(var(--step) * 4);
+      margin-top: calc(var(--step) * 6);
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--step);
+    }
+
+    .spec-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-left: 3px solid var(--accent);
+      padding-left: 8px;
+    }
+
+    .spec-val {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .color-swatch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">Visual Brand Assets</div>
+    <h1>Myventory App Icon Concepts</h1>
+    <p class="desc">
+      옷, 피규어, 향수 등 카테고리를 가리지 않고 내가 아끼는 수집품을 게임 인벤토리처럼 정리하는 서비스 <strong>마이벤토리(Myventory)</strong>의 아이콘 후보 10종 갤러리입니다. 옷장이라는 편협한 오해에서 탈피하고 격자(Grid)와 슬롯(Slot), 수집(Collect)의 은유만을 플랫하고 정제되게 표현했습니다.
+    </p>
+  </header>
+
+  <main class="grid">
+    <!-- Card 01 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_01_matrix.svg" alt="Concept 01 Matrix">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 01</span>
+        <h3 class="title">The Matrix Block</h3>
+        <p class="concept-desc">3x3 슬롯 격자망의 조합입니다. 점선 형태의 중앙 빈 슬롯과 우하단 단색 Signal 컬러의 획득 슬롯을 대비시켜 수집품이 차곡차곡 쌓여가는 쾌감을 직접적으로 상징합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 02 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_02_node.svg" alt="Concept 02 Node">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 02</span>
+        <h3 class="title">Item Node Network</h3>
+        <p class="concept-desc">각 수집 아이템들이 정교하게 정돈되어 연결선을 형성하는 모습입니다. 종류를 가리지 않고 서로가 유기적으로 보관함 내에 구성되는 점조직망을 형상화했습니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 03 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_03_floating.svg" alt="Concept 03 Floating">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 03</span>
+        <h3 class="title">Floating Slots</h3>
+        <p class="concept-desc">다양한 규격의 아이템 슬롯이 대각선 흐름으로 자유롭게 수납되는 모던한 캐주얼 매트릭스입니다. Signal 액센트가 시선을 우하단으로 리드미컬하게 유도합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 04 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_04_bracket.svg" alt="Concept 04 Bracket">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 04</span>
+        <h3 class="title">L-Shape Bracket</h3>
+        <p class="concept-desc">아이템의 경계를 명확히 획정해주는 네 모서리의 인벤토리 브래킷 앵글을 극도로 미니멀하게 추상화했습니다. Signal 액센트 앵글이 소유와 소장의 가치를 강조합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 05 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_05_shelf.svg" alt="Concept 05 Shelf">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 05</span>
+        <h3 class="title">Minimal Shelf</h3>
+        <p class="concept-desc">기하학적 아이템들이 3단 정돈 선반 위에 완벽하게 큐레이션된 상태를 수평 라인과 도형들로 연출했습니다. 심플하면서도 확실한 보관 능력을 상징합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 06 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_06_folder.svg" alt="Concept 06 Folder">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 06</span>
+        <h3 class="title">Layered Folders</h3>
+        <p class="concept-desc">차곡차곡 계단식으로 밀착 적재된 수평 슬롯들의 조합입니다. 수집 상황을 나타내는 인덱스 마커와 맨 앞 Signal 컬러를 통해 역동적인 아카이브를 의미합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 07 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_07_focus.svg" alt="Concept 07 Focus">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 07</span>
+        <h3 class="title">Focus Target</h3>
+        <p class="concept-desc">인벤토리 내부의 하나의 특정 수집품을 확대하여 조준경 십자선과 타겟팅 스팟으로 집중하는 모습입니다. 소중히 아끼는 단 하나의 소장품에 초점을 맞춥니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 08 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_08_cross.svg" alt="Concept 08 Cross">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 08</span>
+        <h3 class="title">Pocket Cross</h3>
+        <p class="concept-desc">게임의 십자 조작키 및 인벤토리 분할 가이드선에서 영감을 얻은 기하학적 십자 레이아웃입니다. Signal 컬러의 코너 앵커가 심플하면서도 견고한 디자인을 완성합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 09 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_09_hexagon.svg" alt="Concept 09 Hexagon">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 09</span>
+        <h3 class="title">Segmented Hexagon</h3>
+        <p class="concept-desc">유기적으로 확장 가능한 벌집 형태의 수집 격자망을 형상화했습니다. Signal 컬러로 채워진 육각 스팟이 획득 아이템의 짜릿한 성취감을 대변합니다.</p>
+      </div>
+    </div>
+
+    <!-- Card 10 -->
+    <div class="card">
+      <div class="icon-container">
+        <img src="concept_10_sorting.svg" alt="Concept 10 Sorting">
+      </div>
+      <div class="info">
+        <span class="num">CONCEPT 10</span>
+        <h3 class="title">Sorting Bar Lines</h3>
+        <p class="concept-desc">서로 다른 높이를 가진 정렬 슬롯 바들이 리드미컬하게 정돈된 형상입니다. 바코드 또는 보관 상태 주파수를 메타포로 한 디지털 수집 큐레이션을 상징합니다.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="specs-grid">
+    <div class="spec-item">
+      <div class="spec-title">제일 중요한 제약사항</div>
+      <p class="spec-val">
+        "옷장 앱"이 아니므로 옷걸이, 티셔츠, 물류상자, 금고 등 특정 분야에 한정되거나 오해를 부르는 구상적 메타포를 철저히 배제하고, 수집품 슬롯과 격자(Grid) 중심의 은유만 적용했습니다.
+      </p>
+    </div>
+    <div class="spec-item">
+      <div class="spec-title">컬러 시스템 규정 (3색)</div>
+      <div class="spec-val">
+        <div class="color-swatch"><div class="swatch" style="background:#121213"></div><strong>Ink</strong> (#121213) — 마크 및 테두리</div>
+        <div class="color-swatch"><div class="swatch" style="background:#F2F1ED"></div><strong>Bone</strong> (#F2F1ED) — 배경색</div>
+        <div class="color-swatch"><div class="swatch" style="background:#DE3B26"></div><strong>Signal</strong> (#DE3B26) — 레드 액센트 (5% 이하 적용)</div>
+      </div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-title">스타일 정책</div>
+      <p class="spec-val">
+        그라디언트, 3D 질감, 광택, 드롭 섀도우를 일절 배제하여 디바이스 크기나 해상도에 무관하게 칼 같은 선명함을 보여주는 Flat Vector 그래픽 규격으로 드로잉되었습니다.
+      </p>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>

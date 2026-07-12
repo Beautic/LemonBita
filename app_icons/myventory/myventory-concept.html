@@ -1,0 +1,1286 @@
+<title>Myventory — 아이콘 &amp; UI 컨셉</title>
+
+<style>
+  /* ─────────── TOKENS ─────────── */
+  :root {
+    --paper:      #F2F1ED;
+    --surface:    #FFFFFF;
+    --slot:       #E5E3DC;
+    --line:       #D7D4CB;
+    --line-soft:  #E4E1D9;
+    --ink:        #121213;
+    --ink-2:      #46443F;
+    --muted:      #77746B;
+    --accent:     #DE3B26;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(222, 59, 38, 0.09);
+
+    --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --font-kr: "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+
+    --step: 8px;
+    --radius: 4px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #131312;
+      --surface:    #1B1B19;
+      --slot:       #232320;
+      --line:       #32322D;
+      --line-soft:  #262622;
+      --ink:        #EDEBE5;
+      --ink-2:      #B5B2A9;
+      --muted:      #939087;
+      --accent:     #F04A2F;
+      --accent-ink: #16110F;
+      --accent-soft: rgba(240, 74, 47, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #131312;
+    --surface:    #1B1B19;
+    --slot:       #232320;
+    --line:       #32322D;
+    --line-soft:  #262622;
+    --ink:        #EDEBE5;
+    --ink-2:      #B5B2A9;
+    --muted:      #939087;
+    --accent:     #F04A2F;
+    --accent-ink: #16110F;
+    --accent-soft: rgba(240, 74, 47, 0.13);
+  }
+  :root[data-theme="light"] {
+    --paper:      #F2F1ED;
+    --surface:    #FFFFFF;
+    --slot:       #E5E3DC;
+    --line:       #D7D4CB;
+    --line-soft:  #E4E1D9;
+    --ink:        #121213;
+    --ink-2:      #46443F;
+    --muted:      #77746B;
+    --accent:     #DE3B26;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(222, 59, 38, 0.09);
+  }
+
+  /* ─────────── BASE ─────────── */
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-kr);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: calc(var(--step) * 7) calc(var(--step) * 3) calc(var(--step) * 12);
+  }
+
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ─────────── TYPE ─────────── */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(44px, 8vw, 82px);
+    letter-spacing: -0.035em;
+    line-height: 0.92;
+    margin: calc(var(--step) * 2) 0 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(24px, 3.4vw, 34px);
+    letter-spacing: -0.022em;
+    line-height: 1.15;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--font-kr);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  p { margin: 0; max-width: 62ch; }
+  .lede { font-size: 17px; color: var(--ink-2); line-height: 1.65; }
+  .small { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  strong { font-weight: 700; color: var(--ink); }
+
+  /* ─────────── HEADER ─────────── */
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 3);
+    padding-bottom: calc(var(--step) * 6);
+    border-bottom: 1px solid var(--line);
+  }
+  .mast-top {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 2.5);
+    flex-wrap: wrap;
+  }
+  .mast-mark {
+    width: 52px; height: 52px;
+    flex: 0 0 52px;
+  }
+  .kr-name {
+    font-family: var(--font-kr);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .mast-meta {
+    display: flex;
+    gap: calc(var(--step) * 3);
+    flex-wrap: wrap;
+    padding-top: calc(var(--step) * 1);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-k {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .meta-v { font-size: 14px; font-weight: 600; }
+
+  /* ─────────── SECTIONS ─────────── */
+  section { padding-top: calc(var(--step) * 9); }
+
+  .sec-head {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--step) * 2.5);
+    margin-bottom: calc(var(--step) * 4);
+  }
+  /* the slot motif: section markers live in inventory cells */
+  .sec-slot {
+    flex: 0 0 auto;
+    width: 34px; height: 34px;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface);
+    margin-top: 3px;
+  }
+  .sec-title-group { display: flex; flex-direction: column; gap: calc(var(--step) * 1); }
+
+  /* ─────────── MAPPING TABLE ─────────── */
+  .map {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .map-row {
+    display: contents;
+  }
+  .map-cell {
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.25);
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 14.5px;
+    display: flex;
+    align-items: center;
+  }
+  .map-cell.k { color: var(--muted); }
+  .map-cell.arrow {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding-inline: calc(var(--step) * 1);
+    justify-content: center;
+  }
+  .map-cell.v { font-weight: 600; }
+  .map-row:last-child .map-cell { border-bottom: none; }
+  .map-head .map-cell {
+    background: var(--slot);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding-block: calc(var(--step) * 1.25);
+  }
+
+  /* ─────────── ICON GRID ─────────── */
+  .icons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: calc(var(--step) * 2.5);
+  }
+  .icard {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: calc(var(--step) * 3);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 2.25);
+    position: relative;
+  }
+  .icard.pick { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .pick-tag {
+    position: absolute;
+    top: -1px; right: calc(var(--step) * 2.5);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .icard-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--step); }
+  .icard-id {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .renders {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 2);
+    flex-wrap: wrap;
+  }
+  .app-icon {
+    width: 92px; height: 92px;
+    border-radius: 21px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--line-soft);
+  }
+  .app-icon.on-light { background: #F2F1ED; }
+  .app-icon.on-dark  { background: #17171A; border-color: #2A2A2C; }
+  .app-icon svg { width: 68px; height: 68px; display: block; }
+  .app-icon-sm {
+    width: 46px; height: 46px;
+    border-radius: 10.5px;
+    display: grid; place-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--line-soft);
+    background: #F2F1ED;
+  }
+  .app-icon-sm svg { width: 34px; height: 34px; display: block; }
+  .render-note {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .render-col { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+
+  .verdict {
+    display: flex;
+    gap: calc(var(--step) * 1);
+    align-items: flex-start;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    padding-top: calc(var(--step) * 1.5);
+    border-top: 1px solid var(--line-soft);
+  }
+  .verdict .vk {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    flex: 0 0 42px;
+    letter-spacing: 0.08em;
+    padding-top: 3px;
+  }
+
+  /* ─────────── PHONES ─────────── */
+  .phones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+    gap: calc(var(--step) * 3.5);
+    justify-items: center;
+  }
+  .phone-col { display: flex; flex-direction: column; gap: calc(var(--step) * 2); align-items: center; width: 100%; max-width: 280px; }
+  .phone {
+    width: 100%;
+    max-width: 268px;
+    aspect-ratio: 268 / 560;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    padding: 10px 9px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 32px -18px rgba(0,0,0,0.35);
+  }
+  .p-status {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    color: var(--muted);
+    padding: 2px 6px 8px;
+  }
+  .p-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px 10px;
+  }
+  .p-word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .p-icons { display: flex; gap: 7px; align-items: center; }
+  .dotbtn { width: 13px; height: 13px; border: 1.4px solid var(--ink); border-radius: 3px; }
+  .dotbtn.round { border-radius: 50%; }
+  .bell-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; margin-left: -6px; margin-top: -8px; }
+
+  .p-chips { display: flex; gap: 5px; padding: 0 4px 9px; overflow: hidden; }
+  .chip {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+    background: var(--surface);
+  }
+  .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .p-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 0 4px;
+  }
+  .p-slot {
+    aspect-ratio: 1;
+    background: var(--slot);
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .p-slot svg { width: 56%; height: 56%; opacity: 0.72; }
+  .p-slot.fav::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    border-width: 0 9px 9px 0;
+    border-style: solid;
+    border-color: transparent var(--accent) transparent transparent;
+  }
+  .p-slot.empty {
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--line);
+  }
+  .p-slot.empty svg { opacity: 0.32; }
+
+  .p-nav {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 9px 4px 3px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .navi { width: 15px; height: 15px; opacity: 0.28; }
+  .navi.on { opacity: 1; }
+
+  .p-caption { text-align: center; }
+  .p-caption .t { font-weight: 700; font-size: 14px; }
+  .p-caption .d { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  /* folder cards inside phone 2 */
+  .p-folders { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; }
+  .p-folder {
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    padding: 7px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+  }
+  .p-folder-mini {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    flex: 0 0 auto;
+  }
+  .p-folder-mini i {
+    display: block;
+    width: 8px; height: 8px;
+    background: var(--slot);
+    border-radius: 1.5px;
+  }
+  .p-folder-mini i.f { background: var(--ink); opacity: 0.55; }
+  .p-folder-mini i.a { background: var(--accent); }
+  .p-folder-txt { flex: 1; min-width: 0; }
+  .p-folder-txt .n { font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-folder-txt .c { font-family: var(--font-mono); font-size: 8.5px; color: var(--muted); }
+
+  /* item detail phone 3 */
+  .p-hero {
+    margin: 0 4px 9px;
+    aspect-ratio: 1;
+    background: var(--slot);
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    position: relative;
+  }
+  .p-hero svg { width: 46%; height: 46%; opacity: 0.8; }
+  .p-hero .corner {
+    position: absolute; top: 0; right: 0;
+    border-width: 0 14px 14px 0;
+    border-style: solid;
+    border-color: transparent var(--accent) transparent transparent;
+  }
+  .p-stats { padding: 0 4px; display: flex; flex-direction: column; gap: 0; }
+  .p-stat {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 9.5px;
+  }
+  .p-stat .k { font-family: var(--font-mono); color: var(--muted); font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .p-stat .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .p-stat .v.acc { color: var(--accent); }
+  .p-cta {
+    margin: 10px 4px 0;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 6px;
+    text-align: center;
+    padding: 9px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  /* ─────────── TOKENS SECTION ─────────── */
+  .tok-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: calc(var(--step) * 2.5);
+  }
+  .tok-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: calc(var(--step) * 2.5);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 1.5);
+  }
+  .tok-panel h3 { margin-bottom: calc(var(--step) * 0.5); }
+  .swatch-row { display: flex; align-items: center; gap: calc(var(--step) * 1.5); }
+  .sw {
+    width: 30px; height: 30px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    flex: 0 0 auto;
+  }
+  .sw-txt { display: flex; flex-direction: column; line-height: 1.35; }
+  .sw-name { font-size: 12.5px; font-weight: 600; }
+  .sw-hex { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+
+  .type-spec { display: flex; flex-direction: column; gap: 3px; padding-bottom: calc(var(--step) * 1.25); border-bottom: 1px solid var(--line-soft); }
+  .type-spec:last-child { border-bottom: none; padding-bottom: 0; }
+  .type-sample { font-size: 21px; letter-spacing: -0.01em; }
+  .type-sample.disp { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+  .type-sample.mo { font-family: var(--font-mono); font-size: 15px; }
+  .type-role { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ─────────── CHECKLIST ─────────── */
+  .checks { display: flex; flex-direction: column; gap: 1px; background: var(--line-soft); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .check {
+    background: var(--surface);
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.25);
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    gap: calc(var(--step) * 1.75);
+    align-items: center;
+  }
+  .check-box {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 3px;
+  }
+  .check-body { min-width: 0; }
+  .check-t { font-size: 14px; font-weight: 600; }
+  .check-d { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .check-d code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--slot);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink-2);
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tag.hot { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  /* ─────────── NOTE ─────────── */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.5);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    max-width: none;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: calc(var(--step) * 3); }
+  .stack-sm { display: flex; flex-direction: column; gap: calc(var(--step) * 2); }
+
+  @media (max-width: 620px) {
+    .map { grid-template-columns: 1fr auto 1fr; }
+    .map-cell { padding: calc(var(--step) * 1.5); font-size: 13px; }
+    .wrap { padding-inline: calc(var(--step) * 2); }
+  }
+</style>
+
+<div class="wrap">
+
+  <!-- ══════════ MASTHEAD ══════════ -->
+  <header class="masthead">
+    <div class="mast-top">
+      <svg class="mast-mark" viewBox="0 0 128 128" aria-label="Myventory 마크" role="img">
+        <g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2">
+          <rect x="32" y="9" width="18" height="18" rx="4"/><rect x="55" y="9" width="18" height="18" rx="4"/><rect x="78" y="9" width="18" height="18" rx="4"/>
+          <rect x="55" y="32" width="18" height="18" rx="4"/>
+          <rect x="32" y="55" width="18" height="18" rx="4"/><rect x="78" y="55" width="18" height="18" rx="4"/>
+          <rect x="32" y="78" width="18" height="18" rx="4"/><rect x="55" y="78" width="18" height="18" rx="4"/><rect x="78" y="78" width="18" height="18" rx="4"/>
+          <rect x="32" y="101" width="18" height="18" rx="4"/><rect x="55" y="101" width="18" height="18" rx="4"/><rect x="78" y="101" width="18" height="18" rx="4"/>
+        </g>
+        <g fill="currentColor">
+          <rect x="9" y="9" width="18" height="18" rx="4"/><rect x="101" y="9" width="18" height="18" rx="4"/>
+          <rect x="9" y="32" width="18" height="18" rx="4"/><rect x="32" y="32" width="18" height="18" rx="4"/><rect x="78" y="32" width="18" height="18" rx="4"/><rect x="101" y="32" width="18" height="18" rx="4"/>
+          <rect x="9" y="55" width="18" height="18" rx="4"/><rect x="101" y="55" width="18" height="18" rx="4"/>
+          <rect x="9" y="78" width="18" height="18" rx="4"/><rect x="101" y="78" width="18" height="18" rx="4"/>
+          <rect x="9" y="101" width="18" height="18" rx="4"/><rect x="101" y="101" width="18" height="18" rx="4"/>
+        </g>
+        <rect x="55" y="55" width="18" height="18" rx="4" fill="var(--accent)"/>
+      </svg>
+      <div>
+        <p class="eyebrow">브랜드 &amp; 프로덕트 컨셉 · v1</p>
+        <h1>MYVENTORY</h1>
+      </div>
+    </div>
+
+    <p class="lede">
+      옷장 앱에서 <strong>내 아이템 인벤토리</strong>로. 옷·피규어·말랑이 — 무엇을 담아도
+      어색하지 않은 프레임을 만들기 위한 아이콘·UI 컨셉안입니다.
+    </p>
+
+    <div class="mast-meta">
+      <div class="meta-item"><span class="meta-k">영문</span><span class="meta-v">Myventory</span></div>
+      <div class="meta-item"><span class="meta-k">한글</span><span class="meta-v">마이벤토리</span></div>
+      <div class="meta-item"><span class="meta-k">애칭</span><span class="meta-v">마벤</span></div>
+      <div class="meta-item"><span class="meta-k">메타포</span><span class="meta-v">게임 인벤토리</span></div>
+      <div class="meta-item"><span class="meta-k">현재 버전</span><span class="meta-v">5.3.0</span></div>
+    </div>
+  </header>
+
+  <!-- ══════════ 01 · 컨셉 ══════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-slot">01</div>
+      <div class="sec-title-group">
+        <h2>인벤토리 메타포</h2>
+        <p class="small">모든 디자인 결정이 이 매핑 하나에서 파생됩니다. 옷에만 성립하는 개념은 전부 버립니다.</p>
+      </div>
+    </div>
+
+    <div class="map">
+      <div class="map-row map-head">
+        <div class="map-cell k">게임 인벤토리</div>
+        <div class="map-cell arrow"></div>
+        <div class="map-cell v">Myventory</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">격자 슬롯 (Slot)</div><div class="map-cell arrow">→</div><div class="map-cell v">아이템 그리드 — 3열 정사각 슬롯</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">가방 · 파우치 탭</div><div class="map-cell arrow">→</div><div class="map-cell v">폴더 — 옷장 / 헌터×헌터 / 원피스 / 말랑이</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">장착 (Equip)</div><div class="map-cell arrow">→</div><div class="map-cell v">OOTD — 오늘 착용한 아이템</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">아이템 스탯</div><div class="map-cell arrow">→</div><div class="map-cell v">상세 정보 — 브랜드 / 색 / 획득일 / 착용 횟수</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">희귀도 (Rarity)</div><div class="map-cell arrow">→</div><div class="map-cell v">즐겨찾기 — 슬롯 모서리에 붉은 마커</div>
+      </div>
+      <div class="map-row">
+        <div class="map-cell k">빈 슬롯</div><div class="map-cell arrow">→</div><div class="map-cell v">아이템 추가 — "아직 자리가 남아있다"</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 02 · 아이콘 ══════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-slot">02</div>
+      <div class="sec-title-group">
+        <h2>아이콘 시안</h2>
+        <p class="small">각 시안은 92px(스토어)와 46px(홈 화면) 두 크기, 그리고 라이트·다크 배경에서 검증했습니다. 작은 크기에서 무너지면 탈락입니다.</p>
+      </div>
+    </div>
+
+    <div class="icons">
+
+      <!-- A · Pixel M -->
+      <article class="icard pick">
+        <span class="pick-tag">추천</span>
+        <div class="icard-head">
+          <h3>픽셀 M</h3>
+          <span class="icard-id">A</span>
+        </div>
+        <div class="renders">
+          <div class="render-col">
+            <div class="app-icon on-light" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="픽셀 M 아이콘">
+                <g fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.22">
+                  <rect x="32" y="9" width="18" height="18" rx="4"/><rect x="55" y="9" width="18" height="18" rx="4"/><rect x="78" y="9" width="18" height="18" rx="4"/>
+                  <rect x="55" y="32" width="18" height="18" rx="4"/>
+                  <rect x="32" y="55" width="18" height="18" rx="4"/><rect x="78" y="55" width="18" height="18" rx="4"/>
+                  <rect x="32" y="78" width="18" height="18" rx="4"/><rect x="55" y="78" width="18" height="18" rx="4"/><rect x="78" y="78" width="18" height="18" rx="4"/>
+                  <rect x="32" y="101" width="18" height="18" rx="4"/><rect x="55" y="101" width="18" height="18" rx="4"/><rect x="78" y="101" width="18" height="18" rx="4"/>
+                </g>
+                <g fill="currentColor">
+                  <rect x="9" y="9" width="18" height="18" rx="4"/><rect x="101" y="9" width="18" height="18" rx="4"/>
+                  <rect x="9" y="32" width="18" height="18" rx="4"/><rect x="32" y="32" width="18" height="18" rx="4"/><rect x="78" y="32" width="18" height="18" rx="4"/><rect x="101" y="32" width="18" height="18" rx="4"/>
+                  <rect x="9" y="55" width="18" height="18" rx="4"/><rect x="101" y="55" width="18" height="18" rx="4"/>
+                  <rect x="9" y="78" width="18" height="18" rx="4"/><rect x="101" y="78" width="18" height="18" rx="4"/>
+                  <rect x="9" y="101" width="18" height="18" rx="4"/><rect x="101" y="101" width="18" height="18" rx="4"/>
+                </g>
+                <rect x="55" y="55" width="18" height="18" rx="4" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">92px</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon on-dark" style="color:#EDEBE5">
+              <svg viewBox="0 0 128 128" role="img" aria-label="픽셀 M 아이콘 (다크)">
+                <g fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.22">
+                  <rect x="32" y="9" width="18" height="18" rx="4"/><rect x="55" y="9" width="18" height="18" rx="4"/><rect x="78" y="9" width="18" height="18" rx="4"/>
+                  <rect x="55" y="32" width="18" height="18" rx="4"/>
+                  <rect x="32" y="55" width="18" height="18" rx="4"/><rect x="78" y="55" width="18" height="18" rx="4"/>
+                  <rect x="32" y="78" width="18" height="18" rx="4"/><rect x="55" y="78" width="18" height="18" rx="4"/><rect x="78" y="78" width="18" height="18" rx="4"/>
+                  <rect x="32" y="101" width="18" height="18" rx="4"/><rect x="55" y="101" width="18" height="18" rx="4"/><rect x="78" y="101" width="18" height="18" rx="4"/>
+                </g>
+                <g fill="currentColor">
+                  <rect x="9" y="9" width="18" height="18" rx="4"/><rect x="101" y="9" width="18" height="18" rx="4"/>
+                  <rect x="9" y="32" width="18" height="18" rx="4"/><rect x="32" y="32" width="18" height="18" rx="4"/><rect x="78" y="32" width="18" height="18" rx="4"/><rect x="101" y="32" width="18" height="18" rx="4"/>
+                  <rect x="9" y="55" width="18" height="18" rx="4"/><rect x="101" y="55" width="18" height="18" rx="4"/>
+                  <rect x="9" y="78" width="18" height="18" rx="4"/><rect x="101" y="78" width="18" height="18" rx="4"/>
+                  <rect x="9" y="101" width="18" height="18" rx="4"/><rect x="101" y="101" width="18" height="18" rx="4"/>
+                </g>
+                <rect x="55" y="55" width="18" height="18" rx="4" fill="#F04A2F"/>
+              </svg>
+            </div>
+            <span class="render-note">다크</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon-sm" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="픽셀 M 아이콘 (소형)">
+                <g fill="currentColor">
+                  <rect x="9" y="9" width="18" height="18" rx="4"/><rect x="101" y="9" width="18" height="18" rx="4"/>
+                  <rect x="9" y="32" width="18" height="18" rx="4"/><rect x="32" y="32" width="18" height="18" rx="4"/><rect x="78" y="32" width="18" height="18" rx="4"/><rect x="101" y="32" width="18" height="18" rx="4"/>
+                  <rect x="9" y="55" width="18" height="18" rx="4"/><rect x="101" y="55" width="18" height="18" rx="4"/>
+                  <rect x="9" y="78" width="18" height="18" rx="4"/><rect x="101" y="78" width="18" height="18" rx="4"/>
+                  <rect x="9" y="101" width="18" height="18" rx="4"/><rect x="101" y="101" width="18" height="18" rx="4"/>
+                </g>
+                <rect x="55" y="55" width="18" height="18" rx="4" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">46px</span>
+          </div>
+        </div>
+        <p class="small">5×5 슬롯 격자에 <strong>M</strong>이 픽셀로 새겨집니다. 브랜드 이니셜과 인벤토리 개념이 한 마크 안에 동시에 들어가는 유일한 시안. 중앙의 붉은 슬롯은 "내 컬렉션의 중심에 있는 아이템".</p>
+        <div class="verdict">
+          <span class="vk">46px</span>
+          <span>빈 슬롯 외곽선을 빼면 M만 남아 작은 크기에서도 또렷합니다. 소형 전용 심볼을 따로 관리해야 하는 건 유일한 부담.</span>
+        </div>
+      </article>
+
+      <!-- B · Slot -->
+      <article class="icard">
+        <div class="icard-head">
+          <h3>슬롯</h3>
+          <span class="icard-id">B</span>
+        </div>
+        <div class="renders">
+          <div class="render-col">
+            <div class="app-icon on-light" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="슬롯 아이콘">
+                <rect x="16" y="16" width="44" height="44" rx="9" fill="currentColor"/>
+                <rect x="68.5" y="18.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="18.5" y="70.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="68" y="68" width="44" height="44" rx="9" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">92px</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon on-dark" style="color:#EDEBE5">
+              <svg viewBox="0 0 128 128" role="img" aria-label="슬롯 아이콘 (다크)">
+                <rect x="16" y="16" width="44" height="44" rx="9" fill="currentColor"/>
+                <rect x="68.5" y="18.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="18.5" y="70.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="68" y="68" width="44" height="44" rx="9" fill="#F04A2F"/>
+              </svg>
+            </div>
+            <span class="render-note">다크</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon-sm" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="슬롯 아이콘 (소형)">
+                <rect x="16" y="16" width="44" height="44" rx="9" fill="currentColor"/>
+                <rect x="68.5" y="18.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="18.5" y="70.5" width="39" height="39" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+                <rect x="68" y="68" width="44" height="44" rx="9" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">46px</span>
+          </div>
+        </div>
+        <p class="small">채워진 슬롯 둘, 빈 슬롯 둘. 가장 단순하고 가장 확실합니다. 어떤 크기에서도 안 무너지고, 어떤 카테고리가 들어와도 편들지 않습니다.</p>
+        <div class="verdict">
+          <span class="vk">약점</span>
+          <span>기억에 남지 않습니다. 브랜드 요소(M)가 전혀 없어서 다른 정리 앱과 구분이 안 돼요.</span>
+        </div>
+      </article>
+
+      <!-- C · Open Box -->
+      <article class="icard">
+        <div class="icard-head">
+          <h3>오픈 박스</h3>
+          <span class="icard-id">C</span>
+        </div>
+        <div class="renders">
+          <div class="render-col">
+            <div class="app-icon on-light" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="오픈 박스 아이콘">
+                <rect x="52" y="60" width="26" height="26" rx="6" fill="#DE3B26"/>
+                <path d="M24 50 L24 100 Q24 108 32 108 L96 108 Q104 108 104 100 L104 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+                <rect x="18" y="34" width="92" height="16" rx="5" fill="currentColor" transform="rotate(-3 64 42)"/>
+              </svg>
+            </div>
+            <span class="render-note">92px</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon on-dark" style="color:#EDEBE5">
+              <svg viewBox="0 0 128 128" role="img" aria-label="오픈 박스 아이콘 (다크)">
+                <rect x="52" y="60" width="26" height="26" rx="6" fill="#F04A2F"/>
+                <path d="M24 50 L24 100 Q24 108 32 108 L96 108 Q104 108 104 100 L104 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+                <rect x="18" y="34" width="92" height="16" rx="5" fill="currentColor" transform="rotate(-3 64 42)"/>
+              </svg>
+            </div>
+            <span class="render-note">다크</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon-sm" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="오픈 박스 아이콘 (소형)">
+                <rect x="52" y="60" width="26" height="26" rx="6" fill="#DE3B26"/>
+                <path d="M24 50 L24 100 Q24 108 32 108 L96 108 Q104 108 104 100 L104 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+                <rect x="18" y="34" width="92" height="16" rx="5" fill="currentColor" transform="rotate(-3 64 42)"/>
+              </svg>
+            </div>
+            <span class="render-note">46px</span>
+          </div>
+        </div>
+        <p class="small">뚜껑이 살짝 열린 상자와 그 안의 아이템. 친근하고 따뜻합니다. 현재 로그인 화면이 이미 <code style="font-family:var(--font-mono);font-size:11px">inventory_2</code> 상자 아이콘을 쓰고 있어 연속성도 있어요.</p>
+        <div class="verdict">
+          <span class="vk">약점</span>
+          <span>"택배·창고" 앱으로 오해받기 쉽습니다. 애착 아이템 앱이라는 감성이 죽어요.</span>
+        </div>
+      </article>
+
+      <!-- D · Frame M -->
+      <article class="icard">
+        <div class="icard-head">
+          <h3>프레임 M</h3>
+          <span class="icard-id">D</span>
+        </div>
+        <div class="renders">
+          <div class="render-col">
+            <div class="app-icon on-light" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="프레임 M 아이콘">
+                <rect x="14" y="14" width="100" height="100" rx="24" fill="none" stroke="currentColor" stroke-width="8"/>
+                <path d="M38 90 L38 42 L52 42 L64 62 L76 42 L90 42 L90 90 L78 90 L78 62 L64 82 L50 62 L50 90 Z" fill="currentColor"/>
+                <circle cx="103" cy="25" r="11" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">92px</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon on-dark" style="color:#EDEBE5">
+              <svg viewBox="0 0 128 128" role="img" aria-label="프레임 M 아이콘 (다크)">
+                <rect x="14" y="14" width="100" height="100" rx="24" fill="none" stroke="currentColor" stroke-width="8"/>
+                <path d="M38 90 L38 42 L52 42 L64 62 L76 42 L90 42 L90 90 L78 90 L78 62 L64 82 L50 62 L50 90 Z" fill="currentColor"/>
+                <circle cx="103" cy="25" r="11" fill="#F04A2F"/>
+              </svg>
+            </div>
+            <span class="render-note">다크</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon-sm" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="프레임 M 아이콘 (소형)">
+                <rect x="14" y="14" width="100" height="100" rx="24" fill="none" stroke="currentColor" stroke-width="8"/>
+                <path d="M38 90 L38 42 L52 42 L64 62 L76 42 L90 42 L90 90 L78 90 L78 62 L64 82 L50 62 L50 90 Z" fill="currentColor"/>
+                <circle cx="103" cy="25" r="11" fill="#DE3B26"/>
+              </svg>
+            </div>
+            <span class="render-note">46px</span>
+          </div>
+        </div>
+        <p class="small">슬롯 프레임 안의 M. 붉은 점은 "새 아이템" 배지. 가장 안전하고 가장 브랜드다운 선택입니다.</p>
+        <div class="verdict">
+          <span class="vk">약점</span>
+          <span>인벤토리 개념이 안 보입니다. 그냥 M 로고예요 — 어느 앱에나 붙을 수 있는.</span>
+        </div>
+      </article>
+
+      <!-- E · Three Slots -->
+      <article class="icard">
+        <div class="icard-head">
+          <h3>삼종 슬롯</h3>
+          <span class="icard-id">E</span>
+        </div>
+        <div class="renders">
+          <div class="render-col">
+            <div class="app-icon on-light" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="삼종 슬롯 아이콘">
+                <rect x="14" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <path d="M37 26 a4 4 0 1 1 4 4 v3 M25 48 L37 34 L49 48 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+                <rect x="68" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <circle cx="91" cy="28" r="6" fill="currentColor"/>
+                <path d="M80 50 L83 38 h16 l3 12 Z" fill="currentColor"/>
+                <rect x="14" y="68" width="46" height="46" rx="10" fill="none" stroke="#DE3B26" stroke-width="5"/>
+                <path d="M37 79 c11 0 15 8 15 15 c0 6 -7 9 -15 9 c-8 0 -15 -3 -15 -9 c0 -7 4 -15 15 -15 Z" fill="#DE3B26"/>
+                <rect x="70.5" y="70.5" width="41" height="41" rx="8" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="7 6" opacity="0.5"/>
+                <path d="M91 80 v22 M80 91 h22" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+              </svg>
+            </div>
+            <span class="render-note">92px</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon on-dark" style="color:#EDEBE5">
+              <svg viewBox="0 0 128 128" role="img" aria-label="삼종 슬롯 아이콘 (다크)">
+                <rect x="14" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <path d="M37 26 a4 4 0 1 1 4 4 v3 M25 48 L37 34 L49 48 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+                <rect x="68" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <circle cx="91" cy="28" r="6" fill="currentColor"/>
+                <path d="M80 50 L83 38 h16 l3 12 Z" fill="currentColor"/>
+                <rect x="14" y="68" width="46" height="46" rx="10" fill="none" stroke="#F04A2F" stroke-width="5"/>
+                <path d="M37 79 c11 0 15 8 15 15 c0 6 -7 9 -15 9 c-8 0 -15 -3 -15 -9 c0 -7 4 -15 15 -15 Z" fill="#F04A2F"/>
+                <rect x="70.5" y="70.5" width="41" height="41" rx="8" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="7 6" opacity="0.5"/>
+                <path d="M91 80 v22 M80 91 h22" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+              </svg>
+            </div>
+            <span class="render-note">다크</span>
+          </div>
+          <div class="render-col">
+            <div class="app-icon-sm" style="color:#121213">
+              <svg viewBox="0 0 128 128" role="img" aria-label="삼종 슬롯 아이콘 (소형)">
+                <rect x="14" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <path d="M37 26 a4 4 0 1 1 4 4 v3 M25 48 L37 34 L49 48 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+                <rect x="68" y="14" width="46" height="46" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+                <circle cx="91" cy="28" r="6" fill="currentColor"/>
+                <path d="M80 50 L83 38 h16 l3 12 Z" fill="currentColor"/>
+                <rect x="14" y="68" width="46" height="46" rx="10" fill="none" stroke="#DE3B26" stroke-width="5"/>
+                <path d="M37 79 c11 0 15 8 15 15 c0 6 -7 9 -15 9 c-8 0 -15 -3 -15 -9 c0 -7 4 -15 15 -15 Z" fill="#DE3B26"/>
+                <rect x="70.5" y="70.5" width="41" height="41" rx="8" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="7 6" opacity="0.5"/>
+                <path d="M91 80 v22 M80 91 h22" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+              </svg>
+            </div>
+            <span class="render-note">46px</span>
+          </div>
+        </div>
+        <p class="small">옷걸이 · 피규어 · 말랑이, 그리고 <strong>비어 있는 네 번째 슬롯</strong>. 확장 컨셉을 가장 정직하게 말하는 시안입니다 — "무엇이든 담을 수 있고, 아직 자리가 남았다".</p>
+        <div class="verdict">
+          <span class="vk">약점</span>
+          <span>46px에서 뭉갭니다. 앱 아이콘으로는 무리고, 온보딩·스토어 스크린샷·마케팅용 일러스트로 쓰는 게 맞습니다.</span>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="note" style="margin-top: 20px">
+      <strong>추천: A(픽셀 M).</strong> 브랜드 이니셜과 인벤토리 격자를 동시에 담은 유일한 시안이고, 빈 슬롯 외곽선만 제거하면 소형 크기도 버팁니다.
+      E(삼종 슬롯)는 아이콘이 아니라 <strong>온보딩·스토어 스크린샷</strong>으로 돌리면 "옷만 담는 앱이 아니다"를 가장 강하게 설득할 수 있습니다.
+    </div>
+  </section>
+
+  <!-- ══════════ 03 · UI ══════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-slot">03</div>
+      <div class="sec-title-group">
+        <h2>UI 컨셉</h2>
+        <p class="small">현재 앱의 흑백 모노크롬을 그대로 계승합니다. 바뀌는 건 색이 아니라 <strong>구조와 언어</strong>예요 — 3열 그리드에 슬롯 프레임을 씌우고, 카피에서 "옷"을 걷어냅니다.</p>
+      </div>
+    </div>
+
+    <div class="phones">
+
+      <!-- Phone 1: Home -->
+      <div class="phone-col">
+        <div class="phone">
+          <div class="p-status"><span>9:41</span><span>▮▮▮</span></div>
+          <div class="p-head">
+            <span class="p-word">MYVENTORY</span>
+            <div class="p-icons">
+              <div class="dotbtn round"></div>
+              <div class="bell-dot"></div>
+              <div class="dotbtn"></div>
+            </div>
+          </div>
+          <div class="p-chips">
+            <span class="chip on">전체</span>
+            <span class="chip">옷장</span>
+            <span class="chip">피규어</span>
+            <span class="chip">말랑이</span>
+          </div>
+          <div class="p-grid">
+            <div class="p-slot fav">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10a3 3 0 1 1 3 3v3"/><path d="M9 34 24 20l15 14z"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="currentColor"><circle cx="24" cy="13" r="6"/><path d="M13 38l3-14h16l3 14z"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="currentColor"><path d="M24 12c12 0 17 9 17 17 0 6-8 9-17 9s-17-3-17-9c0-8 5-17 17-17z"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M15 12h18l6 8-6 4v14H15V24l-6-4z"/></svg>
+            </div>
+            <div class="p-slot fav">
+              <svg viewBox="0 0 48 48" fill="currentColor"><circle cx="24" cy="13" r="6"/><path d="M13 38l3-14h16l3 14z"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="11" y="18" width="26" height="20" rx="3"/><path d="M18 18v-4a6 6 0 0 1 12 0v4"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="currentColor"><path d="M24 12c12 0 17 9 17 17 0 6-8 9-17 9s-17-3-17-9c0-8 5-17 17-17z"/></svg>
+            </div>
+            <div class="p-slot">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M15 12h18l6 8-6 4v14H15V24l-6-4z"/></svg>
+            </div>
+            <div class="p-slot empty">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M24 14v20M14 24h20"/></svg>
+            </div>
+          </div>
+          <div class="p-nav">
+            <svg class="navi on" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          </div>
+        </div>
+        <div class="p-caption">
+          <div class="t">인벤토리</div>
+          <div class="d">아이템이 <strong>슬롯</strong>에 놓입니다. 붉은 모서리 = 즐겨찾기, 점선 슬롯 = 추가. 옷·피규어·말랑이가 한 그리드에 공존해요.</div>
+        </div>
+      </div>
+
+      <!-- Phone 2: Folders -->
+      <div class="phone-col">
+        <div class="phone">
+          <div class="p-status"><span>9:41</span><span>▮▮▮</span></div>
+          <div class="p-head">
+            <span class="p-word">폴더</span>
+            <div class="p-icons"><div class="dotbtn"></div></div>
+          </div>
+          <div class="p-folders">
+            <div class="p-folder">
+              <div class="p-folder-mini"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+              <div class="p-folder-txt"><div class="n">옷장</div><div class="c">134 items</div></div>
+            </div>
+            <div class="p-folder">
+              <div class="p-folder-mini"><i class="f"></i><i class="a"></i><i class="f"></i><i class="f"></i></div>
+              <div class="p-folder-txt"><div class="n">헌터 × 헌터</div><div class="c">12 items</div></div>
+            </div>
+            <div class="p-folder">
+              <div class="p-folder-mini"><i class="f"></i><i class="f"></i><i></i><i></i></div>
+              <div class="p-folder-txt"><div class="n">원피스</div><div class="c">8 items</div></div>
+            </div>
+            <div class="p-folder">
+              <div class="p-folder-mini"><i class="a"></i><i class="f"></i><i class="f"></i><i class="f"></i></div>
+              <div class="p-folder-txt"><div class="n">말랑이</div><div class="c">23 items</div></div>
+            </div>
+            <div class="p-folder">
+              <div class="p-folder-mini"><i class="f"></i><i></i><i></i><i></i></div>
+              <div class="p-folder-txt"><div class="n">향수</div><div class="c">5 items</div></div>
+            </div>
+            <div class="p-folder" style="border-style:dashed; opacity:.6">
+              <div class="p-folder-mini"><i></i><i></i><i></i><i></i></div>
+              <div class="p-folder-txt"><div class="n">+ 새 폴더</div><div class="c">무엇이든</div></div>
+            </div>
+          </div>
+          <div class="p-nav">
+            <svg class="navi" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+            <svg class="navi on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          </div>
+        </div>
+        <div class="p-caption">
+          <div class="t">폴더 = 가방 탭</div>
+          <div class="d"><strong>이미 구현된 기능입니다.</strong> <code style="font-family:var(--font-mono);font-size:11px">closet_folders</code>가 다중 배정까지 지원해요. 이름만 "옷장 폴더" → "폴더"로 중립화하면 끝.</div>
+        </div>
+      </div>
+
+      <!-- Phone 3: Item detail -->
+      <div class="phone-col">
+        <div class="phone">
+          <div class="p-status"><span>9:41</span><span>▮▮▮</span></div>
+          <div class="p-head">
+            <span class="p-word" style="font-family:var(--font-kr); font-weight:700; font-size:12px">아이템</span>
+            <div class="p-icons"><div class="dotbtn"></div></div>
+          </div>
+          <div class="p-hero">
+            <span class="corner"></span>
+            <svg viewBox="0 0 48 48" fill="currentColor"><circle cx="24" cy="13" r="6"/><path d="M13 38l3-14h16l3 14z"/></svg>
+          </div>
+          <div class="p-stats">
+            <div class="p-stat"><span class="k">폴더</span><span class="v">헌터 × 헌터</span></div>
+            <div class="p-stat"><span class="k">카테고리</span><span class="v">피규어</span></div>
+            <div class="p-stat"><span class="k">색상</span><span class="v">블랙 · 실버</span></div>
+            <div class="p-stat"><span class="k">획득일</span><span class="v">2024.11.03</span></div>
+            <div class="p-stat"><span class="k">등록 후</span><span class="v">616일</span></div>
+            <div class="p-stat"><span class="k">즐겨찾기</span><span class="v acc">★ 최애</span></div>
+          </div>
+          <div class="p-cta">장착하기</div>
+          <div class="p-nav">
+            <svg class="navi on" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10"/></svg>
+            <svg class="navi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          </div>
+        </div>
+        <div class="p-caption">
+          <div class="t">아이템 = 스탯 카드</div>
+          <div class="d">필드는 <strong>카테고리에 따라 달라집니다</strong>. 옷이면 브랜드·사이즈·세탁 주기, 피규어면 시리즈·획득일. "장착"은 옷일 때만 뜹니다.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ 04 · 토큰 ══════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-slot">04</div>
+      <div class="sec-title-group">
+        <h2>디자인 토큰</h2>
+        <p class="small">현재 색이 13,000줄에 하드코딩돼 있습니다. <code class="mono">lib/theme/</code>를 신설하고 여기서부터 시작하세요.</p>
+      </div>
+    </div>
+
+    <div class="tok-grid">
+      <div class="tok-panel">
+        <h3>색</h3>
+        <div class="swatch-row"><span class="sw" style="background:#FFFFFF"></span><span class="sw-txt"><span class="sw-name">Surface</span><span class="sw-hex">#FFFFFF</span></span></div>
+        <div class="swatch-row"><span class="sw" style="background:#F7F6F3"></span><span class="sw-txt"><span class="sw-name">Ground</span><span class="sw-hex">#F7F6F3</span></span></div>
+        <div class="swatch-row"><span class="sw" style="background:#E9E7E1"></span><span class="sw-txt"><span class="sw-name">Slot</span><span class="sw-hex">#E9E7E1</span></span></div>
+        <div class="swatch-row"><span class="sw" style="background:#78756C"></span><span class="sw-txt"><span class="sw-name">Muted</span><span class="sw-hex">#78756C</span></span></div>
+        <div class="swatch-row"><span class="sw" style="background:#121213"></span><span class="sw-txt"><span class="sw-name">Ink · Primary</span><span class="sw-hex">#121213</span></span></div>
+        <div class="swatch-row"><span class="sw" style="background:#DE3B26"></span><span class="sw-txt"><span class="sw-name">Accent · Signal</span><span class="sw-hex">#DE3B26</span></span></div>
+        <p class="small" style="padding-top:4px">기존 흑백을 유지하되 회색에 <strong>따뜻한 편향</strong>을 줍니다. 붉은색은 즐겨찾기·삭제·알림 <strong>단 세 곳</strong>에만.</p>
+      </div>
+
+      <div class="tok-panel">
+        <h3>타이포</h3>
+        <div class="type-spec">
+          <span class="type-sample disp">MYVENTORY</span>
+          <span class="type-role">Display · 워드마크 · 무거운 그로테스크</span>
+        </div>
+        <div class="type-spec">
+          <span class="type-sample">내 아이템 인벤토리</span>
+          <span class="type-role">Body · Pretendard 권장 (현재 Roboto)</span>
+        </div>
+        <div class="type-spec">
+          <span class="type-sample mo">134 ITEMS · 616일</span>
+          <span class="type-role">Mono · 수치 · 슬롯 라벨 · 스탯</span>
+        </div>
+        <p class="small" style="padding-top:4px">인벤토리 UI의 성격은 <strong>모노스페이스</strong>가 만듭니다. 개수·날짜·스탯을 전부 mono로 두면 게임 인벤토리 톤이 자동으로 잡혀요.</p>
+      </div>
+
+      <div class="tok-panel">
+        <h3>슬롯 규격</h3>
+        <div class="type-spec">
+          <span class="type-sample mo" style="font-size:13px">radius&nbsp;&nbsp;6px</span>
+          <span class="type-role">아이템 슬롯</span>
+        </div>
+        <div class="type-spec">
+          <span class="type-sample mo" style="font-size:13px">gap&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6px</span>
+          <span class="type-role">그리드 간격 (현재 12/16px → 축소)</span>
+        </div>
+        <div class="type-spec">
+          <span class="type-sample mo" style="font-size:13px">ratio&nbsp;&nbsp;1 : 1</span>
+          <span class="type-role">정사각 (현재 0.6 세로형 → 변경)</span>
+        </div>
+        <p class="small" style="padding-top:4px">현재 그리드는 <code class="mono">childAspectRatio: 0.6</code>인 세로 카드 — 옷에만 맞습니다. <strong>정사각 슬롯</strong>으로 바꾸면 피규어·말랑이도 자연스러워져요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 05 · 실행 ══════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-slot">05</div>
+      <div class="sec-title-group">
+        <h2>실행 체크리스트</h2>
+        <p class="small">실제 코드베이스를 스캔해서 뽑은 항목입니다. 위에서부터 순서대로 하면 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="checks">
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">App Store Connect 이름 선점</span>
+          <span class="check-d">5분, 무료. 삭제된 구 <code>MyVentory</code> 앱의 이름 예약이 남아있을 수 있는 게 <strong>유일한 미해결 변수</strong>입니다. 막히면 <code>Myventory - 내 아이템 인벤토리</code>로 붙이면 통과.</span>
+        </span>
+        <span class="tag hot">오늘</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">도메인 등록</span>
+          <span class="check-d"><code>myventory.io</code> · <code>getmyventory.com</code> 등록 가능(whois 확인). <code>.com</code>은 Afternic 매물, <code>.app</code>은 방치 상태 — 둘 다 패스.</span>
+        </span>
+        <span class="tag hot">오늘</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">KIPRIS 상표 출원 (9류 · 42류)</span>
+          <span class="check-d">한국은 <strong>선출원주의</strong> — 먼저 낸 사람이 임자입니다. 이름 확정했으면 미루지 마세요.</span>
+        </span>
+        <span class="tag hot">이번 주</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t"><code>lib/theme/</code> 신설</span>
+          <span class="check-d">현재 테마는 <code>main.dart</code> 20줄이 전부이고, 색은 전 화면에 하드코딩. 위 토큰으로 <code>ColorScheme</code> 정의 후 점진 교체.</span>
+        </span>
+        <span class="tag">기반</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">아이콘 파이프라인 구축</span>
+          <span class="check-d"><code>flutter_launcher_icons</code>가 아예 없습니다. 패키지 추가 + <code>assets/icon/</code> 소스 이미지 제작부터.</span>
+        </span>
+        <span class="tag">기반</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">그리드 → 슬롯 전환</span>
+          <span class="check-d"><code>home_screen.dart</code>의 <code>childAspectRatio: 0.6</code> → 정사각. 슬롯 프레임·즐겨찾기 마커 추가.</span>
+        </span>
+        <span class="tag">UI</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">카피 중립화</span>
+          <span class="check-d">"옷장 → 인벤토리", "MY CLOSET → MYVENTORY", 로그인 화면 <strong>"나만의 디지털 옷장" → "내 아이템 인벤토리"</strong>.</span>
+        </span>
+        <span class="tag">UI</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">카테고리 taxonomy 확장</span>
+          <span class="check-d"><code>utils/categories.dart</code>가 옷 10종으로 고정. 최상위에 <strong>아이템 타입</strong>(의류·피규어·인형·기타)을 추가하고 그 아래 기존 옷 분류를 넣으세요. PNG 아이콘 85개도 옷 전용.</span>
+        </span>
+        <span class="tag">구조</span>
+      </div>
+      <div class="check">
+        <span class="check-box"></span>
+        <span class="check-body">
+          <span class="check-t">앱 이름 교체 (8개 파일)</span>
+          <span class="check-d"><code>pubspec.yaml</code> · <code>main.dart:33</code> · <code>AndroidManifest.xml</code> · <code>Info.plist</code> · <code>AppInfo.xcconfig</code> · <code>web/manifest.json</code> · <code>web/index.html</code> · <code>login_screen.dart:63</code>. 번들 ID(<code>com.antigravity.dress</code>)는 <strong>바꾸지 마세요</strong> — 기존 사용자가 날아갑니다.</span>
+        </span>
+        <span class="tag">배포</span>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:20px">
+      <strong>OOTD·코디 캔버스는 옷 전용 기능입니다.</strong> 지우지 말고, <em>의류 카테고리에서만 노출</em>되도록 조건부로 두세요.
+      피규어 폴더를 보고 있을 땐 "장착"이 나올 이유가 없으니까요. 이게 확장 컨셉의 핵심 원칙입니다 — <strong>기능은 아이템 타입을 따라간다.</strong>
+    </div>
+  </section>
+
+</div>

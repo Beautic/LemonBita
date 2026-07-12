@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#141824"/>
+  
+  <!-- 사선 포켓 슬롯 면 분할 (쿨 그레이) -->
+  <path d="M120 180 L256 316 L392 180 V332 C392 354 374 372 352 372 H160 C138 372 120 354 120 332 Z" fill="#252C3D"/>
+  
+  <!-- 전체 M라인 아웃라인 경계 -->
+  <path d="M120 180 L256 316 L392 180 V332 C392 354 374 372 352 372 H160 C138 372 120 354 120 332 Z" fill="none" stroke="#ECEFF4" stroke-width="20" stroke-linejoin="round" stroke-linecap="round"/>
+  
+  <!-- 수집 핵심 스팟 (Signal Red) -->
+  <circle cx="256" cy="220" r="16" fill="#DE3B26"/>
+</svg>

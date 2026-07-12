@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 테크니컬 스페이스 배경 -->
+    <radialGradient id="cube-bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#192033" />
+      <stop offset="100%" stop-color="#080B12" />
+    </radialGradient>
+    
+    <!-- 큐브 탑 쉘 그라디언트 (밝은 메탈릭 실버) -->
+    <linearGradient id="top-metal" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A5B0C5" />
+      <stop offset="100%" stop-color="#E2E8F3" />
+    </linearGradient>
+
+    <!-- 큐브 레프트 쉘 그라디언트 (진한 다크 스틸) -->
+    <linearGradient id="left-metal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4E5568" />
+      <stop offset="100%" stop-color="#212635" />
+    </linearGradient>
+
+    <!-- 큐브 라이트 쉘 그라디언트 (영롱한 Signal Red 액센트) -->
+    <linearGradient id="right-signal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF634F" />
+      <stop offset="50%" stop-color="#DE3B26" />
+      <stop offset="100%" stop-color="#9C1708" />
+    </linearGradient>
+
+    <filter id="cube-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="108" fill="url(#cube-bg)"/>
+
+  <!-- 큐브 외곽 글로우 효과 -->
+  <polygon points="256,110 386,185 386,335 256,410 126,335 126,185" fill="#DE3B26" opacity="0.12" filter="url(#cube-glow)"/>
+
+  <!-- 3D 아이소메트릭 큐브 조립체 -->
+  <!-- 큐브 본체 블랙 실루엣/라인 형성 -->
+  <polygon points="256,120 376,190 376,330 256,400 136,330 136,190" fill="#090B10" stroke="#090B10" stroke-width="12" stroke-linejoin="round"/>
+
+  <!-- 1. TOP 면 (메탈릭 실버 블록들) -->
+  <!-- Top Center -->
+  <polygon points="256,134 290,154 256,174 222,154" fill="url(#top-metal)"/>
+  <!-- Top Left -->
+  <polygon points="214,159 248,179 214,199 180,179" fill="url(#top-metal)"/>
+  <!-- Top Right -->
+  <polygon points="298,159 332,179 298,199 264,179" fill="url(#top-metal)"/>
+  <!-- Top Front -->
+  <polygon points="256,184 290,204 256,224 222,204" fill="url(#top-metal)"/>
+
+  <!-- 2. LEFT 면 (다크 그레이 수납 블록들) -->
+  <!-- Left Top -->
+  <polygon points="146,200 180,180 180,230 146,250" fill="url(#left-metal)"/>
+  <!-- Left Center -->
+  <polygon points="188,224 222,204 222,254 188,274" fill="url(#left-metal)"/>
+  <!-- Left Bottom -->
+  <polygon points="146,260 180,240 180,290 146,310" fill="url(#left-metal)"/>
+  <!-- Left Front -->
+  <polygon points="188,284 222,264 222,314 188,334" fill="url(#left-metal)"/>
+
+  <!-- 3. RIGHT 면 (Signal Red 하이라이트 활성화 수집 슬롯) -->
+  <!-- Right Top (비활성 그레이) -->
+  <polygon points="290,204 324,184 358,200 324,220" fill="#4E5568" opacity="0.3"/>
+  <polygon points="324,204 358,184 358,234 324,254" fill="url(#left-metal)"/>
+  
+  <!-- Right Center (Signal Red 활성화 #DE3B26) -->
+  <polygon points="290,224 324,204 324,254 290,274" fill="url(#right-signal)" filter="url(#cube-glow)"/>
+  <!-- Right Front (Signal Red 활성화 #DE3B26) -->
+  <polygon points="290,284 324,264 324,314 290,334" fill="url(#right-signal)" filter="url(#cube-glow)"/>
+  <!-- Right Bottom (Signal Red 활성화 #DE3B26) -->
+  <polygon points="332,260 366,240 366,290 332,310" fill="url(#right-signal)" filter="url(#cube-glow)"/>
+</svg>

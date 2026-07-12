@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 백스페이스 질감 그라디언트 -->
+    <radialGradient id="seal-bg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#1F1D1A" />
+      <stop offset="100%" stop-color="#0A0908" />
+    </radialGradient>
+
+    <!-- 왁스 실 메인 레드 그라디언트 -->
+    <radialGradient id="wax-grad" cx="45%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#FF5D47" />
+      <stop offset="70%" stop-color="#DE3B26" />
+      <stop offset="100%" stop-color="#701207" />
+    </radialGradient>
+
+    <!-- 양각 엠보싱 하이라이트/그림자 효과 필터 -->
+    <filter id="emboss" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feOffset dx="-2" dy="-2" in="blur" result="hilite" />
+      <feOffset dx="2" dy="2" in="blur" result="shadow" />
+      <feComposite in="SourceGraphic" in2="shadow" operator="out" result="embossed" />
+    </filter>
+    
+    <filter id="seal-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="108" fill="url(#seal-bg)"/>
+
+  <!-- 왁스 엠블럼 그림자 -->
+  <circle cx="260" cy="264" r="176" fill="#000000" opacity="0.6" filter="url(#seal-glow)"/>
+
+  <!-- 왁스 실 본체 (불규칙하게 흐르는 자연스러운 원형 씰) -->
+  <path d="M256,76 C300,74 350,90 380,120 C420,160 442,210 436,260 C430,310 410,360 376,396 C340,430 290,442 240,436 C190,430 140,400 106,366 C70,330 74,270 80,220 C86,170 110,120 156,90 C200,60 220,78 256,76 Z" fill="url(#wax-grad)"/>
+
+  <!-- 안쪽 원형 음각 테두리 선 -->
+  <circle cx="256" cy="256" r="130" fill="none" stroke="#701207" stroke-width="8" opacity="0.5"/>
+  <circle cx="256" cy="256" r="130" fill="none" stroke="#FFA599" stroke-width="4" opacity="0.4"/>
+
+  <!-- 중앙 양각 수집가 마크 ('M' + 격자 브래킷 융합형) -->
+  <g transform="translate(256, 256)" filter="url(#emboss)">
+    <!-- 양각 쉐도우 레이어 -->
+    <path d="M-60,50 V-30 L-20,10 L20,-10 L60,50 M-60,-50 H-30 V-20 H-60 Z M30,-50 H60 V-20 H30 Z" fill="none" stroke="#500902" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 양각 메인 하이라이트 레이어 -->
+    <path d="M-60,50 V-30 L-20,10 L20,-10 L60,50 M-60,-50 H-30 V-20 H-60 Z M30,-50 H60 V-20 H30 Z" fill="none" stroke="#FFC5BD" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- 중앙 수집 가치 보증 왕관 데코 -->
+    <polygon points="0,-48 16,-62 32,-48 24,-34 8,-34" fill="#FFC5BD"/>
+    <polygon points="0,-48 -16,-62 -32,-48 -24,-34 -8,-34" fill="#500902" opacity="0.4"/>
+  </g>
+</svg>
