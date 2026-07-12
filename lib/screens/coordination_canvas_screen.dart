@@ -218,10 +218,9 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
           const SnackBar(content: Text('코디 아이디어가 저장되었습니다!')),
         );
         setState(() {
-          _items.clear();
           _isSaving = false;
         });
-        _loadPlannedOotds();
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
