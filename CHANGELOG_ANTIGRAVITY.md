@@ -3,6 +3,22 @@
 사용자 요청 및 Claude의 피드백을 반영하여 수정된 내용을 기록합니다.
 
 
+## 2026-07-12 (v5.4.0) — HTML 렌더러 toImage 미지원 에러 수정 및 CanvasKit 에셋 폰트 패키징 적용
+
+### 1. HTML 렌더러 스크린샷 캡쳐 예외 복구 (CanvasKit 원복)
+- **구현 내용**:
+  - Flutter Web HTML 렌더러 환경에서 `RenderRepaintBoundary.toImage()` 함수 호출 시 발생하는 `toImage is not supported on the web` 런타임 차단 크래시 버그를 식별했습니다.
+  - 코디 캔버스 합성 이미지 저장 및 OOTD 등록 기능이 필수 작동되어야 하므로, 빌드 렌더러 및 index.html 엔진 렌더러 구성을 다시 **CanvasKit**으로 복원시켰습니다.
+
+### 2. CanvasKit 모바일 Safari 아이콘 미노출 고질 버그 영구 격리
+- **구현 내용**:
+  - CanvasKit 엔진이 구동될 때 iOS/Safari 브라우저의 도메인 보안 제약(CORS)으로 구글 원격 서버(fonts.gstatic.com)로부터 Material Icons 폰트 리소스를 받지 못해 아이콘이 사각형으로 깨지던 버그의 근본적 패치를 수행했습니다.
+  - Flutter SDK 내부 빌드 캐시에 있는 `MaterialIcons-Regular.otf` 폰트 파일을 프로젝트 로컬 에셋 디렉터리(`assets/fonts/MaterialIcons-Regular.otf`)로 직접 적재 복사했습니다.
+  - [pubspec.yaml](file:///Users/a421104/Documents/project/Antigravity/dress/pubspec.yaml)에 `family: MaterialIcons` 에셋을 로컬 리소스로 명시적으로 등록하여 빌드 시 `FontManifest.json`에 자체 도메인 로컬 폰트로 패키징되도록 조치했습니다.
+  - 이로써 CanvasKit 렌더러가 외부 네트워크 지연 및 CORS 제약 없이 기기 내부 패키지로부터 직접 아이콘 폰트를 퍼올려 그리기 때문에, 아이폰을 포함한 모든 모바일 웹 뷰에서도 아이콘이 깨지지 않고 100% 온전하게 노출됩니다.
+
+---
+
 ## 2026-07-12 (v5.3.3) — 원피스 레이어드 코디 자동 정렬 고도화 및 iOS 아이콘 깨짐 해결
 
 ### 1. 원피스(Onepiece/Dress) 자동 정렬 및 Z-index 정렬 고도화

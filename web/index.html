@@ -105,7 +105,7 @@
           onEntrypointLoaded: function(engineInitializer) {
             loaderMsg.innerText = "Initializing UI Engine...";
             engineInitializer.initializeEngine({
-              renderer: "html"
+              renderer: "canvaskit"
             }).then(function(appRunner) {
               loaderMsg.innerText = "Mounting App...";
               appRunner.runApp();

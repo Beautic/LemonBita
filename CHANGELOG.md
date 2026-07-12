@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v5.4.0] - 2026-07-12
+
+### Fixed
+- **HTML 렌더러 스크린샷 캡쳐 불가능 버그 해결 (CanvasKit 복귀)**:
+  - HTML 렌더러 빌드 시 `toImage is not supported on the web` 에러가 발생하여 코디 캔버스 이미지 저장 및 OOTD 등록이 차단되던 런타임 표준 오류 수정.
+  - 캔버스 스크린샷 픽셀 변환 기능 복구를 위해 Flutter Web 빌드 렌더러를 다시 **CanvasKit**으로 복구 전환 완료 (`deploy_dev.sh`, `deploy_prod.sh` 및 `web/index.html` 렌더러 셋업 원복).
+- **CanvasKit 환경 하 모바일 Safari 아이콘 깨짐 원천 박멸 (오프라인 폰트 로컬 패키징)**:
+  - CanvasKit 엔진이 fonts.gstatic.com 원격 서버에서 `MaterialIcons-Regular.otf` 웹폰트를 내려받을 때 모바일 기기의 보안 제약(CORS)으로 깨지던 이슈를 완전 해결.
+  - SDK 내장 폰트 파일을 프로젝트의 로컬 리소스 폴더(`assets/fonts/MaterialIcons-Regular.otf`)로 직접 복사하여 패키징하고, `pubspec.yaml` 에 `family: MaterialIcons` 에셋으로 영구 등록.
+  - 이를 통해 CanvasKit 엔진이 외부 망 접속 없이 도메인 로컬 폰트를 즉시 로드하도록 유도하여 모든 모바일 기기(아이폰/안드로이드)의 아이콘 선명도 100% 정상 보장 및 무오류 저장 실현.
+
 ## [v5.3.3] - 2026-07-12
 
 ### Added
