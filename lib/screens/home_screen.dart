@@ -255,6 +255,28 @@ class _HomeScreenState extends State<HomeScreen> {
             }).toList();
           }
 
+          // 2. 카테고리별 등록 벌 수 집계 및 내림차순 정렬
+          final Map<String, int> categoryCounts = {};
+          for (var doc in clothes) {
+            final data = doc.data() as Map<String, dynamic>;
+            final catName = data['category'] ?? '기타';
+            categoryCounts[catName] = (categoryCounts[catName] ?? 0) + 1;
+          }
+
+          // ALL 칩을 제외한 카테고리 복사본 정렬
+          final dynamicCategories = _categories.where((cat) => cat['name'] != 'ALL').toList();
+          dynamicCategories.sort((a, b) {
+            final countA = categoryCounts[a['name']] ?? 0;
+            final countB = categoryCounts[b['name']] ?? 0;
+            return countB.compareTo(countA); // 등록된 옷이 많은 순으로 내림차순
+          });
+
+          // ALL 칩을 맨 앞에 삽입하여 동적 최종 카테고리 목록 생성
+          final finalCategories = [
+            _categories.firstWhere((cat) => cat['name'] == 'ALL'),
+            ...dynamicCategories,
+          ];
+
           return Column(
             children: [
               _buildWeatherRecommendationCard(clothes, tagCounts),
@@ -302,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              _buildStoryCategories(),
+              _buildStoryCategories(finalCategories),
               const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
               Expanded(
                 child: filteredClothes.isEmpty
@@ -347,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 상단 인스타 스토리 형태의 카테고리
-  Widget _buildStoryCategories() {
+  Widget _buildStoryCategories(List<Map<String, dynamic>> finalCategories) {
     return Container(
       height: 100,
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -355,9 +377,9 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
+        itemCount: finalCategories.length,
         itemBuilder: (context, index) {
-          final category = _categories[index];
+          final category = finalCategories[index];
           final isSelected = _selectedCategory == category['name'];
           
           return GestureDetector(
