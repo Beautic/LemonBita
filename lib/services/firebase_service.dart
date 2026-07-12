@@ -181,6 +181,32 @@ class FirebaseService {
     }, SetOptions(merge: true));
   }
 
+  // 유저가 추가한 커스텀 카테고리 목록 가져오기
+  Future<List<String>> getUserCustomCategories() async {
+    if (currentUserId == null) return const [];
+    try {
+      final doc = await _firestore.collection('users').doc(currentUserId).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['userCustomCategories'] != null) {
+          return List<String>.from(data['userCustomCategories']);
+        }
+      }
+    } catch (e) {
+      debugPrint("Failed to fetch custom categories: $e");
+    }
+    return const [];
+  }
+
+  // 커스텀 카테고리 목록 업데이트 (추가/삭제 반영)
+  Future<void> updateUserCustomCategories(List<String> categories) async {
+    if (currentUserId == null) return;
+    await _firestore.collection('users').doc(currentUserId).set({
+      'userCustomCategories': categories,
+    }, SetOptions(merge: true));
+  }
+
+
   // 이메일 로그인
   Future<AuthUser> loginWithEmail(String email, String password) async {
     try {

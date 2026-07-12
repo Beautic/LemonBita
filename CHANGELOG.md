@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - 남성/여성에 따른 원피스, 치마 등의 필터 제외나 불필요한 카테고리를 숨기기 위한 개인 맞춤형 노출 제어 팝업 추가.
   - 가로 칩바 맨 끝에 **⚙️ 설정 칩**을 추가하고, 클릭 시 10대 카테고리 노출 여부를 토글할 수 있는 바텀 시트 구현.
   - 사용자가 선택한 카테고리 목록(`activeCategories`)을 Firestore 유저 프로필에 동기화하여 멀티 디바이스에서도 상태가 영구 보존되도록 연동.
+- **사용자 임의 카테고리 신설(Custom Category CRUD) 지원**:
+  - 기본 제공되는 10대 카테고리 외에, 사용자가 직접 원하는 카테고리(예: 수영복, 트레이닝 등)를 텍스트로 즉각 신설 및 삭제할 수 있는 기능 추가.
+  - 카테고리 설정 바텀시트에 신설 필드를 제공하고, 새로 만든 카테고리에는 범용적인 스타일 아이콘(`Icons.style`)을 자동 매핑하여 통일감 부여.
+  - 옷 업로드([UploadScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_screen.dart)), 옷 수정([ClothingDetailScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/clothing_detail_screen.dart)), 옷 검색([SearchClothesScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/search_clothes_screen.dart)) 화면의 대분류 선택 목록에도 실시간 동기화 적용.
 
 ### Changed
 - **4:5 인스타그램 피드 종횡비 개편**: 기존 9:16에서 **4:5 비율(`aspectRatio: 4 / 5`)** 카드로 전환하고 그레이 외부 배경 및 카드 드롭 섀도우를 가미해 잡지 화보 감성으로 개편.

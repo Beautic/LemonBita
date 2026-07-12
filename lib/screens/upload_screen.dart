@@ -51,6 +51,23 @@ class _UploadScreenState extends State<UploadScreen> {
     {'name': '핑크', 'color': Colors.pink},
   ];
 
+  List<String> _customCategories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomCategories();
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final list = await _firebaseService.getUserCustomCategories();
+    if (mounted) {
+      setState(() {
+        _customCategories = list;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _colorController.dispose();
@@ -355,7 +372,10 @@ class _UploadScreenState extends State<UploadScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: CategoryData.mainCategories.map((category) {
+              children: [
+                ...CategoryData.mainCategories,
+                ..._customCategories,
+              ].map((category) {
                 final isSelected = _selectedCategory == category;
                 return ChoiceChip(
                   label: Text(category),

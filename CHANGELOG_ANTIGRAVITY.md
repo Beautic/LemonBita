@@ -47,6 +47,13 @@
   - 가로 스크롤 칩바 맨 우측 끝에 **⚙️ 설정 칩**을 유기적으로 이식하고, 탭 시 10대 카테고리의 노출 상태를 개별 토글할 수 있는 미니멀 바텀 시트를 제공합니다.
   - 사용자가 저장한 activeCategories 설정을 Firestore 사용자 정보 문서에 `activeCategories` 필드로 병합 저장(`SetOptions(merge: true)`)하여 기기를 바꾸더라도 필터 셋업이 동일하게 자동 보존됩니다.
 
+### 8. 사용자 임의 카테고리 신설(Custom Category CRUD) 지원 및 인프라 연동
+- **구현 내용**:
+  - 기본으로 지원하는 10대 카테고리 외에, 사용자가 직접 자신만의 카테고리(예: 수영복, 피트니스 등)를 생성하거나 삭제할 수 있도록 확장했습니다.
+  - 카테고리 설정 바텀시트 상단에 신설 텍스트 인풋 폼을 추가하여 입력 시 `userCustomCategories` 리스트에 담아 Firestore 유저 도큐먼트에 영구 반영되도록 설계했습니다.
+  - 생성된 신규 커스텀 카테고리는 가로 칩바에 범용 태그 스타일 아이콘(`Icons.style`)으로 자동 정렬 노출됩니다.
+  - 신규 옷 등록([UploadScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_screen.dart)), 정보 수정([ClothingDetailScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/clothing_detail_screen.dart)), 의류 검색([SearchClothesScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/search_clothes_screen.dart)) 내 대분류 선택 드롭다운 및 필터 칩 목록에도 실시간으로 동기화되어 커스텀 카테고리로의 분류 배정이 완벽하게 이루어집니다.
+
 ---
 
 ## 2026-06-20 (v5.2) — OOTD 등록 즉시 반영 및 세탁 필요 메인 가시성 확보, 배포 규칙 지정

@@ -81,6 +81,8 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     {'name': '핑크', 'color': Colors.pink},
   ];
 
+  List<String> _customCategories = [];
+
   @override
   void initState() {
     super.initState();
@@ -110,10 +112,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     _fitController = TextEditingController(text: widget.item['fit'] ?? '');
     _lengthController = TextEditingController(text: widget.item['length'] ?? '');
     
-    _selectedCategory = widget.item['category'] ?? CategoryData.mainCategories.first;
-    if (!CategoryData.mainCategories.contains(_selectedCategory)) {
-      _selectedCategory = CategoryData.mainCategories.first;
-    }
+    _selectedCategory = widget.item['category'] ?? '상의';
     
     _selectedSubCategory = widget.item['subCategory'] ?? '';
     if (_selectedSubCategory.isNotEmpty && !CategoryData.getSubCategories(_selectedCategory).contains(_selectedSubCategory)) {
@@ -131,7 +130,21 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
     } else {
       _selectedFolderIds = [];
     }
-    
+
+    _loadCustomCategoriesAndInit();
+  }
+
+  Future<void> _loadCustomCategoriesAndInit() async {
+    final list = await _firebaseService.getUserCustomCategories();
+    if (mounted) {
+      setState(() {
+        _customCategories = list;
+        final allMain = [...CategoryData.mainCategories, ..._customCategories];
+        if (!allMain.contains(_selectedCategory)) {
+          _selectedCategory = allMain.isNotEmpty ? allMain.first : '상의';
+        }
+      });
+    }
   }
 
   @override
@@ -541,7 +554,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
                     decoration: _inputDecoration('대분류 선택'),
-                    items: CategoryData.mainCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    items: [...CategoryData.mainCategories, ..._customCategories].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                     onChanged: (val) {
                       setState(() {
                         _selectedCategory = val!;

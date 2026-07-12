@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   List<String> _activeCategories = ['상의', '원피스', '바지', '치마', '아우터', '신발', '가방', '모자', '악세서리', '기타'];
+  List<String> _userCustomCategories = [];
 
   @override
   void initState() {
@@ -60,9 +61,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadActiveCategories() async {
     final list = await _firebaseService.getActiveCategories();
+    final customList = await _firebaseService.getUserCustomCategories();
     if (mounted) {
       setState(() {
         _activeCategories = list;
+        _userCustomCategories = customList;
       });
     }
   }
@@ -275,8 +278,17 @@ class _HomeScreenState extends State<HomeScreen> {
             categoryCounts[catName] = (categoryCounts[catName] ?? 0) + 1;
           }
 
+          // 기본 카테고리와 사용자가 추가한 커스텀 카테고리를 병합
+          final allCategories = [
+            ..._categories,
+            ..._userCustomCategories.map((name) => {
+              'name': name,
+              'icon': Icons.style, // 범용적인 예쁜 태그/스타일 아이콘
+            }),
+          ];
+
           // ALL 칩을 제외하고, 유저가 선택한 activeCategories 에 포함되는 카테고리만 동적 노출
-          final dynamicCategories = _categories.where((cat) {
+          final dynamicCategories = allCategories.where((cat) {
             return cat['name'] != 'ALL' && _activeCategories.contains(cat['name']);
           }).toList();
           dynamicCategories.sort((a, b) {
@@ -287,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // ALL 칩을 맨 앞에 삽입하여 동적 최종 카테고리 목록 생성
           final finalCategories = [
-            _categories.firstWhere((cat) => cat['name'] == 'ALL'),
+            allCategories.firstWhere((cat) => cat['name'] == 'ALL'),
             ...dynamicCategories,
           ];
 
@@ -476,9 +488,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showCategoryCustomizerBottomSheet() {
     final List<String> allPresetNames = ['상의', '원피스', '바지', '치마', '아우터', '신발', '가방', '모자', '악세서리', '기타'];
     List<String> tempSelected = List<String>.from(_activeCategories);
+    final TextEditingController customController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // 키보드 노출 시 시트가 위로 밀려나도록 설정
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -486,9 +500,16 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+            final allVisibleCategories = [...allPresetNames, ..._userCustomCategories];
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 20.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0, // 키보드 높이만큼 바텀 마진 추가
+              ),
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          '카테고리 칩 설정 ⚙️',
+                          '카테고리 설정 ⚙️',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         IconButton(
@@ -506,54 +527,146 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
-                      '자주 쓰는 카테고리만 골라서 메인 화면에 노출할 수 있습니다.',
+                      '자주 쓰는 카테고리만 골라 칩을 구성하고, 직접 새로운 카테고리를 추가할 수 있습니다.',
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
-                    Flexible(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        itemCount: allPresetNames.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 3.5,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemBuilder: (context, index) {
-                          final name = allPresetNames[index];
-                          final isChecked = tempSelected.contains(name);
-                          return CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              name,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: customController,
+                            maxLength: 10,
+                            decoration: InputDecoration(
+                              hintText: '새 카테고리 이름 입력 (최대 10자)',
+                              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+                              counterText: '',
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              filled: true,
+                              fillColor: const Color(0xFFF1F3F5),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
-                            value: isChecked,
-                            activeColor: Colors.black,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            onChanged: (bool? value) {
-                              setSheetState(() {
-                                if (value == true) {
-                                  if (!tempSelected.contains(name)) {
-                                    tempSelected.add(name);
-                                  }
-                                } else {
-                                  if (tempSelected.length > 1) {
-                                    tempSelected.remove(name);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('최소 하나의 카테고리는 선택되어야 합니다.')),
-                                    );
-                                  }
-                                }
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 46,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () async {
+                              final text = customController.text.trim();
+                              if (text.isEmpty) return;
+                              
+                              if (allVisibleCategories.contains(text) || text == 'ALL') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('이미 존재하는 카테고리 이름입니다.')),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                _userCustomCategories.add(text);
+                                _activeCategories.add(text);
+                                tempSelected.add(text);
                               });
+
+                              await _firebaseService.updateUserCustomCategories(_userCustomCategories);
+                              await _firebaseService.updateActiveCategories(_activeCategories);
+
+                              customController.clear();
+                              setSheetState(() {});
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("'$text' 카테고리가 신설되었습니다.")),
+                              );
                             },
-                          );
-                        },
-                      ),
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('추가', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    const SizedBox(height: 12),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: allVisibleCategories.length,
+                      itemBuilder: (context, index) {
+                        final name = allVisibleCategories[index];
+                        final isChecked = tempSelected.contains(name);
+                        final isCustom = _userCustomCategories.contains(name);
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: isChecked,
+                                activeColor: Colors.black,
+                                onChanged: (bool? value) {
+                                  setSheetState(() {
+                                    if (value == true) {
+                                      if (!tempSelected.contains(name)) {
+                                        tempSelected.add(name);
+                                      }
+                                    } else {
+                                      if (tempSelected.length > 1) {
+                                        tempSelected.remove(name);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('최소 하나의 카테고리는 선택되어야 합니다.')),
+                                        );
+                                      }
+                                    }
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isCustom ? FontWeight.bold : FontWeight.w500,
+                                    color: isCustom ? Colors.blueAccent : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              if (isCustom)
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                                  onPressed: () async {
+                                    setState(() {
+                                      _userCustomCategories.remove(name);
+                                      _activeCategories.remove(name);
+                                      tempSelected.remove(name);
+                                    });
+
+                                    await _firebaseService.updateUserCustomCategories(_userCustomCategories);
+                                    await _firebaseService.updateActiveCategories(_activeCategories);
+
+                                    setSheetState(() {});
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("'$name' 카테고리가 삭제되었습니다.")),
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     SizedBox(

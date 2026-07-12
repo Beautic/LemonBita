@@ -36,6 +36,8 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
 
   final Set<String> _selectedIds = {};
 
+  List<String> _customCategories = [];
+
   @override
   void initState() {
     super.initState();
@@ -43,7 +45,17 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
       _selectedIds.addAll(widget.initialSelectedIds!);
     }
     _fetchAllClothes();
+    _loadCustomCategories();
     _searchController.addListener(_applyFilters);
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final list = await _firebaseService.getUserCustomCategories();
+    if (mounted) {
+      setState(() {
+        _customCategories = list;
+      });
+    }
   }
 
   @override
@@ -199,7 +211,7 @@ class _SearchClothesScreenState extends State<SearchClothesScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                     const SizedBox(width: 8),
-                    ...CategoryData.mainCategories.map((cat) {
+                    ...[...CategoryData.mainCategories, ..._customCategories].map((cat) {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: FilterChip(
