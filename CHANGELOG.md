@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v6.1.2] - 2026-07-13
+
+### Restored
+- **의류 그리드 슬롯 내 '🧼 세탁 필요' 파란색 직관적 알림 배지 복원**:
+  - 홈 화면의 격자 아이템 리뉴얼 시 미니멀화 과정에서 빨간색 미세 도트로 임시 축소되었던 세탁 필요 알림을, 이전 버전의 강력한 사용성을 계승하여 **의류 이미지(옷) 영역 좌하단에 겹쳐 뜨는 선명한 파란색 `🧼 세탁 필요` 미니 배지**로 복원 완료.
+  - 마이벤토리의 격자 테마 톤과 조화되도록 각진 사각형(`BorderRadius.circular(4)`) 및 8.5px 세련된 폰트와 그림자 오버레이로 디자인 정제.
+
 ## [v6.1.1] - 2026-07-13
 
 ### Fixed

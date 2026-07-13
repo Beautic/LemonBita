@@ -806,14 +806,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   painter: CornerNotch(),
                 ),
               ),
-            // 세탁 필요 - 좌하단 붉은 도트 (기존 파란 배지 대체)
+            // 세탁 필요 - 좌하단 선명한 파란색 알림 배지 복원 (가독성 극대화 및 테마 매칭)
             if (isWashRequired)
-              const Positioned(
-                bottom: 6,
+              Positioned(
+                bottom: 4,
                 left: 6,
-                child: CircleAvatar(
-                  radius: 3,
-                  backgroundColor: AppColors.accent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_laundry_service, size: 8, color: Colors.white),
+                      SizedBox(width: 2),
+                      Text(
+                        '세탁 필요',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             // 착용 횟수 - 우하단 모노스페이스 숫자
