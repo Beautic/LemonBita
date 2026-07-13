@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v6.2.2] - 2026-07-14
+
+### Added
+- **폴더별 기본 비공개(Privacy by Default) 및 다각 친구 공유(지정 공유) 기능**:
+  - 새 옷장/아이템 가방 생성 시 기본 공개 여부를 **'나만 보기(비공개 / `isSharedWithFriends = false`)'**로 지정.
+  - 가방 수정 다이얼로그 개편: `모든 친구에게 공개` vs `일부 친구에게 지정 공개` 라디오 분기 제공 및 내 친구 목록(`friends`)을 가져와 개별 다중 선택하는 UI 구현.
+  - 지정 공유 친구의 UID 목록을 `sharedWithFriendIds` 필드로 저장 및 실시간 동기화.
+- **가방 단위 외부 공유 링크 복사 및 전용 뷰어(ShareFolderScreen)**:
+  - 로그인 여부와 관계없이 특정 폴더의 아이템들을 조회할 수 있도록 외부 공유 링크 복사 🔗 기능 추가.
+  - 외부 방문자를 위한 웹 전용 공유 페이지([ShareFolderScreen](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/share_folder_screen.dart)) 신설 및 `main.dart` 내 해시 딥링크(/share) 라우팅 연동.
+
+### Changed
+- **친구 쇼룸 및 코디 캔버스 권한 필터링 개편**:
+  - 공유 가방이거나 혹은 내 UID가 허용 친구 목록(`sharedWithFriendIds`)에 포함되어 있는 경우에만 친구 쇼룸 및 코디 캔버스의 가방 및 소장품이 안전하게 노출되도록 필터링 규칙 반전 바인딩 적용.
+- **업로드 시 프라이버시 알림 UI 보완**:
+  - 신규 의류/아이템 등록 화면의 보관함 선택 영역에서 비공개 가방 옆에 `🔒` 자물쇠 기호를 표시하고, 하나라도 선택될 경우 하단에 주의/안내 헬퍼 텍스트 노출.
+
 ## [v6.2.1] - 2026-07-14
 
 ### Changed

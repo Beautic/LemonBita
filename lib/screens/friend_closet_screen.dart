@@ -146,13 +146,17 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           .snapshots(),
       builder: (context, folderSnapshot) {
         final folderDocs = folderSnapshot.data?.docs ?? [];
+        final String myUid = _firebaseService.currentUserId ?? '';
         final publicFolders = folderDocs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['isSharedWithFriends'] != false;
+          final isShared = data['isSharedWithFriends'] ?? false;
+          final List<dynamic> allowedUids = data['sharedWithFriendIds'] ?? [];
+          return isShared || allowedUids.contains(myUid);
         }).toList();
 
+        final publicFolderIds = publicFolders.map((doc) => doc.id).toSet();
         final privateFolderIds = folderDocs
-            .where((doc) => (doc.data() as Map<String, dynamic>)['isSharedWithFriends'] == false)
+            .where((doc) => !publicFolderIds.contains(doc.id))
             .map((doc) => doc.id)
             .toSet();
 
@@ -291,13 +295,17 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           .snapshots(),
       builder: (context, folderSnapshot) {
         final folderDocs = folderSnapshot.data?.docs ?? [];
+        final String myUid = _firebaseService.currentUserId ?? '';
         final publicFolders = folderDocs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['isSharedWithFriends'] != false;
+          final isShared = data['isSharedWithFriends'] ?? false;
+          final List<dynamic> allowedUids = data['sharedWithFriendIds'] ?? [];
+          return isShared || allowedUids.contains(myUid);
         }).toList();
 
+        final publicFolderIds = publicFolders.map((doc) => doc.id).toSet();
         final privateFolderIds = folderDocs
-            .where((doc) => (doc.data() as Map<String, dynamic>)['isSharedWithFriends'] == false)
+            .where((doc) => !publicFolderIds.contains(doc.id))
             .map((doc) => doc.id)
             .toSet();
 

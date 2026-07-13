@@ -3,6 +3,37 @@
 사용자 요청 및 Claude의 피드백을 반영하여 수정된 내용을 기록합니다.
 
 
+## 2026-07-14 (v6.2.2) — 폴더 기본 비공개(Privacy by Default) 및 다각 지정 공유(외부 링크 포함) 개발 완료
+
+### 1. 폴더 생성 시 Privacy by Default (기본 비공개) 적용
+- **구현 내용**:
+  - `firebase_service.dart` 내 `createClosetFolder`와 `createItemFolder` 메소드에서 `'isSharedWithFriends'` 필드의 디폴트값을 `true`에서 `false`로 수정하여, 생성 시 무조건 '나만 보기' 상태로 개설되게 함.
+  - 옷장/아이템 가방 리스트를 실시간으로 받아오는 `getClosetFoldersStream` 및 `getItemFoldersStream` 내부의 폴더 매핑 함수에서도 기본 프라이버시 플래그 기본값을 `false`로 반환하며, 친구 UID 목록을 담을 `sharedWithFriendIds` 배열 로딩 로직을 견고하게 바인딩함.
+
+### 2. 폴더 다각 지정 친구 공유 UI 개발
+- **구현 내용**:
+  - `home_screen.dart`(의류 폴더 관리) 및 `item_screen.dart`(일반 아이템 폴더 관리)에서 가방 관리 다이얼로그(`_showRenameFolderDialog` / `_showFolderManageDialog`)를 대폭 확장.
+  - 친구 공유 스위치를 켤 때 "모든 친구 공개" vs "일부 친구 지정" 라디오 선택지를 노출하며, 일부 친구 지정을 택하면 Firestore의 내 친구 목록(`getFriends`)을 dynamic 렌더링하고 `CheckboxListTile`을 통해 다중 선택할 수 있도록 `StatefulBuilder` 내 멀티 체크박스 리스트 뷰를 결합함.
+  - 친구 지정 선택 시 `isSharedWithFriends = false`로 프라이버시 락을 유지한 상태에서, 해당 친구들의 UID 배열 리스트(`sharedWithFriendIds`)를 Firestore의 타겟 가방 문서에 직접 동기화 저장하도록 처리함.
+
+### 3. 친구 쇼룸 및 코디 캔버스 권한 필터링 개편
+- **구현 내용**:
+  - 타인(친구)의 옷장 및 인벤토리를 관람하는 `friend_closet_screen.dart` 와 코디 제작 화면 `coordination_canvas_screen.dart` 에서 친구 폴더를 검출할 때, 공유 토글 플래그가 참이거나(`isSharedWithFriends != false`), 또는 지정 공유 친구 배열에 내 UID가 등록되어 있는(`sharedWithFriendIds.contains(myUid)`) 가방만 활성화되어 보이도록 역필터링 판정을 전격 도입함.
+  - 이로써 미선택된 비공개 가방과 그 하위에 보관된 의류/아이템들은 친구 뷰 및 추천용 코디 제작 도구에서 완벽하게 격리 차단됨.
+
+### 4. 에셋 등록(업로드) 시 비공개 시각 알림
+- **구현 내용**:
+  - 옷 업로드 화면 `upload_screen.dart` 과 아이템 등록 화면 `upload_item_screen.dart` 의 가방 선택 영역에서, 비공개 상태인 가방 칩의 명칭 앞에 `🔒` 기호를 덧붙여 노출하여 현재 가방의 보안 등급을 실시간 시인성 있게 파악하도록 함.
+  - 비공개 상태인 가방이 단 하나라도 선택된 경우 하단에 "선택한 가방 중 기본 비공개(나만 보기) 상태의 가방이 있습니다. 해당 가방 안의 아이템은 친구들에게 보이지 않습니다." 라는 헬퍼 경고 문구를 동적으로 띄워 사용자 실수를 사전에 예방.
+
+### 5. 외부 비로그인 공유 링크 및 ShareFolderScreen 뷰어 신설
+- **구현 내용**:
+  - 로그인하지 않은 외부 유저도 가방을 감상할 수 있도록, 폴더 관리 바텀시트/다이얼로그에서 `🔗 외부 공유 링크 복사하기` 버튼을 탭하면 `https://digital-closet-dev.web.app/#/share?userId=XXX&folderId=YYY&type=closet` 형식의 고유 딥링크 주소를 모바일 클립보드(`Clipboard`)에 복사해주는 헬퍼 추가.
+  - `main.dart` 에 `onGenerateRoute` 해시 주소 파서 로직을 삽입하여, `/share` 진입 시 비로그인 외부 유저를 전용 뷰어 페이지 `ShareFolderScreen` 로 완벽 분기 연동.
+  - 신설된 `share_folder_screen.dart` 에서는 가방 및 아이템 정보를 비로그인 상태로도 안전하게 조회해오기 위해, Firestore Rules의 read 조건 개방을 활용하여 direct lookup 메소드(`getFolderById`, `getUserProfileDirect`, `getFolderItemsDirect`)를 실행하여 3열 1:1 정사각 인벤토리 그리드로 렌더링하고, 클릭 시 상세 제원 모달 및 서비스 가입 권장 풋터 바를 우아하게 노출함.
+
+---
+
 ## 2026-07-14 (v6.2.1) — 컨셉 C (오픈 박스) 신규 앱 아이콘 공식 적용 및 개발계 배포
 
 ### 1. 컨셉 C (오픈 박스) 앱 아이콘 전면 교체

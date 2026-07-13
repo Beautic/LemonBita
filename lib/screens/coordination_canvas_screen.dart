@@ -307,9 +307,13 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                   builder: (context, folderSnapshot) {
                     final Set<String> privateFolderIds = {};
                     if (widget.friendUid != null && folderSnapshot.hasData) {
+                      final String myUid = _firebaseService.currentUserId ?? '';
                       for (var doc in folderSnapshot.data!.docs) {
                         final data = doc.data() as Map<String, dynamic>;
-                        if (data['isSharedWithFriends'] == false) {
+                        final isShared = data['isSharedWithFriends'] ?? false;
+                        final List<dynamic> allowedUids = data['sharedWithFriendIds'] ?? [];
+                        final isAllowedToMe = allowedUids.contains(myUid);
+                        if (!isShared && !isAllowedToMe) {
                           privateFolderIds.add(doc.id);
                         }
                       }

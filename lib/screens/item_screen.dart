@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import '../theme/app_theme.dart';
@@ -149,7 +150,8 @@ class _ItemScreenState extends State<ItemScreen> {
               _buildFolderButton('unclassified', '미분류', _selectedFolderId == 'unclassified'),
               const SizedBox(width: 8),
               ...folders.map((folder) {
-                final isShared = folder['isSharedWithFriends'] ?? true;
+                final isShared = folder['isSharedWithFriends'] ?? false;
+                final sharedFriendIds = List<String>.from(folder['sharedWithFriendIds'] ?? []);
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: _buildFolderButton(
@@ -157,6 +159,7 @@ class _ItemScreenState extends State<ItemScreen> {
                     folder['name'] ?? '',
                     _selectedFolderId == folder['id'],
                     isShared: isShared,
+                    sharedWithFriendIds: sharedFriendIds,
                   ),
                 );
               }),
@@ -168,7 +171,7 @@ class _ItemScreenState extends State<ItemScreen> {
     );
   }
 
-  Widget _buildFolderButton(String id, String label, bool isSelected, {bool isShared = true}) {
+  Widget _buildFolderButton(String id, String label, bool isSelected, {bool isShared = false, List<String> sharedWithFriendIds = const []}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -179,7 +182,7 @@ class _ItemScreenState extends State<ItemScreen> {
         },
         onLongPress: () {
           if (id != 'all' && id != 'unclassified') {
-            _showFolderManageDialog(id, label, isShared);
+            _showFolderManageDialog(id, label, isShared, sharedWithFriendIds);
           }
         },
         borderRadius: BorderRadius.circular(AppRadius.button),
@@ -204,13 +207,21 @@ class _ItemScreenState extends State<ItemScreen> {
                 color: isSelected ? AppColors.ink : AppColors.muted,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? AppColors.ink : AppColors.ink.withOpacity(0.8),
-                ),
+              Builder(
+                builder: (context) {
+                  String prefix = '';
+                  if (id != 'all' && id != 'unclassified' && !isShared) {
+                    prefix = sharedWithFriendIds.isNotEmpty ? '👥 ' : '🔒 ';
+                  }
+                  return Text(
+                    '$prefix$label',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? AppColors.ink : AppColors.ink.withOpacity(0.8),
+                    ),
+                  );
+                }
               ),
             ],
           ),
@@ -556,47 +567,186 @@ class _ItemScreenState extends State<ItemScreen> {
   }
 
   // 개별 폴더(가방) 관리 팝업 (수정 / 삭제 / 친구 공유 제어)
-  void _showFolderManageDialog(String folderId, String folderName, bool currentShareStatus) {
+  void _copyFolderShareLink(String folderId, String name, String type) {
+    final myUid = _firebaseService.currentUserId;
+    if (myUid == null) return;
+    final shareUrl = "https://digital-closet-dev.web.app/#/share?userId=$myUid&folderId=$folderId&type=$type";
+    Clipboard.setData(ClipboardData(text: shareUrl)).then((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🔗 "$name" 가방의 외부 공유 링크가 복사되었습니다!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+  }
+
+  void _showFolderManageDialog(String folderId, String folderName, bool currentShareStatus, List<String> currentSharedFriendIds) {
     final controller = TextEditingController(text: folderName);
     bool isShared = currentShareStatus;
+    
+    List<String> selectedFriendIds = List<String>.from(currentSharedFriendIds);
+    bool isTargetedFriendShare = selectedFriendIds.isNotEmpty;
+    
+    List<Map<String, dynamic>>? friendsList;
+    bool isLoadingFriends = false;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          if (friendsList == null && !isLoadingFriends) {
+            isLoadingFriends = true;
+            _firebaseService.getFriends().then((list) {
+              setDialogState(() {
+                friendsList = list;
+                isLoadingFriends = false;
+              });
+            });
+          }
+
           return AlertDialog(
             backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
-            title: const Text('가방 관리 ⚙️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextField(
-                  controller: controller,
-                  maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: '가방 이름 수정',
-                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.ink)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('친구에게 이 가방 공유하기', style: TextStyle(fontSize: 12, color: AppColors.ink)),
-                    Switch(
-                      value: isShared,
-                      activeColor: AppColors.accent,
-                      onChanged: (val) {
-                        setDialogState(() {
-                          isShared = val;
-                        });
-                      },
-                    ),
-                  ],
+                const Text('가방 관리 ⚙️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                IconButton(
+                  icon: const Icon(Icons.link_rounded, size: 20, color: AppColors.ink),
+                  tooltip: '외부 공유 링크 복사',
+                  onPressed: () {
+                    _copyFolderShareLink(folderId, folderName, 'item');
+                  },
                 ),
               ],
+            ),
+            content: SizedBox(
+              width: 320,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      maxLength: 10,
+                      decoration: const InputDecoration(
+                        labelText: '가방 이름 수정',
+                        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.ink)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('친구에게 이 가방 공유하기', style: TextStyle(fontSize: 12, color: AppColors.ink)),
+                        Switch(
+                          value: isShared || isTargetedFriendShare,
+                          activeColor: AppColors.accent,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              if (val) {
+                                isShared = true;
+                                isTargetedFriendShare = false;
+                              } else {
+                                isShared = false;
+                                isTargetedFriendShare = false;
+                                selectedFriendIds.clear();
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    if (isShared || isTargetedFriendShare) ...[
+                      const Divider(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<bool>(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('모든 친구 공개', style: TextStyle(fontSize: 11)),
+                              value: false,
+                              groupValue: isTargetedFriendShare,
+                              activeColor: Colors.black,
+                              onChanged: (val) {
+                                setDialogState(() {
+                                  isShared = true;
+                                  isTargetedFriendShare = false;
+                                  selectedFriendIds.clear();
+                                });
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<bool>(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('일부 친구 지정', style: TextStyle(fontSize: 11)),
+                              value: true,
+                              groupValue: isTargetedFriendShare,
+                              activeColor: Colors.black,
+                              onChanged: (val) {
+                                setDialogState(() {
+                                  isShared = false;
+                                  isTargetedFriendShare = true;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (isTargetedFriendShare) ...[
+                        const SizedBox(height: 8),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('공유할 친구 선택:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+                        if (isLoadingFriends)
+                          const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                        else if (friendsList == null || friendsList!.isEmpty)
+                          const Text('등록된 친구가 없습니다.', style: TextStyle(fontSize: 11, color: Colors.grey))
+                        else
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 120),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[200]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: friendsList!.map((friend) {
+                                final String friendUid = friend['uid'] ?? '';
+                                final String friendName = friend['nickname'] ?? '이름 없음';
+                                final isSelected = selectedFriendIds.contains(friendUid);
+                                return CheckboxListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                  title: Text(friendName, style: const TextStyle(fontSize: 12)),
+                                  value: isSelected,
+                                  activeColor: Colors.black,
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                  dense: true,
+                                  onChanged: (val) {
+                                    setDialogState(() {
+                                      if (val == true) {
+                                        selectedFriendIds.add(friendUid);
+                                      } else {
+                                        selectedFriendIds.remove(friendUid);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
             ),
             actions: [
               TextButton(
@@ -623,7 +773,13 @@ class _ItemScreenState extends State<ItemScreen> {
                 onPressed: () async {
                   final newName = controller.text.trim();
                   if (newName.isNotEmpty) {
-                    await _firebaseService.updateItemFolder(folderId, newName, isSharedWithFriends: isShared);
+                    final finalShareStatus = isShared && !isTargetedFriendShare;
+                    await _firebaseService.updateItemFolder(
+                      folderId, 
+                      newName, 
+                      isSharedWithFriends: finalShareStatus,
+                      sharedWithFriendIds: selectedFriendIds,
+                    );
                     if (context.mounted) Navigator.pop(context);
                   }
                 },

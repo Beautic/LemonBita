@@ -1107,13 +1107,14 @@ class FirebaseService {
 
   // ==== 옷장 폴더(closet_folders) 관련 로직 ====
 
-  // 폴더 생성
+  // 폴더 생성 (Privacy by Default: 기본 비공개)
   Future<String> createClosetFolder(String name) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     final doc = await _firestore.collection('closet_folders').add({
       'userId': currentUserId,
       'name': name,
-      'isSharedWithFriends': true, // 기본 공개
+      'isSharedWithFriends': false, // 기본 비공개 (나만 보기)
+      'sharedWithFriendIds': [],    // 명시적으로 지정한 친구 UID 목록
       'createdAt': FieldValue.serverTimestamp(),
     });
     return doc.id;
@@ -1132,7 +1133,8 @@ class FirebaseService {
             return {
               'id': doc.id,
               'name': data['name'] ?? '',
-              'isSharedWithFriends': data['isSharedWithFriends'] ?? true,
+              'isSharedWithFriends': data['isSharedWithFriends'] ?? false, // 기본 비공개
+              'sharedWithFriendIds': List<String>.from(data['sharedWithFriendIds'] ?? []),
               'createdAt': data['createdAt'],
             };
           }).toList();
@@ -1174,12 +1176,15 @@ class FirebaseService {
     await batch.commit();
   }
 
-  // 폴더 이름 및 공유 여부 수정
-  Future<void> updateClosetFolder(String folderId, String newName, {bool? isSharedWithFriends}) async {
+  // 폴더 이름 및 공유 여부, 지정 친구 수정
+  Future<void> updateClosetFolder(String folderId, String newName, {bool? isSharedWithFriends, List<String>? sharedWithFriendIds}) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     final updates = <String, dynamic>{'name': newName};
     if (isSharedWithFriends != null) {
       updates['isSharedWithFriends'] = isSharedWithFriends;
+    }
+    if (sharedWithFriendIds != null) {
+      updates['sharedWithFriendIds'] = sharedWithFriendIds;
     }
     await _firestore.collection('closet_folders').doc(folderId).update(updates);
   }
@@ -1212,13 +1217,14 @@ class FirebaseService {
 
   // ==== 일반 아이템 폴더(item_folders) 관련 로직 ====
 
-  // 폴더 생성
+  // 폴더 생성 (Privacy by Default: 기본 비공개)
   Future<String> createItemFolder(String name) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     final doc = await _firestore.collection('item_folders').add({
       'userId': currentUserId,
       'name': name,
-      'isSharedWithFriends': true, // 기본 공개
+      'isSharedWithFriends': false, // 기본 비공개 (나만 보기)
+      'sharedWithFriendIds': [],    // 명시적으로 지정한 친구 UID 목록
       'createdAt': FieldValue.serverTimestamp(),
     });
     return doc.id;
@@ -1237,7 +1243,8 @@ class FirebaseService {
             return {
               'id': doc.id,
               'name': data['name'] ?? '',
-              'isSharedWithFriends': data['isSharedWithFriends'] ?? true,
+              'isSharedWithFriends': data['isSharedWithFriends'] ?? false, // 기본 비공개
+              'sharedWithFriendIds': List<String>.from(data['sharedWithFriendIds'] ?? []),
               'createdAt': data['createdAt'],
             };
           }).toList();
@@ -1279,14 +1286,55 @@ class FirebaseService {
     await batch.commit();
   }
 
-  // 폴더 이름 및 공유 여부 수정
-  Future<void> updateItemFolder(String folderId, String newName, {bool? isSharedWithFriends}) async {
+  // 폴더 이름 및 공유 여부, 지정 친구 수정
+  Future<void> updateItemFolder(String folderId, String newName, {bool? isSharedWithFriends, List<String>? sharedWithFriendIds}) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
     final updates = <String, dynamic>{'name': newName};
     if (isSharedWithFriends != null) {
       updates['isSharedWithFriends'] = isSharedWithFriends;
     }
+    if (sharedWithFriendIds != null) {
+      updates['sharedWithFriendIds'] = sharedWithFriendIds;
+    }
     await _firestore.collection('item_folders').doc(folderId).update(updates);
   }
-}
 
+  // ==== 외부 공유 링크 조회용 비로그인 헬퍼 ====
+
+  // 특정 폴더(옷장/아이템) 단건 비로그인 조회 (외부 공유용)
+  Future<Map<String, dynamic>?> getFolderById(String folderId, String type) async {
+    final collection = type == 'closet' ? 'closet_folders' : 'item_folders';
+    final doc = await _firestore.collection(collection).doc(folderId).get();
+    if (!doc.exists) return null;
+    final data = doc.data()!;
+    return {
+      'id': doc.id,
+      'name': data['name'] ?? '',
+      'userId': data['userId'] ?? '',
+      'isSharedWithFriends': data['isSharedWithFriends'] ?? false,
+      'sharedWithFriendIds': List<String>.from(data['sharedWithFriendIds'] ?? []),
+    };
+  }
+
+  // 특정 유저 정보 단건 비로그인 조회
+  Future<Map<String, dynamic>?> getUserProfileDirect(String userId) async {
+    final doc = await _firestore.collection('users').doc(userId).get();
+    if (!doc.exists) return null;
+    return doc.data();
+  }
+
+  // 특정 폴더 내부의 아이템 목록 비로그인 조회 (외부 공유용)
+  Future<List<Map<String, dynamic>>> getFolderItemsDirect(String folderId, String type) async {
+    final collection = type == 'closet' ? 'clothes' : 'items';
+    final snapshot = await _firestore
+        .collection(collection)
+        .where('folderIds', arrayContains: folderId)
+        .get();
+        
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+  }
+}

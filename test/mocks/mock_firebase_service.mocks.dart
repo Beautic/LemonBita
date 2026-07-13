@@ -132,6 +132,46 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
       ) as _i3.Stream<_i5.DocumentSnapshot<Object?>>);
 
   @override
+  _i3.Future<List<String>> getActiveCategories() => (super.noSuchMethod(
+        Invocation.method(
+          #getActiveCategories,
+          [],
+        ),
+        returnValue: _i3.Future<List<String>>.value(<String>[]),
+      ) as _i3.Future<List<String>>);
+
+  @override
+  _i3.Future<void> updateActiveCategories(List<String>? categories) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateActiveCategories,
+          [categories],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<List<String>> getUserCustomCategories() => (super.noSuchMethod(
+        Invocation.method(
+          #getUserCustomCategories,
+          [],
+        ),
+        returnValue: _i3.Future<List<String>>.value(<String>[]),
+      ) as _i3.Future<List<String>>);
+
+  @override
+  _i3.Future<void> updateUserCustomCategories(List<String>? categories) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateUserCustomCategories,
+          [categories],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
   _i3.Future<_i2.AuthUser> loginWithEmail(
     String? email,
     String? password,
@@ -259,6 +299,105 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
         Invocation.method(
           #deleteClothingData,
           [docId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addItemData({
+    required String? imageUrl,
+    required String? category,
+    required String? folderId,
+    required List<String>? folderIds,
+    required String? brand,
+    required String? name,
+    required String? acquiredDate,
+    required int? price,
+    required String? memo,
+    required bool? isFavorite,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addItemData,
+          [],
+          {
+            #imageUrl: imageUrl,
+            #category: category,
+            #folderId: folderId,
+            #folderIds: folderIds,
+            #brand: brand,
+            #name: name,
+            #acquiredDate: acquiredDate,
+            #price: price,
+            #memo: memo,
+            #isFavorite: isFavorite,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getItemsStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getItemsStream,
+          [],
+        ),
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
+
+  @override
+  _i3.Future<void> updateItemData({
+    required String? docId,
+    required Map<String, dynamic>? updatedData,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateItemData,
+          [],
+          {
+            #docId: docId,
+            #updatedData: updatedData,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> deleteItemData(String? docId) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteItemData,
+          [docId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Stream<_i5.QuerySnapshot<Object?>> getUsageDiaryStream(String? itemId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUsageDiaryStream,
+          [itemId],
+        ),
+        returnValue: _i3.Stream<_i5.QuerySnapshot<Object?>>.empty(),
+      ) as _i3.Stream<_i5.QuerySnapshot<Object?>>);
+
+  @override
+  _i3.Future<void> addUsageRecord(
+    String? itemId,
+    String? memo,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addUsageRecord,
+          [
+            itemId,
+            memo,
+          ],
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
@@ -755,6 +894,7 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
     String? folderId,
     String? newName, {
     bool? isSharedWithFriends,
+    List<String>? sharedWithFriendIds,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -763,7 +903,10 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
             folderId,
             newName,
           ],
-          {#isSharedWithFriends: isSharedWithFriends},
+          {
+            #isSharedWithFriends: isSharedWithFriends,
+            #sharedWithFriendIds: sharedWithFriendIds,
+          },
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
@@ -802,4 +945,105 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
       ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<String> createItemFolder(String? name) => (super.noSuchMethod(
+        Invocation.method(
+          #createItemFolder,
+          [name],
+        ),
+        returnValue: _i3.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #createItemFolder,
+            [name],
+          ),
+        )),
+      ) as _i3.Future<String>);
+
+  @override
+  _i3.Stream<List<Map<String, dynamic>>> getItemFoldersStream() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getItemFoldersStream,
+          [],
+        ),
+        returnValue: _i3.Stream<List<Map<String, dynamic>>>.empty(),
+      ) as _i3.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Future<void> deleteItemFolder(String? folderId) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteItemFolder,
+          [folderId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateItemFolder(
+    String? folderId,
+    String? newName, {
+    bool? isSharedWithFriends,
+    List<String>? sharedWithFriendIds,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateItemFolder,
+          [
+            folderId,
+            newName,
+          ],
+          {
+            #isSharedWithFriends: isSharedWithFriends,
+            #sharedWithFriendIds: sharedWithFriendIds,
+          },
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<Map<String, dynamic>?> getFolderById(
+    String? folderId,
+    String? type,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getFolderById,
+          [
+            folderId,
+            type,
+          ],
+        ),
+        returnValue: _i3.Future<Map<String, dynamic>?>.value(),
+      ) as _i3.Future<Map<String, dynamic>?>);
+
+  @override
+  _i3.Future<Map<String, dynamic>?> getUserProfileDirect(String? userId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUserProfileDirect,
+          [userId],
+        ),
+        returnValue: _i3.Future<Map<String, dynamic>?>.value(),
+      ) as _i3.Future<Map<String, dynamic>?>);
+
+  @override
+  _i3.Future<List<Map<String, dynamic>>> getFolderItemsDirect(
+    String? folderId,
+    String? type,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getFolderItemsDirect,
+          [
+            folderId,
+            type,
+          ],
+        ),
+        returnValue: _i3.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i3.Future<List<Map<String, dynamic>>>);
 }

@@ -361,30 +361,66 @@ class _UploadItemScreenState extends State<UploadItemScreen> {
                 if (folders.isEmpty) {
                   return const Text('생성된 아이템 가방이 없습니다. 가방을 만들어 아이템을 분류해 보세요.', style: TextStyle(fontSize: 12, color: AppColors.muted));
                 }
+                final selectedFolders = folders.where((f) => _selectedFolderIds.contains(f['id'])).toList();
+                final hasPrivateFolder = selectedFolders.any((f) => f['isSharedWithFriends'] == false);
 
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: folders.map((folder) {
-                    final isSelected = _selectedFolderIds.contains(folder['id']);
-                    return ChoiceChip(
-                      label: Text(folder['name'] ?? '', style: TextStyle(color: isSelected ? Colors.white : AppColors.ink)),
-                      selected: isSelected,
-                      selectedColor: AppColors.ink,
-                      backgroundColor: AppColors.surface,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button), side: BorderSide(color: isSelected ? AppColors.ink : AppColors.line)),
-                      onSelected: (val) {
-                        setState(() {
-                          if (val) {
-                            _selectedFolderIds = [folder['id']!];
-                          } else {
-                            _selectedFolderIds.remove(folder['id']);
-                          }
-                        });
-                      },
-                      showCheckmark: false,
-                    );
-                  }).toList(),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: folders.map((folder) {
+                        final String id = folder['id'] ?? '';
+                        final String name = folder['name'] ?? '';
+                        final bool isShared = folder['isSharedWithFriends'] ?? false;
+                        final List<dynamic> sharedFriendIds = folder['sharedWithFriendIds'] ?? [];
+                        final isPartiallyShared = sharedFriendIds.isNotEmpty;
+
+                        String displayName = name;
+                        if (!isShared) {
+                          displayName = isPartiallyShared ? '👥 $name' : '🔒 $name';
+                        }
+
+                        final isSelected = _selectedFolderIds.contains(id);
+                        return ChoiceChip(
+                          label: Text(displayName, style: TextStyle(color: isSelected ? Colors.white : AppColors.ink)),
+                          selected: isSelected,
+                          selectedColor: AppColors.ink,
+                          backgroundColor: AppColors.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.button),
+                            side: BorderSide(color: isSelected ? AppColors.ink : AppColors.line),
+                          ),
+                          onSelected: (val) {
+                            setState(() {
+                              if (val) {
+                                _selectedFolderIds = [id];
+                              } else {
+                                _selectedFolderIds.remove(id);
+                              }
+                            });
+                          },
+                          showCheckmark: false,
+                        );
+                      }).toList(),
+                    ),
+                    if (hasPrivateFolder) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.lock_outline, size: 14, color: AppColors.muted),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '선택한 가방이 기본 비공개(나만 보기) 상태입니다. 해당 가방 안의 아이템은 친구들에게 보이지 않습니다.',
+                              style: const TextStyle(color: AppColors.muted, fontSize: 11, height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 );
               },
             ),

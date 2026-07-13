@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/firebase_service.dart';
-import 'screens/home_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
+
+import 'screens/share_folder_screen.dart';
 
 void main() async {
   try {
@@ -51,7 +52,26 @@ class DigitalClosetApp extends StatelessWidget {
         ),
         fontFamily: 'Pretendard',
       ),
-      home: const AuthWrapper(),
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        if (settings.name != null && settings.name!.startsWith('/share')) {
+          final uri = Uri.parse(settings.name!);
+          final userId = uri.queryParameters['userId'];
+          final folderId = uri.queryParameters['folderId'];
+          final type = uri.queryParameters['type'] ?? 'closet';
+          
+          if (userId != null && folderId != null) {
+            return MaterialPageRoute(
+              builder: (context) => ShareFolderScreen(
+                userId: userId,
+                folderId: folderId,
+                type: type,
+              ),
+            );
+          }
+        }
+        return MaterialPageRoute(builder: (context) => const AuthWrapper());
+      },
     );
   }
 }

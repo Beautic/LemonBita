@@ -518,35 +518,67 @@ class _UploadScreenState extends State<UploadScreen> {
                     style: TextStyle(color: Colors.grey[500], fontSize: 13),
                   );
                 }
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: folders.map((folder) {
-                    final String id = folder['id'];
-                    final String name = folder['name'];
-                    final isSelected = _selectedFolderIds.contains(id);
-                    return FilterChip(
-                      label: Text(name),
-                      selected: isSelected,
-                      selectedColor: Colors.black,
-                      checkmarkColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                final selectedFolders = folders.where((f) => _selectedFolderIds.contains(f['id'])).toList();
+                final hasPrivateFolder = selectedFolders.any((f) => f['isSharedWithFriends'] == false);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: folders.map((folder) {
+                        final String id = folder['id'];
+                        final String name = folder['name'];
+                        final bool isShared = folder['isSharedWithFriends'] ?? false;
+                        final List<dynamic> sharedFriendIds = folder['sharedWithFriendIds'] ?? [];
+                        final isPartiallyShared = sharedFriendIds.isNotEmpty;
+
+                        String displayName = name;
+                        if (!isShared) {
+                          displayName = isPartiallyShared ? '👥 $name' : '🔒 $name';
+                        }
+
+                        final isSelected = _selectedFolderIds.contains(id);
+                        return FilterChip(
+                          label: Text(displayName),
+                          selected: isSelected,
+                          selectedColor: Colors.black,
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          backgroundColor: Colors.grey[200],
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedFolderIds.add(id);
+                              } else {
+                                _selectedFolderIds.remove(id);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    if (hasPrivateFolder) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.lock_outline, size: 14, color: Colors.grey),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '선택한 가방 중 기본 비공개(나만 보기) 상태의 가방이 있습니다. 해당 가방 안의 의류는 친구들에게 보이지 않습니다.',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 11, height: 1.3),
+                            ),
+                          ),
+                        ],
                       ),
-                      backgroundColor: Colors.grey[200],
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedFolderIds.add(id);
-                          } else {
-                            _selectedFolderIds.remove(id);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                    ],
+                  ],
                 );
               },
             ),
