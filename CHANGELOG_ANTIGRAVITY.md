@@ -32,7 +32,12 @@
   - `main.dart` 에 `onGenerateRoute` 해시 주소 파서 로직을 삽입하여, `/share` 진입 시 비로그인 외부 유저를 전용 뷰어 페이지 `ShareFolderScreen` 로 완벽 분기 연동.
   - 신설된 `share_folder_screen.dart` 에서는 가방 및 아이템 정보를 비로그인 상태로도 안전하게 조회해오기 위해, Firestore Rules의 read 조건 개방을 활용하여 direct lookup 메소드(`getFolderById`, `getUserProfileDirect`, `getFolderItemsDirect`)를 실행하여 3열 1:1 정사각 인벤토리 그리드로 렌더링하고, 클릭 시 상세 제원 모달 및 서비스 가입 권장 풋터 바를 우아하게 노출함.
 
+### 6. 아이템 보관함 폴더 필터 텍스트 간결화 및 일관성 확보
+- **구현 내용**:
+  - `item_screen.dart` 의 하단 폴더 바에서 첫 번째 전체보기 칩의 레이블을 `'전체 가방'`에서 `'전체'`로 간결하게 수정하여, 홈 화면(의류 보관함)의 레이블 형태와 일치시킴으로써 인벤토리 전반의 시인성과 일관성을 회복했습니다.
+
 ---
+
 
 ## 2026-07-14 (v6.2.1) — 컨셉 C (오픈 박스) 신규 앱 아이콘 공식 적용 및 개발계 배포
 

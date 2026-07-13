@@ -145,7 +145,7 @@ class _ItemScreenState extends State<ItemScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _buildFolderButton('all', '전체 가방', _selectedFolderId == 'all'),
+              _buildFolderButton('all', '전체', _selectedFolderId == 'all'),
               const SizedBox(width: 8),
               _buildFolderButton('unclassified', '미분류', _selectedFolderId == 'unclassified'),
               const SizedBox(width: 8),
