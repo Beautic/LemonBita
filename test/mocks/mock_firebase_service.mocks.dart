@@ -753,8 +753,9 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
   @override
   _i3.Future<void> updateClosetFolder(
     String? folderId,
-    String? newName,
-  ) =>
+    String? newName, {
+    bool? isSharedWithFriends,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #updateClosetFolder,
@@ -762,6 +763,7 @@ class MockFirebaseService extends _i1.Mock implements _i2.FirebaseService {
             folderId,
             newName,
           ],
+          {#isSharedWithFriends: isSharedWithFriends},
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),

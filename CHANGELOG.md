@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v6.2.0] - 2026-07-14
+
+### Added
+- **듀얼 인벤토리(의류 vs 일반 아이템) 분할 개편 및 5분할 네비게이션 적용**:
+  - 하단 메인 내비게이션 바([main_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/main_screen.dart))를 5분할하여 `의류(home)`와 `아이템(items)` 탭을 완전히 분리해 독립 관리.
+  - `➕` 등록 버튼 누를 시 `새 의류 등록`과 `새 일반 아이템 등록` 분기 처리 모달 시트 탑재.
+- **일반 아이템 보관함 및 타임라인 다이어리 (Diary Log) 연계**:
+  - 의류 중심 기능이 제거된 1:1 정사각 격자 슬롯 뷰어([item_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/item_screen.dart)) 신설.
+  - 일반 아이템 상세 등록 폼([upload_item_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/upload_item_screen.dart)) 신설 및 AI 배경제거 기능 제공.
+  - 사용/플레이 일지 쓰기 버튼 탑재 및 다이얼로그 연동, Firestore `addUsageRecord` 트랜잭션을 통한 플레이 횟수(`usageCount`) 실시간 증감 및 상세 화면 하단 타임라인 다이어리 실시간 연계([item_detail_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/item_detail_screen.dart)) 신설.
+- **🔒 폴더별 공유 프라이버시 제어 및 친구 화면 필터 격리**:
+  - 의류 폴더(`closet_folders`) 및 일반 아이템 폴더(`item_folders`) 생성/수정 모달에 `친구에게 이 가방 공유하기` 토글 Switch 적용.
+  - 친구 쇼룸([friend_closet_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/friend_closet_screen.dart))에서 비공개로 설정된 폴더 및 해당 폴더 하위 의류/아이템을 완벽 격리 필터링.
+  - 코디 캔버스([coordination_canvas_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/coordination_canvas_screen.dart)) 내 바텀 시트 의류 선택창에서도 타인 검색 시 비공개 폴더 하위 의류를 실시간 차단.
+
+### Changed
+- **프로필 복합 대시보드 통계 및 2중 폴더 수량 집계**:
+  - `CLOTHES`, `ITEMS` 총 수량, `FOLDERS` (의류 가방 + 일반 아이템 가방 수량 병합), 그리고 사용/착용 누적 합산 횟수인 `WORN&PLAY` 수치 통계 4칸 개편([profile_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/profile_screen.dart)).
+
 ## [v6.1.2] - 2026-07-13
 
 ### Restored

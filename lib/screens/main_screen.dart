@@ -8,6 +8,8 @@ import '../theme/app_theme.dart';
 import 'ootd_screen.dart';
 import 'upload_ootd_screen.dart';
 import 'coordination_canvas_screen.dart';
+import 'item_screen.dart';
+import 'upload_item_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,6 +26,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const OotdScreen(),
     const SizedBox.shrink(), // Index 2 is for Upload (+)
+    const ItemScreen(),
     const ProfileScreen(),
   ];
 
@@ -36,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
       builder: (BuildContext context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0),
+            padding: const EdgeInsets.symmetric(vertical: 20.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -44,19 +47,38 @@ class _MainScreenState extends State<MainScreen> {
                   '무엇을 추가할까요?',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Colors.black,
                     child: Icon(Icons.checkroom, color: Colors.white),
                   ),
-                  title: const Text('인벤토리에 새 아이템 추가', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text('새 의류 등록하기', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('상의, 하의, 아우터, 신발 등 의류 아이템', style: TextStyle(fontSize: 11, color: Colors.grey)),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UploadScreen(),
+                        fullscreenDialog: true,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.black,
+                    child: Icon(Icons.inventory_2_outlined, color: Colors.white),
+                  ),
+                  title: const Text('새 일반 아이템 등록하기', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('보드게임, 피규어, 향수, LP 등 일반 소장품', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UploadItemScreen(),
                         fullscreenDialog: true,
                       ),
                     );
@@ -166,24 +188,13 @@ class _MainScreenState extends State<MainScreen> {
                 color: _currentIndex == 0 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                 size: 28,
               ),
-              label: '인벤토리',
+              label: '옷장',
             ),
             BottomNavigationBarItem(
-              icon: Container(
-                width: 26,
-                height: 30,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: _currentIndex == 1 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  Icons.person,
-                  color: _currentIndex == 1 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
-                  size: 18,
-                ),
+              icon: Icon(
+                Icons.collections_bookmark_outlined,
+                color: _currentIndex == 1 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
+                size: 26,
               ),
               label: 'OOTD',
             ),
@@ -203,8 +214,16 @@ class _MainScreenState extends State<MainScreen> {
             ),
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.person_outline,
+                Icons.inventory_2_outlined,
                 color: _currentIndex == 3 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
+                size: 26,
+              ),
+              label: '아이템',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.person_outline,
+                color: _currentIndex == 4 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                 size: 30,
               ),
               label: '프로필',

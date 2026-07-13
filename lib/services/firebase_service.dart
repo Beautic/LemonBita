@@ -355,6 +355,112 @@ class FirebaseService {
     await _firestore.collection('clothes').doc(docId).delete();
   }
 
+  // ==== 일반 아이템(소장품) 관련 로직 ====
+
+  // 1. 새 일반 아이템 추가
+  Future<void> addItemData({
+    required String? imageUrl,
+    required String category,
+    required String? folderId,
+    required List<String>? folderIds,
+    required String? brand,
+    required String? name,
+    required String? acquiredDate,
+    required int price,
+    required String? memo,
+    required bool isFavorite,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    final data = {
+      'userId': currentUserId,
+      'imageUrl': imageUrl ?? '',
+      'category': category,
+      'folderId': folderId ?? '',
+      'folderIds': folderIds ?? [],
+      'brand': brand ?? '',
+      'name': name ?? '',
+      'acquiredDate': acquiredDate ?? '',
+      'price': price,
+      'memo': memo ?? '',
+      'isFavorite': isFavorite,
+      'usageCount': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    await _firestore.collection('items').add(data);
+  }
+
+  // 2. 실시간 '내' 일반 아이템 가져오기
+  Stream<QuerySnapshot> getItemsStream() {
+    if (currentUserId == null) {
+      return const Stream.empty();
+    }
+    return _firestore
+        .collection('items')
+        .where('userId', isEqualTo: currentUserId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  // 3. 일반 아이템 수정
+  Future<void> updateItemData({
+    required String docId,
+    required Map<String, dynamic> updatedData,
+  }) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('items').doc(docId).update(updatedData);
+  }
+
+  // 4. 일반 아이템 삭제
+  Future<void> deleteItemData(String docId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    await _firestore.collection('items').doc(docId).delete();
+  }
+
+  // ==== 일반 아이템 사용 기록 일지 (Usage Diary) ====
+
+  // 5. 사용 일지 목록 실시간 스트림
+  Stream<QuerySnapshot> getUsageDiaryStream(String itemId) {
+    return _firestore
+        .collection('items')
+        .doc(itemId)
+        .collection('usage_diary')
+        .orderBy('usedAt', descending: true)
+        .snapshots();
+  }
+
+  // 6. 사용 기록 추가 및 총 사용횟수 증가 트랜잭션
+  Future<void> addUsageRecord(String itemId, String memo) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+
+    final diaryRef = _firestore
+        .collection('items')
+        .doc(itemId)
+        .collection('usage_diary')
+        .doc();
+
+    final itemRef = _firestore.collection('items').doc(itemId);
+
+    await _firestore.runTransaction((transaction) async {
+      // 1. 사용 일지 문서 기록
+      transaction.set(diaryRef, {
+        'usedAt': FieldValue.serverTimestamp(),
+        'memo': memo,
+      });
+
+      // 2. 부모 아이템 문서의 usageCount 필드 1 증가
+      final snapshot = await transaction.get(itemRef);
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final int currentCount = (data['usageCount'] as num?)?.toInt() ?? 0;
+        transaction.update(itemRef, {
+          'usageCount': currentCount + 1,
+        });
+      }
+    });
+  }
+
   // ==== OOTD 관련 로직 ====
 
   // 6.5 기존 OOTD에 옷 태그 일괄 연결/해제
@@ -1007,6 +1113,7 @@ class FirebaseService {
     final doc = await _firestore.collection('closet_folders').add({
       'userId': currentUserId,
       'name': name,
+      'isSharedWithFriends': true, // 기본 공개
       'createdAt': FieldValue.serverTimestamp(),
     });
     return doc.id;
@@ -1025,6 +1132,7 @@ class FirebaseService {
             return {
               'id': doc.id,
               'name': data['name'] ?? '',
+              'isSharedWithFriends': data['isSharedWithFriends'] ?? true,
               'createdAt': data['createdAt'],
             };
           }).toList();
@@ -1066,12 +1174,14 @@ class FirebaseService {
     await batch.commit();
   }
 
-  // 폴더 이름 수정
-  Future<void> updateClosetFolder(String folderId, String newName) async {
+  // 폴더 이름 및 공유 여부 수정
+  Future<void> updateClosetFolder(String folderId, String newName, {bool? isSharedWithFriends}) async {
     if (currentUserId == null) throw Exception("로그인이 필요합니다.");
-    await _firestore.collection('closet_folders').doc(folderId).update({
-      'name': newName,
-    });
+    final updates = <String, dynamic>{'name': newName};
+    if (isSharedWithFriends != null) {
+      updates['isSharedWithFriends'] = isSharedWithFriends;
+    }
+    await _firestore.collection('closet_folders').doc(folderId).update(updates);
   }
 
   // 특정 옷을 여러 폴더로 이동 (또는 미분류)
@@ -1099,4 +1209,84 @@ class FirebaseService {
     }
     await batch.commit();
   }
+
+  // ==== 일반 아이템 폴더(item_folders) 관련 로직 ====
+
+  // 폴더 생성
+  Future<String> createItemFolder(String name) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final doc = await _firestore.collection('item_folders').add({
+      'userId': currentUserId,
+      'name': name,
+      'isSharedWithFriends': true, // 기본 공개
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return doc.id;
+  }
+
+  // 폴더 목록 조회 (실시간 Stream)
+  Stream<List<Map<String, dynamic>>> getItemFoldersStream() {
+    if (currentUserId == null) return const Stream.empty();
+    return _firestore
+        .collection('item_folders')
+        .where('userId', isEqualTo: currentUserId)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'] ?? '',
+              'isSharedWithFriends': data['isSharedWithFriends'] ?? true,
+              'createdAt': data['createdAt'],
+            };
+          }).toList();
+          
+          list.sort((a, b) {
+            final aTime = a['createdAt'] as Timestamp?;
+            final bTime = b['createdAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return aTime.compareTo(bTime);
+          });
+          return list;
+        });
+  }
+
+  // 폴더 삭제
+  Future<void> deleteItemFolder(String folderId) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    
+    final batch = _firestore.batch();
+    
+    // 폴더 문서 삭제
+    batch.delete(_firestore.collection('item_folders').doc(folderId));
+    
+    // 해당 폴더에 연결된 아이템들의 folderIds 배열에서 이 폴더 ID를 제거
+    final itemsSnapshot = await _firestore
+        .collection('items')
+        .where('userId', isEqualTo: currentUserId)
+        .where('folderIds', arrayContains: folderId)
+        .get();
+        
+    for (var doc in itemsSnapshot.docs) {
+      batch.update(doc.reference, {
+        'folderIds': FieldValue.arrayRemove([folderId])
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  // 폴더 이름 및 공유 여부 수정
+  Future<void> updateItemFolder(String folderId, String newName, {bool? isSharedWithFriends}) async {
+    if (currentUserId == null) throw Exception("로그인이 필요합니다.");
+    final updates = <String, dynamic>{'name': newName};
+    if (isSharedWithFriends != null) {
+      updates['isSharedWithFriends'] = isSharedWithFriends;
+    }
+    await _firestore.collection('item_folders').doc(folderId).update(updates);
+  }
 }
+

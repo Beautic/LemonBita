@@ -193,116 +193,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return StreamBuilder<QuerySnapshot>(
                 stream: _firebaseService.getClothesStream(),
                 builder: (context, clothesSnapshot) {
-                  if (clothesSnapshot.connectionState == ConnectionState.waiting ||
-                      ootdSnapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.ink));
-                  }
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: _firebaseService.getItemsStream(),
+                    builder: (context, itemsSnapshot) {
+                      if (clothesSnapshot.connectionState == ConnectionState.waiting ||
+                          ootdSnapshot.connectionState == ConnectionState.waiting ||
+                          itemsSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: AppColors.ink));
+                      }
 
-                  final clothes = clothesSnapshot.data?.docs ?? [];
-                  final ootds = ootdSnapshot.data?.docs ?? [];
+                      final clothes = clothesSnapshot.data?.docs ?? [];
+                      final ootds = ootdSnapshot.data?.docs ?? [];
+                      final items = itemsSnapshot.data?.docs ?? [];
 
-                  // OOTD 착용 횟수
-                  Map<String, int> tagCounts = {};
-                  for (var doc in ootds) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    List<dynamic> taggedIds = data['taggedClothesIds'] ?? [];
-                    if (taggedIds.isEmpty && data['taggedClothes'] != null) {
-                      taggedIds = (data['taggedClothes'] as List).map((e) => e['id']).toList();
-                    }
-                    for (var id in taggedIds) {
-                      tagCounts[id.toString()] = (tagCounts[id.toString()] ?? 0) + 1;
-                    }
-                  }
+                      // OOTD 착용 횟수
+                      Map<String, int> tagCounts = {};
+                      for (var doc in ootds) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        List<dynamic> taggedIds = data['taggedClothesIds'] ?? [];
+                        if (taggedIds.isEmpty && data['taggedClothes'] != null) {
+                          taggedIds = (data['taggedClothes'] as List).map((e) => e['id']).toList();
+                        }
+                        for (var id in taggedIds) {
+                          tagCounts[id.toString()] = (tagCounts[id.toString()] ?? 0) + 1;
+                        }
+                      }
 
-                  // 6개월 기준 잠자고 있는 옷
-                  final List<Map<String, dynamic>> scoredClothes = clothes.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return {
-                      'docId': doc.id,
-                      'data': data,
-                      'tagCount': tagCounts[doc.id] ?? 0,
-                    };
-                  }).toList();
+                      // 6개월 기준 잠자고 있는 옷
+                      final List<Map<String, dynamic>> scoredClothes = clothes.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return {
+                          'docId': doc.id,
+                          'data': data,
+                          'tagCount': tagCounts[doc.id] ?? 0,
+                        };
+                      }).toList();
 
-                  final unusedClothes = scoredClothes.where((item) => item['tagCount'] == 0).toList();
+                      final unusedClothes = scoredClothes.where((item) => item['tagCount'] == 0).toList();
 
-                  // 카테고리 비율 계산
-                  Map<String, int> categoryCounts = {};
-                  for (var doc in clothes) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final category = data['category'] ?? '기타';
-                    categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
-                  }
+                      // 일반 아이템 플레이/사용 횟수 합산
+                      int itemsPlayCount = 0;
+                      for (var doc in items) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        itemsPlayCount += (data['usageCount'] as num? ?? 0).toInt();
+                      }
 
-                  final sortedCategories = categoryCounts.entries.toList()
-                    ..sort((a, b) => b.value.compareTo(a.value));
+                      // 카테고리 비율 계산
+                      Map<String, int> categoryCounts = {};
+                      for (var doc in clothes) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final category = data['category'] ?? '기타';
+                        categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+                      }
 
-                  // 최애템 TOP 3
-                  final favoriteClothes = List<Map<String, dynamic>>.from(scoredClothes)
-                    ..sort((a, b) => (b['tagCount'] as int).compareTo(a['tagCount'] as int));
-                  final top3Clothes = favoriteClothes.where((item) => item['tagCount'] > 0).take(3).toList();
+                      final sortedCategories = categoryCounts.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value));
 
-                  return StreamBuilder<List<Map<String, dynamic>>>(
-                    stream: _firebaseService.getClosetFoldersStream(),
-                    builder: (context, folderSnapshot) {
-                      final foldersCount = folderSnapshot.data?.length ?? 0;
+                      // 최애템 TOP 3
+                      final favoriteClothes = List<Map<String, dynamic>>.from(scoredClothes)
+                        ..sort((a, b) => (b['tagCount'] as int).compareTo(a['tagCount'] as int));
+                      final top3Clothes = favoriteClothes.where((item) => item['tagCount'] > 0).take(3).toList();
 
-                      return SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // 1. 프로필 요약 헤더 (작게, 1줄)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(AppRadius.card),
-                                border: Border.all(color: AppColors.line),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: AppColors.slot,
-                                    backgroundImage: profileImageUrl.isNotEmpty ? NetworkImage(profileImageUrl) : null,
-                                    child: profileImageUrl.isEmpty ? const Icon(Icons.person, size: 26, color: AppColors.muted) : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                      return StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: _firebaseService.getClosetFoldersStream(),
+                        builder: (context, closetFolderSnapshot) {
+                          return StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: _firebaseService.getItemFoldersStream(),
+                            builder: (context, itemFolderSnapshot) {
+                              final closetFoldersCount = closetFolderSnapshot.data?.length ?? 0;
+                              final itemFoldersCount = itemFolderSnapshot.data?.length ?? 0;
+                              final foldersCount = closetFoldersCount + itemFoldersCount;
+
+                              return SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // 1. 프로필 요약 헤더 (작게, 1줄)
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(AppRadius.card),
+                                        border: Border.all(color: AppColors.line),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 26,
+                                            backgroundColor: AppColors.slot,
+                                            backgroundImage: profileImageUrl.isNotEmpty ? NetworkImage(profileImageUrl) : null,
+                                            child: profileImageUrl.isEmpty ? const Icon(Icons.person, size: 26, color: AppColors.muted) : null,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(nickname, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.ink)),
+                                                const SizedBox(height: 2),
+                                                Text(email, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                                              ],
+                                            ),
+                                          ),
+                                          TextButton.icon(
+                                            onPressed: () => _editProfile(userData),
+                                            icon: const Icon(Icons.edit, size: 12, color: AppColors.ink),
+                                            label: const Text('수정', style: TextStyle(fontSize: 12, color: AppColors.ink, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // 2. 통계 4칸
+                                    Row(
                                       children: [
-                                        Text(nickname, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.ink)),
-                                        const SizedBox(height: 2),
-                                        Text(email, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                                        Expanded(child: _buildStatCell('CLOTHES', '${clothes.length}', isAccent: false)),
+                                        const SizedBox(width: 6),
+                                        Expanded(child: _buildStatCell('ITEMS', '${items.length}', isAccent: false)),
+                                        const SizedBox(width: 6),
+                                        Expanded(child: _buildStatCell('FOLDERS', '$foldersCount', isAccent: false)),
+                                        const SizedBox(width: 6),
+                                        Expanded(child: _buildStatCell('WORN&PLAY', '${ootds.length + itemsPlayCount}', isAccent: true)),
                                       ],
                                     ),
-                                  ),
-                                  TextButton.icon(
-                                    onPressed: () => _editProfile(userData),
-                                    icon: const Icon(Icons.edit, size: 12, color: AppColors.ink),
-                                    label: const Text('수정', style: TextStyle(fontSize: 12, color: AppColors.ink, fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // 2. 통계 4칸
-                            Row(
-                              children: [
-                                Expanded(child: _buildStatCell('ITEMS', '${clothes.length}', isAccent: false)),
-                                const SizedBox(width: 6),
-                                Expanded(child: _buildStatCell('FOLDERS', '$foldersCount', isAccent: false)),
-                                const SizedBox(width: 6),
-                                Expanded(child: _buildStatCell('WORN', '${ootds.length}', isAccent: false)),
-                                const SizedBox(width: 6),
-                                Expanded(child: _buildStatCell('UNUSED', '${unusedClothes.length}', isAccent: true)),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
+                                    const SizedBox(height: 12),
 
                             // 3. 카테고리 분포 (막대 차트)
                             if (clothes.isNotEmpty) ...[
@@ -442,6 +459,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const Divider(height: 1, color: AppColors.line),
                           ],
                         ),
+                      );
+                            },
+                          );
+                        },
                       );
                     },
                   );

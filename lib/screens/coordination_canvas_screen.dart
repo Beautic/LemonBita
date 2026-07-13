@@ -301,124 +301,157 @@ class _CoordinationCanvasScreenState extends State<CoordinationCanvasScreen> {
                 final targetUid = widget.friendUid ?? _firebaseService.currentUserId;
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('clothes')
+                      .collection(widget.friendUid != null ? 'closet_folders' : 'clothes')
                       .where('userId', isEqualTo: targetUid)
-                      .orderBy('createdAt', descending: true)
                       .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.black));
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
-                    }
-
-                    final allDocs = snapshot.data!.docs;
-                    final categoriesSet = <String>{};
-                    for (var doc in allDocs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      if (data['category'] != null && data['category'].toString().isNotEmpty) {
-                        categoriesSet.add(data['category'].toString());
+                  builder: (context, folderSnapshot) {
+                    final Set<String> privateFolderIds = {};
+                    if (widget.friendUid != null && folderSnapshot.hasData) {
+                      for (var doc in folderSnapshot.data!.docs) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        if (data['isSharedWithFriends'] == false) {
+                          privateFolderIds.add(doc.id);
+                        }
                       }
                     }
-                    final categories = ['전체', ...categoriesSet.toList()..sort()];
-                    final docs = selectedCategory == '전체'
-                        ? allDocs
-                        : allDocs.where((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            return data['category'] == selectedCategory;
-                          }).toList();
 
-                    return Column(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Text('추가할 옷 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        ),
-                        if (categories.length > 1)
-                          SizedBox(
-                            height: 40,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: categories.length,
-                              itemBuilder: (context, index) {
-                                final cat = categories[index];
-                                final isSelected = cat == selectedCategory;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setSheetState(() {
-                                      selectedCategory = cat;
-                                    });
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('clothes')
+                          .where('userId', isEqualTo: targetUid)
+                          .orderBy('createdAt', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: Colors.black));
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text('옷장에 등록된 옷이 없습니다.'));
+                        }
+
+                        final allDocs = snapshot.data!.docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          if (widget.friendUid != null) {
+                            if (data['isSharedWithFriends'] == false) return false;
+                            final List<dynamic> folderIds = data['folderIds'] ?? [];
+                            if (folderIds.isNotEmpty && folderIds.every((fid) => privateFolderIds.contains(fid))) {
+                              return false;
+                            }
+                          }
+                          return true;
+                        }).toList();
+
+                        if (allDocs.isEmpty) {
+                          return const Center(child: Text('공유 허용된 옷이 없습니다.'));
+                        }
+
+                        final categoriesSet = <String>{};
+                        for (var doc in allDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          if (data['category'] != null && data['category'].toString().isNotEmpty) {
+                            categoriesSet.add(data['category'].toString());
+                          }
+                        }
+                        final categories = ['전체', ...categoriesSet.toList()..sort()];
+                        final docs = selectedCategory == '전체'
+                            ? allDocs
+                            : allDocs.where((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                return data['category'] == selectedCategory;
+                              }).toList();
+
+                        return Column(
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              child: Text('추가할 옷 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            ),
+                            if (categories.length > 1)
+                              SizedBox(
+                                height: 40,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: categories.length,
+                                  itemBuilder: (context, index) {
+                                    final cat = categories[index];
+                                    final isSelected = cat == selectedCategory;
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setSheetState(() {
+                                          selectedCategory = cat;
+                                        });
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.only(right: 8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? Colors.black : Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            cat,
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white : Colors.black87,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
                                   },
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? Colors.black : Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        cat,
-                                        style: TextStyle(
-                                          color: isSelected ? Colors.white : Colors.black87,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          fontSize: 13,
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: GridView.builder(
+                                controller: scrollController,
+                                padding: const EdgeInsets.all(16),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  childAspectRatio: 1,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                ),
+                                itemCount: docs.length,
+                                itemBuilder: (context, index) {
+                                  final data = docs[index].data() as Map<String, dynamic>;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      final newItem = CanvasItem(
+                                        docId: docs[index].id,
+                                        imageUrl: data['imageUrl'] ?? '',
+                                        title: data['category'] ?? '',
+                                        color: data['color'] ?? '',
+                                        category: data['category'] ?? '',
+                                        offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
+                                      );
+                                      setState(() {
+                                        _items.add(newItem);
+                                        _selectedIndex = _items.length - 1;
+                                      });
+                                      _loadImageBytesFor(newItem);
+                                      Navigator.pop(context);
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: Colors.grey[100],
+                                        image: DecorationImage(
+                                          image: NetworkImage(data['imageUrl'] ?? ''),
+                                          fit: BoxFit.cover,
                                         ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: GridView.builder(
-                            controller: scrollController,
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              childAspectRatio: 1,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                            ),
-                            itemCount: docs.length,
-                            itemBuilder: (context, index) {
-                              final data = docs[index].data() as Map<String, dynamic>;
-                              return GestureDetector(
-                                onTap: () {
-                                  final newItem = CanvasItem(
-                                    docId: docs[index].id,
-                                    imageUrl: data['imageUrl'] ?? '',
-                                    title: data['category'] ?? '',
-                                    color: data['color'] ?? '',
-                                    category: data['category'] ?? '',
-                                    offset: Offset(MediaQuery.of(context).size.width / 2 - 60, 150),
                                   );
-                                  setState(() {
-                                    _items.add(newItem);
-                                    _selectedIndex = _items.length - 1;
-                                  });
-                                  _loadImageBytesFor(newItem);
-                                  Navigator.pop(context);
                                 },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.grey[100],
-                                    image: DecorationImage(
-                                      image: NetworkImage(data['imageUrl'] ?? ''),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                 );

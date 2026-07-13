@@ -419,14 +419,18 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 6),
               _buildFolderChip(id: 'unclassified', name: '미분류'),
               const SizedBox(width: 6),
-              ...folders.map((folder) => Padding(
-                padding: const EdgeInsets.only(right: 6.0),
-                child: _buildFolderChip(
-                  id: folder['id'] as String,
-                  name: folder['name'] as String,
-                  isDeletable: true,
-                ),
-              )),
+              ...folders.map((folder) {
+                final isShared = folder['isSharedWithFriends'] as bool? ?? true;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: _buildFolderChip(
+                    id: folder['id'] as String,
+                    name: folder['name'] as String,
+                    isDeletable: true,
+                    isShared: isShared,
+                  ),
+                );
+              }),
               IconButton(
                 icon: const Icon(
                   Icons.create_new_folder_outlined,
@@ -1157,8 +1161,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ==== 옷장 폴더 UI 로직 추가 ====
 
-  Widget _buildFolderChip({required String id, required String name, bool isDeletable = false}) {
+  Widget _buildFolderChip({required String id, required String name, bool isDeletable = false, bool isShared = true}) {
     final isSelected = _selectedFolderId == id;
+    final displayName = (!isShared && isDeletable) ? '🔒 $name' : name;
+
     return GestureDetector(
       onTap: () {
         if (_selectedFolderId != id) {
@@ -1185,7 +1191,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (isDeletable)
               const SizedBox(width: 4),
             Text(
-              name,
+              displayName,
               style: TextStyle(
                 color: isSelected ? AppColors.surface : AppColors.ink,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -1195,7 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (isDeletable && isSelected) ...[
               const SizedBox(width: 6),
               GestureDetector(
-                onTap: () => _showFolderManageOptions(id, name),
+                onTap: () => _showFolderManageOptions(id, name, isShared),
                 child: Icon(
                   Icons.settings_outlined,
                   size: 13,
@@ -1254,7 +1260,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showFolderManageOptions(String folderId, String name) {
+  void _showFolderManageOptions(String folderId, String name, bool isShared) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -1276,10 +1282,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: Colors.black87),
-                title: const Text('이름 변경하기'),
+                title: const Text('설정 변경하기 (이름 & 공유)'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showRenameFolderDialog(folderId, name);
+                  _showRenameFolderDialog(folderId, name, isShared);
                 },
               ),
               ListTile(
@@ -1297,46 +1303,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showRenameFolderDialog(String folderId, String currentName) {
+  void _showRenameFolderDialog(String folderId, String currentName, bool currentShareStatus) {
     final controller = TextEditingController(text: currentName);
+    bool isShared = currentShareStatus;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: const Text('폴더 이름 변경', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '새 폴더 이름을 입력하세요',
-              hintStyle: TextStyle(fontSize: 14),
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                final newName = controller.text.trim();
-                if (newName.isNotEmpty && newName != currentName) {
-                  try {
-                    await _firebaseService.updateClosetFolder(folderId, newName);
-                    if (mounted) Navigator.pop(context);
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('이름 변경 실패: $e')),
-                      );
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text('폴더 설정 변경', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: '새 폴더 이름을 입력하세요',
+                      hintStyle: TextStyle(fontSize: 14),
+                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('친구에게 이 폴더 공유하기', style: TextStyle(fontSize: 12)),
+                      Switch(
+                        value: isShared,
+                        activeColor: AppColors.accent,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            isShared = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final newName = controller.text.trim();
+                    if (newName.isNotEmpty) {
+                      try {
+                        await _firebaseService.updateClosetFolder(folderId, newName, isSharedWithFriends: isShared);
+                        if (mounted) Navigator.pop(context);
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('설정 변경 실패: $e')),
+                          );
+                        }
+                      }
                     }
-                  }
-                }
-              },
-              child: const Text('변경', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ],
+                  },
+                  child: const Text('변경', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          }
         );
       },
     );

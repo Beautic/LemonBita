@@ -15,7 +15,9 @@ class FriendClosetScreen extends StatefulWidget {
 
 class _FriendClosetScreenState extends State<FriendClosetScreen> {
   final FirebaseService _firebaseService = FirebaseService();
-  int _selectedTab = 0; // 0: 의류 목록, 1: 추천한 코디
+  int _selectedTab = 0; // 0: 의류, 1: 일반 아이템, 2: 추천 코디
+  String _selectedClothesFolderId = 'all';
+  String _selectedItemsFolderId = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
       backgroundColor: AppColors.ground,
       appBar: AppBar(
         title: Text(
-          '$friendNickname님의 인벤토리',
+          '$friendNickname님의 쇼룸',
           style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink, fontSize: 16),
         ),
         elevation: 0,
@@ -61,7 +63,7 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
             ),
           ),
 
-          // 2. 탭 전환 바 (의류 목록 vs 추천한 코디)
+          // 2. 탭 전환 바 (의류 vs 일반 아이템 vs 추천 코디)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             child: Container(
@@ -74,16 +76,23 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
                 children: [
                   Expanded(
                     child: _buildTabButton(
-                      label: '아이템 목록',
+                      label: '의류 👕',
                       isSelected: _selectedTab == 0,
                       onTap: () => setState(() => _selectedTab = 0),
                     ),
                   ),
                   Expanded(
                     child: _buildTabButton(
-                      label: '추천한 코디',
+                      label: '아이템 📦',
                       isSelected: _selectedTab == 1,
                       onTap: () => setState(() => _selectedTab = 1),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildTabButton(
+                      label: '추천 코디 🎀',
+                      isSelected: _selectedTab == 2,
+                      onTap: () => setState(() => _selectedTab = 2),
                     ),
                   ),
                 ],
@@ -96,7 +105,9 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           Expanded(
             child: _selectedTab == 0
                 ? _buildClothesTab(friendUid)
-                : _buildSuggestedOutfitsTab(friendUid),
+                : _selectedTab == 1
+                    ? _buildItemsTab(friendUid)
+                    : _buildSuggestedOutfitsTab(friendUid),
           ),
         ],
       ),
@@ -126,67 +137,297 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
     );
   }
 
-  // 첫 번째 탭: 친구의 의류 목록 (3열 정사각 슬롯형 그리드)
+  // 1) 의류 탭 (친구의 공개 폴더 칩 바 + 필터링된 의류 그리드)
   Widget _buildClothesTab(String friendUid) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('clothes')
+          .collection('closet_folders')
           .where('userId', isEqualTo: friendUid)
-          .orderBy('createdAt', descending: true)
           .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.ink));
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text(
-              '등록된 아이템이 없습니다.',
-              style: TextStyle(color: AppColors.muted, fontSize: 13),
+      builder: (context, folderSnapshot) {
+        final folderDocs = folderSnapshot.data?.docs ?? [];
+        final publicFolders = folderDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['isSharedWithFriends'] != false;
+        }).toList();
+
+        final privateFolderIds = folderDocs
+            .where((doc) => (doc.data() as Map<String, dynamic>)['isSharedWithFriends'] == false)
+            .map((doc) => doc.id)
+            .toSet();
+
+        return Column(
+          children: [
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  ChoiceChip(
+                    label: const Text('전체', style: TextStyle(fontSize: 11)),
+                    selected: _selectedClothesFolderId == 'all',
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedClothesFolderId = 'all');
+                    },
+                    selectedColor: AppColors.ink,
+                    backgroundColor: AppColors.surface,
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 6),
+                  ChoiceChip(
+                    label: const Text('미분류', style: TextStyle(fontSize: 11)),
+                    selected: _selectedClothesFolderId == 'unclassified',
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedClothesFolderId = 'unclassified');
+                    },
+                    selectedColor: AppColors.ink,
+                    backgroundColor: AppColors.surface,
+                    showCheckmark: false,
+                  ),
+                  ...publicFolders.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final isSelected = _selectedClothesFolderId == doc.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: ChoiceChip(
+                        label: Text(data['name'] ?? '', style: const TextStyle(fontSize: 11)),
+                        selected: isSelected,
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedClothesFolderId = doc.id);
+                        },
+                        selectedColor: AppColors.ink,
+                        backgroundColor: AppColors.surface,
+                        showCheckmark: false,
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
-          );
-        }
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('clothes')
+                    .where('userId', isEqualTo: friendUid)
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, clothesSnapshot) {
+                  if (clothesSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.ink));
+                  }
+                  final docs = clothesSnapshot.data?.docs ?? [];
 
-        final clothes = snapshot.data!.docs;
+                  // 비공개 폴더 소속 의류 필터링
+                  final filteredClothes = docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    if (data['isSharedWithFriends'] == false) return false;
 
-        return GridView.builder(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 6,
-          ),
-          itemCount: clothes.length,
-          itemBuilder: (context, index) {
-            final data = clothes[index].data() as Map<String, dynamic>;
-            return Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.slot),
-                border: Border.all(color: AppColors.line),
+                    final List<dynamic> folderIds = data['folderIds'] ?? [];
+                    if (folderIds.isNotEmpty && folderIds.every((fid) => privateFolderIds.contains(fid))) {
+                      return false;
+                    }
+
+                    if (_selectedClothesFolderId == 'unclassified') {
+                      return folderIds.isEmpty;
+                    } else if (_selectedClothesFolderId != 'all') {
+                      return folderIds.contains(_selectedClothesFolderId);
+                    }
+                    return true;
+                  }).toList();
+
+                  if (filteredClothes.isEmpty) {
+                    return const Center(
+                      child: Text('공유 허용된 의류가 없습니다.', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                    );
+                  }
+
+                  return GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: filteredClothes.length,
+                    itemBuilder: (context, index) {
+                      final doc = filteredClothes[index];
+                      final data = doc.data() as Map<String, dynamic>;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Center(
+                          child: Image.network(
+                            data['imageUrl'] ?? '',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, url, error) => const Icon(Icons.error_outline_rounded, color: AppColors.muted, size: 20),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-              padding: const EdgeInsets.all(6),
-              child: Center(
-                child: Image.network(
-                  data['imageUrl'] ?? '',
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.ink));
-                  },
-                  errorBuilder: (context, url, error) => const Icon(Icons.error_outline_rounded, color: AppColors.muted, size: 20),
-                ),
-              ),
-            );
-          },
+            ),
+          ],
         );
       },
     );
   }
 
-  // 두 번째 탭: 내가 추천한 코디 목록 (2열 4:5 직사각 화보 그리드)
+  // 2) 일반 아이템 탭 (친구의 공개 아이템 폴더 칩 바 + 필터링된 일반 아이템 그리드)
+  Widget _buildItemsTab(String friendUid) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('item_folders')
+          .where('userId', isEqualTo: friendUid)
+          .snapshots(),
+      builder: (context, folderSnapshot) {
+        final folderDocs = folderSnapshot.data?.docs ?? [];
+        final publicFolders = folderDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['isSharedWithFriends'] != false;
+        }).toList();
+
+        final privateFolderIds = folderDocs
+            .where((doc) => (doc.data() as Map<String, dynamic>)['isSharedWithFriends'] == false)
+            .map((doc) => doc.id)
+            .toSet();
+
+        return Column(
+          children: [
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  ChoiceChip(
+                    label: const Text('전체', style: TextStyle(fontSize: 11)),
+                    selected: _selectedItemsFolderId == 'all',
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedItemsFolderId = 'all');
+                    },
+                    selectedColor: AppColors.ink,
+                    backgroundColor: AppColors.surface,
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 6),
+                  ChoiceChip(
+                    label: const Text('미분류', style: TextStyle(fontSize: 11)),
+                    selected: _selectedItemsFolderId == 'unclassified',
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedItemsFolderId = 'unclassified');
+                    },
+                    selectedColor: AppColors.ink,
+                    backgroundColor: AppColors.surface,
+                    showCheckmark: false,
+                  ),
+                  ...publicFolders.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final isSelected = _selectedItemsFolderId == doc.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: ChoiceChip(
+                        label: Text(data['name'] ?? '', style: const TextStyle(fontSize: 11)),
+                        selected: isSelected,
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedItemsFolderId = doc.id);
+                        },
+                        selectedColor: AppColors.ink,
+                        backgroundColor: AppColors.surface,
+                        showCheckmark: false,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('items')
+                    .where('userId', isEqualTo: friendUid)
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, itemsSnapshot) {
+                  if (itemsSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.ink));
+                  }
+                  final docs = itemsSnapshot.data?.docs ?? [];
+
+                  // 비공개 폴더 소속 아이템 필터링
+                  final filteredItems = docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    if (data['isSharedWithFriends'] == false) return false;
+
+                    final List<dynamic> folderIds = data['folderIds'] ?? [];
+                    if (folderIds.isNotEmpty && folderIds.every((fid) => privateFolderIds.contains(fid))) {
+                      return false;
+                    }
+
+                    if (_selectedItemsFolderId == 'unclassified') {
+                      return folderIds.isEmpty;
+                    } else if (_selectedItemsFolderId != 'all') {
+                      return folderIds.contains(_selectedItemsFolderId);
+                    }
+                    return true;
+                  }).toList();
+
+                  if (filteredItems.isEmpty) {
+                    return const Center(
+                      child: Text('공유 허용된 아이템이 없습니다.', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                    );
+                  }
+
+                  return GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final doc = filteredItems[index];
+                      final data = doc.data() as Map<String, dynamic>;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Center(
+                          child: Image.network(
+                            data['imageUrl'] ?? '',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, url, error) => const Icon(Icons.error_outline_rounded, color: AppColors.muted, size: 20),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 3) 추천 코디 탭 (2열 4:5 직사각 화보 그리드)
   Widget _buildSuggestedOutfitsTab(String friendUid) {
     final currentUserId = _firebaseService.currentUserId;
     if (currentUserId == null) {
@@ -204,13 +445,13 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           return const Center(child: CircularProgressIndicator(color: AppColors.ink));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.dashboard_customize_outlined, size: 48, color: AppColors.line),
-                const SizedBox(height: 12),
-                const Text(
+                SizedBox(height: 12),
+                Text(
                   '아직 추천한 코디가 없습니다.\n첫 제안을 남겨 친구를 도와보세요!',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.muted, fontSize: 12, height: 1.4),
@@ -220,7 +461,6 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           );
         }
 
-        // 복합 인덱스 우회를 위해 메모리 상에서 최신순 정렬 수행
         final List<QueryDocumentSnapshot> ootds = List.from(snapshot.data!.docs)
           ..sort((a, b) {
             final aData = a.data() as Map<String, dynamic>;
@@ -238,7 +478,7 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.8, // 4:5 매거진 비율 맞춤
+            childAspectRatio: 0.8,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),
@@ -261,46 +501,25 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.line),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
                       child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card - 1)),
-                        child: Container(
-                          color: AppColors.ground,
-                          child: Image.network(
-                            data['imageUrl'] ?? '',
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink));
-                            },
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error_outline_rounded, color: AppColors.muted),
-                          ),
-                        ),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
+                        child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
+                            ? Image.network(data['imageUrl'], fit: BoxFit.cover)
+                            : const Center(child: Icon(Icons.style_outlined, size: 36, color: AppColors.line)),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('제안된 코디', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.ink)),
-                          if (data['createdAt'] != null)
-                            Text(
-                              _formatTimestamp(data['createdAt'] as Timestamp),
-                              style: AppText.mono.copyWith(fontSize: 9, color: AppColors.muted),
-                            ),
-                        ],
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      child: Text(
+                        data['title'] ?? '추천 코디',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.ink),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -311,10 +530,5 @@ class _FriendClosetScreenState extends State<FriendClosetScreen> {
         );
       },
     );
-  }
-
-  String _formatTimestamp(Timestamp timestamp) {
-    final date = timestamp.toDate();
-    return '${date.year.toString().substring(2)}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 }
