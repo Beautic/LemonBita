@@ -3,6 +3,66 @@
 사용자 요청 및 Claude의 피드백을 반영하여 수정된 내용을 기록합니다.
 
 
+## 2026-07-13 (v6.1.0) — 친구 관리 탭바 추천 코디 구현 및 지능형 부분 검색(Prefix) 필터 성능 개편
+
+### 1. 친구 옷장 내 '내가 추천한 코디' 모아보기 탭 신설 및 Myventory 테마 정합
+- **구현 내용**:
+  - [friend_closet_screen.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/screens/friend_closet_screen.dart) 파일을 `StatefulWidget`으로 리팩토링하고 탭 전환 상태(`_selectedTab`)를 추가했습니다.
+  - 상단에 수평형 슬라이더 느낌의 탭 바를 추가하여 `아이템 목록`과 `추천한 코디`를 즉각 전환할 수 있도록 구현했습니다.
+  - **아이템 목록 탭**: 홈화면 인벤토리 그리드와 통일성 있게 `AppColors.slot` 음각 배경이 입혀진 **3열 1:1 정사각 격자 슬롯**으로 친구 옷을 표출하여 디자인 톤을 일치시켰습니다.
+  - **추천한 코디 탭**: 내가 해당 친구에게 추천 및 선물한 코디 내역(`suggestedById == currentUserId`)을 실시간 동기화하여 **2열 4:5 매거진 비율 그리드**로 시각적으로 시원하게 노출하고, 탭 시 상세 보기(`PlannedOotdDetailScreen`)로 연계시켰습니다.
+
+### 2. 친구 검색 RTT 레이턴시 극감 및 시각 피드백 추가
+- **구현 내용**:
+  - `searchUsers` 내에서 `email`, `phoneNumber`, `nickname`에 대한 3중 순차 Firestore get 요청을 비동기 병렬 구조인 `Future.wait`로 묶어 처리함으로써, 통신 지연 시간을 기존 대비 **1/3 수준**으로 대폭 단축했습니다.
+  - 검색 중(대기 상태)일 때 입력 박스 바로 하단에 얇은 `LinearProgressIndicator(color: Colors.black)`를 노출하여 시각적 지루함을 줄이고 체감 성능을 향상했습니다.
+
+### 3. 닉네임 지능형 부분 검색 (Prefix Match Query) 적용
+- **구현 내용**:
+  - 기존 닉네임 검색 시 완벽히 일치하는 단어만 필터링되던 `isEqualTo` 검색의 성능 한계를 극복했습니다.
+  - 사용자가 앞 글자만 쳐도 관련 이름이 전부 색인되도록 `isGreaterThanOrEqualTo` 및 `isLessThanOrEqualTo` 범위 기반 Prefix 조회를 적용하여 검색 사용성을 크게 확대했습니다.
+
+---
+
+## 2026-07-13 (v6.0.0) — 마이벤토리(Myventory) UI 리뉴얼 및 브랜드 리브랜딩 대규모 업데이트
+
+### 1. 테마 디자인 토큰 및 가독성 개선 시스템 도입 (`lib/theme/app_theme.dart` [NEW])
+- **구현 내용**:
+  - 누끼 이미지(배경 제거)의 윤곽 가독성을 보장하기 위해 본 그레이 슬롯 컬러(`AppColors.slot` — #EFEDE6)와 중성 샌드 베이지 배경(`AppColors.ground` — #F7F6F3)을 신설하고 연동.
+  - 슬롯 및 버튼 곡률 토큰(`AppRadius.slot = 6.0`, `AppRadius.card = 10.0`, `AppRadius.button = 12.0`, `AppRadius.sheet = 20.0`) 규격화.
+  - 모노스페이스 기반 계량 지표 폰트(`AppText.mono`)를 정의하여 획일화된 그리드 스타일 도입.
+
+### 2. 홈 화면 1:1 정사각 슬롯형 인벤토리 그리드 구성
+- **구현 내용**:
+  - 기존 3열 옷장 그리드를 **정사각 슬롯형(childAspectRatio: 1.0)** 격자로 리뉴얼하여 이종 소품 수납 준비.
+  - **즐겨찾기**: 우상단 강렬한 붉은색 삼각 Notch 노출 및 상세화면 스위치 제공.
+  - **세탁 필요**: 좌하단 컴팩트 붉은 도트(6x6) 표시.
+  - **착용 횟수**: 우하단 모노스페이스 텍스트 표기 (0회면 숨김).
+  - **신규 수납 슬롯**: 마지막 인덱스에 점선형 둥근 사각형 `+` 빈 슬롯(`_EmptySlot`, `DashedSlotPainter` [NEW])을 추가하여 즉각 입고 연계.
+
+### 3. 홈 헤더 다이어트 및 가시성 2.2배 증대
+- **구현 내용**:
+  - 날씨 카드를 단 **1줄 42px 바**로 고도로 압축하고 스마트 추천은 바텀시트 팝업(`_showSmartRecommendationDialog` [NEW])으로 전환하여 공간 확보.
+  - 폴더 바와 카테고리 칩 바를 **단 1줄의 수평 통합 필터 바(`_buildMergedFilterBar` [NEW])**로 단일화.
+  - 카테고리 칩들을 사각형(`radius: 4`)으로 전환하여 사각 인벤토리 비주얼과 매칭.
+
+### 4. 프로필 대시보드 전개 통합 (`profile_screen.dart` 리팩토링)
+- **구현 내용**:
+  - 여백이 많던 프로필 화면에 옷장 분석기(`closet_analytics_screen.dart`) 통계 알고리즘을 전개 통합.
+  - 프로필 이미지 축소 및 통계 4칸(`ITEMS`, `FOLDERS`, `WORN`, `UNUSED` - UNUSED는 붉은 경고 보더로 강조) 배치.
+  - 흑백 그라데이션 카테고리 비율 차트, 자주 입은 TOP 3 아이템 목록, 잠자는 아이템 붉은 경고 배너 및 가로 스크롤 모달 시트 구현.
+
+### 5. OOTD 그리드 크롭 버그 해결
+- **구현 내용**:
+  - 레터박스 여백으로 찌그러지던 피드 목록 이미지를 정사각 커버 크롭(`BoxFit.cover`)으로 전면 교정.
+
+### 6. 카피 중립화 및 리브랜딩 전면 적용
+- **구현 내용**:
+  - 옷장/옷 -> 인벤토리/아이템 단어 교체.
+  - `pubspec.yaml`, `main.dart`, `AndroidManifest.xml`, `Info.plist`, `AppInfo.xcconfig`, `manifest.json`, `index.html` 내 앱 이름을 공식 리브랜딩 명칭인 **`Myventory`**로 일괄 전환. (패키지명 com.antigravity.dress는 불변 보존)
+
+---
+
 ## 2026-07-12 (v5.4.0) — HTML 렌더러 toImage 미지원 에러 수정 및 CanvasKit 에셋 폰트 패키징 적용
 
 ### 1. HTML 렌더러 스크린샷 캡쳐 예외 복구 (CanvasKit 원복)

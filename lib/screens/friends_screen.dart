@@ -273,6 +273,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 ],
               ),
             ),
+            if (_isSearching) const LinearProgressIndicator(color: Colors.black),
             _buildSearchResults(),
             _buildFriendRequests(),
             _buildFriendsList(),

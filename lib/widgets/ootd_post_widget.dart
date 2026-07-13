@@ -103,11 +103,14 @@ class _OotdPostWidgetState extends State<OotdPostWidget> {
             ),
             // Image
             if (imageUrl.isNotEmpty)
-              Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: MediaQuery.of(context).size.width,
+              ClipRRect(
+                borderRadius: BorderRadius.zero,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.width,
+                ),
               ),
             // Actions
             OotdInteractionBar(

@@ -4,6 +4,7 @@ import 'services/firebase_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   try {
@@ -30,25 +31,25 @@ class DigitalClosetApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Digital Closet',
+      title: 'Myventory',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: Colors.white,
-        primaryColor: Colors.black,
+        scaffoldBackgroundColor: AppColors.ground,
+        primaryColor: AppColors.ink,
         colorScheme: const ColorScheme.light(
-          primary: Colors.black,
-          secondary: Colors.grey,
-          surface: Colors.white,
+          primary: AppColors.ink,
+          secondary: AppColors.muted,
+          surface: AppColors.surface,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: AppColors.ground,
+          foregroundColor: AppColors.ink,
           elevation: 0,
           centerTitle: true,
           systemOverlayStyle: SystemUiOverlayStyle.dark,
         ),
-        fontFamily: 'Roboto',
+        fontFamily: 'Pretendard',
       ),
       home: const AuthWrapper(),
     );

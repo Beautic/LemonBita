@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(Icons.inventory_2_rounded, size: 80, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 16),
               const Text(
-                '나만의 디지털 옷장',
+                '내 아이템 인벤토리',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),

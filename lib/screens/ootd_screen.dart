@@ -281,10 +281,13 @@ class _OotdScreenState extends State<OotdScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                item['imageUrl'] ?? '',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image_not_supported, color: Colors.grey)),
+              ClipRRect(
+                borderRadius: BorderRadius.zero,
+                child: Image.network(
+                  item['imageUrl'] ?? '',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image_not_supported, color: Colors.grey)),
+                ),
               ),
               if ((item['taggedClothes'] as List?)?.isNotEmpty == true)
                 const Positioned(

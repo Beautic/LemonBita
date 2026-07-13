@@ -9,6 +9,7 @@ import '../services/bg_removal_service.dart';
 import '../utils/image_filters.dart';
 import 'package:image_picker/image_picker.dart';
 import 'ootd_selection_screen.dart';
+import '../theme/app_theme.dart';
 class ClothingDetailScreen extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> item;
@@ -47,6 +48,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   
   String? _selectedColorPreset;
   bool _isCustomColor = false;
+  bool _isFavorite = false;
 
   // 세탁 관리 상태 변수 추가
   int _washInterval = 0;
@@ -121,6 +123,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
 
     _washInterval = widget.item['washInterval'] ?? 0;
     _lastWashedCount = widget.item['lastWashedCount'] ?? 0;
+    _isFavorite = (widget.item['isFavorite'] as bool?) ?? false;
     
     final List<dynamic>? rawFolderIds = widget.item['folderIds'];
     if (rawFolderIds != null) {
@@ -247,6 +250,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
         'washInterval': _washInterval,
         'lastWashedCount': _lastWashedCount,
         'folderIds': _selectedFolderIds,
+        'isFavorite': _isFavorite,
         'folderId': FieldValue.delete(), // 이전 단일 folderId 필드 제거
       };
 
@@ -399,7 +403,7 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('옷 정보 정리', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('아이템 정보', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.folder_open, color: Colors.black87),
@@ -545,6 +549,20 @@ class _ClothingDetailScreenState extends State<ClothingDetailScreen> {
 
                   // 활용 통계 섹션 추가
                   _buildOotdUsageSection(),
+                  const SizedBox(height: 16),
+
+                  // 즐겨찾기 스위치 추가
+                  SwitchListTile.adaptive(
+                    activeColor: AppColors.accent,
+                    title: const Text('즐겨찾기 등록', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('즐겨찾기 등록 시 홈 화면 그리드 우상단에 붉은색 마크가 강조됩니다.'),
+                    value: _isFavorite,
+                    onChanged: (val) {
+                      setState(() {
+                        _isFavorite = val;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 16),
 
                   // 2. 정보 수정 폼

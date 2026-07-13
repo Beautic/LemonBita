@@ -1,5 +1,5 @@
 name: dress
-description: "A new Flutter project."
+description: "내 아이템 인벤토리"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -58,6 +58,32 @@ dev_dependencies:
   mockito: ^5.4.4
   build_runner: ^2.4.8
   fake_cloud_firestore: ^2.4.8
+  flutter_launcher_icons: ^0.13.1
+
+# ─────────────────────────────────────────────────────────────────
+# 앱 아이콘 (Myventory · 픽셀 M)
+#   소스 SVG : app_icons/myventory/svg/
+#   재생성    : dart run flutter_launcher_icons
+# ─────────────────────────────────────────────────────────────────
+flutter_launcher_icons:
+  image_path: "assets/icon/icon-light.png"
+
+  android: "ic_launcher"
+  adaptive_icon_background: "#F2F1ED"      # bone
+  adaptive_icon_foreground: "assets/icon/adaptive-fg.png"
+  adaptive_icon_monochrome: "assets/icon/monochrome.png"   # Android 13+ 테마 아이콘
+
+  ios: true
+  remove_alpha_ios: true                    # App Store는 알파 채널 있으면 리젝
+
+  web:
+    generated: true
+    background_color: "#F2F1ED"
+    theme_color: "#121213"
+
+  macos:
+    generated: true
+    image_path: "assets/icon/icon-light.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -256,7 +256,7 @@ class _UploadScreenState extends State<UploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('옷장에 추가하기',
+        title: const Text('인벤토리에 추가',
             style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(

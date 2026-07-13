@@ -4,6 +4,7 @@ import 'home_screen.dart';
 import 'upload_screen.dart';
 import 'profile_screen.dart';
 import 'notification_screen.dart';
+import '../theme/app_theme.dart';
 import 'ootd_screen.dart';
 import 'upload_ootd_screen.dart';
 import 'coordination_canvas_screen.dart';
@@ -49,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
                     backgroundColor: Colors.black,
                     child: Icon(Icons.checkroom, color: Colors.white),
                   ),
-                  title: const Text('옷장에 새 아이템 추가', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text('인벤토리에 새 아이템 추가', style: TextStyle(fontWeight: FontWeight.w600)),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -162,10 +163,10 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(
                 Icons.grid_view_rounded,
-                color: _currentIndex == 0 ? Colors.black : Colors.grey[400],
+                color: _currentIndex == 0 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                 size: 28,
               ),
-              label: '옷장',
+              label: '인벤토리',
             ),
             BottomNavigationBarItem(
               icon: Container(
@@ -174,13 +175,13 @@ class _MainScreenState extends State<MainScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: _currentIndex == 1 ? Colors.black : Colors.grey[400]!,
+                    color: _currentIndex == 1 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                     width: 2,
                   ),
                 ),
                 child: Icon(
                   Icons.person,
-                  color: _currentIndex == 1 ? Colors.black : Colors.grey[400],
+                  color: _currentIndex == 1 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                   size: 18,
                 ),
               ),
@@ -192,10 +193,10 @@ class _MainScreenState extends State<MainScreen> {
                 height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 2),
+                  border: Border.all(color: AppColors.ink, width: 2),
                 ),
                 child: const Center(
-                  child: Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, height: 1.1)),
+                  child: Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.ink, height: 1.1)),
                 ),
               ),
               label: '추가',
@@ -203,7 +204,7 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(
                 Icons.person_outline,
-                color: _currentIndex == 3 ? Colors.black : Colors.grey[400],
+                color: _currentIndex == 3 ? AppColors.ink : AppColors.muted.withOpacity(0.5),
                 size: 30,
               ),
               label: '프로필',

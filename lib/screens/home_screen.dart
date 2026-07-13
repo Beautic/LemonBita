@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import 'upload_screen.dart';
+import '../theme/app_theme.dart';
+import 'dart:ui' as ui;
 import 'clothing_detail_screen.dart';
 import 'search_clothes_screen.dart';
 import '../utils/categories.dart';
@@ -134,9 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : null,
       appBar: AppBar(
-        title: const Text(
-          'MY CLOSET',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black),
+        title: Text(
+          'MYVENTORY',
+          style: AppText.mono.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16, color: AppColors.ink),
         ),
         actions: [
           StreamBuilder<QuerySnapshot>(
@@ -306,19 +308,18 @@ class _HomeScreenState extends State<HomeScreen> {
           return Column(
             children: [
               _buildWeatherRecommendationCard(clothes, tagCounts),
-              _buildFolderBar(), // 옷장 폴더 바 추가
+              _buildMergedFilterBar(finalCategories),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 8.0, right: 16.0, bottom: 4.0),
+                padding: const EdgeInsets.only(left: 16.0, top: 4.0, right: 16.0, bottom: 4.0),
                 child: Row(
                   children: [
                     Text(
-                      _selectedCategory == 'ALL' ? 'All Items' : _selectedCategory,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '(${filteredClothes.length})',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      '${filteredClothes.length} ITEMS',
+                      style: AppText.mono.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.muted,
+                      ),
                     ),
                     const Spacer(),
                     TextButton.icon(
@@ -330,13 +331,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       icon: Icon(
                         _isEditMode ? Icons.close_rounded : Icons.check_box_outlined,
-                        size: 16,
-                        color: _isEditMode ? Colors.redAccent : Colors.black87,
+                        size: 15,
+                        color: _isEditMode ? AppColors.accent : AppColors.ink,
                       ),
                       label: Text(
-                        _isEditMode ? '선택 취소' : '옷 다중 선택',
+                        _isEditMode ? '선택 취소' : '다중 선택',
                         style: TextStyle(
-                          color: _isEditMode ? Colors.redAccent : Colors.black87,
+                          color: _isEditMode ? AppColors.accent : AppColors.ink,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -350,8 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              _buildStoryCategories(finalCategories),
-              const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+              const Divider(height: 1, thickness: 1, color: AppColors.line),
               Expanded(
                 child: filteredClothes.isEmpty
                     ? Center(
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
-                            Text('이 카테고리에는\n등록된 옷이 없습니다.', 
+                            Text('이 카테고리에는\n등록된 아이템이 없습니다.', 
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.grey[500]),
                             ),
@@ -370,14 +370,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     : GridView.builder(
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: filteredClothes.length,
+                        itemCount: filteredClothes.length + 1,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.6, // 이미지(정방형) + 텍스트 2줄 공간
+                          crossAxisSpacing: 7,
+                          mainAxisSpacing: 7,
+                          childAspectRatio: 1.0,
                         ),
                         itemBuilder: (context, index) {
+                          if (index == filteredClothes.length) {
+                            return const _EmptySlot();
+                          }
                           final doc = filteredClothes[index];
                           final item = doc.data() as Map<String, dynamic>;
                           final count = tagCounts[doc.id] ?? 0;
@@ -394,93 +397,122 @@ class _HomeScreenState extends State<HomeScreen> {
     ); // closes Scaffold
   }
 
-  // 상단 인스타 스토리 형태의 카테고리
-  Widget _buildStoryCategories(List<Map<String, dynamic>> finalCategories) {
-    // 설정 칩을 덧붙인 최종 렌더링 리스트
-    final List<Map<String, dynamic>> renderedCategories = [
-      ...finalCategories,
-      {'name': '설정', 'icon': Icons.settings_rounded, 'isSettingChip': true},
-    ];
+  Widget _buildMergedFilterBar(List<Map<String, dynamic>> finalCategories) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firebaseService.getClosetFoldersStream(),
+      builder: (context, snapshot) {
+        final folders = snapshot.data ?? [];
+        final List<Map<String, dynamic>> renderedCategories = [
+          ...finalCategories,
+          {'name': '설정', 'icon': Icons.settings_rounded, 'isSettingChip': true},
+        ];
 
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: renderedCategories.length,
-        itemBuilder: (context, index) {
-          final category = renderedCategories[index];
-          final isSetting = category['isSettingChip'] == true;
-          final isSelected = _selectedCategory == category['name'];
-          
-          return GestureDetector(
-            onTap: () {
-              if (isSetting) {
-                _showCategoryCustomizerBottomSheet();
-              } else {
-                setState(() => _selectedCategory = category['name']);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Column(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSetting 
-                            ? Colors.grey[300]! 
-                            : (isSelected ? Colors.black : Colors.grey[300]!),
-                        width: isSelected ? 2.5 : 1.0,
-                      ),
-                      color: isSetting ? const Color(0xFFF1F3F5) : Colors.white,
-                    ),
-                    child: isSetting
-                        ? Icon(
-                            category['icon'],
-                            color: Colors.grey[700],
-                            size: 22,
-                          )
-                        : (category.containsKey('imageAsset')
-                            ? Center(
-                                child: Image.asset(
-                                  category['imageAsset'],
-                                  width: 32,
-                                  height: 32,
-                                  color: isSelected ? Colors.black : Colors.grey[600],
-                                  errorBuilder: (context, error, stackTrace) => Icon(
-                                    Icons.category_rounded,
-                                    color: isSelected ? Colors.black : Colors.grey[600],
-                                    size: 24,
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                category['icon'],
-                                color: isSelected ? Colors.black : Colors.grey[600],
-                                size: 24,
-                              )),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    category['name'],
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.black : Colors.grey[600],
-                    ),
-                  ),
-                ],
+        return Container(
+          height: 44,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            children: [
+              _buildFolderChip(id: 'all', name: '전체'),
+              const SizedBox(width: 6),
+              _buildFolderChip(id: 'unclassified', name: '미분류'),
+              const SizedBox(width: 6),
+              ...folders.map((folder) => Padding(
+                padding: const EdgeInsets.only(right: 6.0),
+                child: _buildFolderChip(
+                  id: folder['id'] as String,
+                  name: folder['name'] as String,
+                  isDeletable: true,
+                ),
+              )),
+              IconButton(
+                icon: const Icon(
+                  Icons.create_new_folder_outlined,
+                  color: AppColors.muted,
+                  size: 18,
+                ),
+                onPressed: _showCreateFolderDialog,
+                tooltip: '폴더 만들기',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
-            ),
-          );
-        },
-      ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: VerticalDivider(width: 1, thickness: 1, color: AppColors.line),
+              ),
+              ...renderedCategories.map((category) {
+                final isSetting = category['isSettingChip'] == true;
+                final isSelected = _selectedCategory == category['name'];
+
+                return GestureDetector(
+                  onTap: () {
+                    if (isSetting) {
+                      _showCategoryCustomizerBottomSheet();
+                    } else {
+                      setState(() => _selectedCategory = category['name']);
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.ink : AppColors.surface,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isSelected ? AppColors.ink : AppColors.line,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isSetting) ...[
+                          Icon(
+                            category['icon'] as IconData,
+                            size: 13,
+                            color: AppColors.muted,
+                          ),
+                          const SizedBox(width: 4),
+                        ] else if (category.containsKey('imageAsset')) ...[
+                          Image.asset(
+                            category['imageAsset'] as String,
+                            width: 13,
+                            height: 13,
+                            color: isSelected ? AppColors.surface : AppColors.ink,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.category_rounded,
+                              color: isSelected ? AppColors.surface : AppColors.ink,
+                              size: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ] else ...[
+                          Icon(
+                            category['icon'] as IconData,
+                            color: isSelected ? AppColors.surface : AppColors.ink,
+                            size: 13,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          category['name'] as String,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? AppColors.surface : AppColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -713,17 +745,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final int washedSince = tagCount - lastWashedCount;
     final bool isWashRequired = washInterval > 0 && washedSince >= washInterval;
 
-    // 색상, 패턴 조합으로 임시 타이틀 생성
-    String color = item['color'] ?? '';
-    String pattern = item['pattern'] ?? '';
-    String title = '$color $pattern'.trim();
-    if (title.isEmpty) title = item['brand'] ?? '';
-    if (title.isEmpty) title = item['category'] ?? '옷 정보 없음';
-
-    String category = item['category'] ?? '';
-    String subCategory = item['subCategory'] ?? '';
-    String subtitle = subCategory.isNotEmpty ? '$category · $subCategory' : category;
-
+    final bool isFavorite = (item['isFavorite'] as bool?) ?? false;
     final bool isSelected = _selectedClothingIds.contains(docId);
 
     return GestureDetector(
@@ -742,114 +764,91 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(
               builder: (context) => ClothingDetailScreen(docId: docId, item: item),
             ),
-          );
+          ).then((_) => _loadActiveCategories()); // 상세에서 돌아올 때 즐겨찾기 상태 최신화를 위해 갱신
         }
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Hero(
-                    tag: docId,
-                    child: Image.network(
-                      item['imageUrl'] ?? '',
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey[100],
-                        child: const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
-                      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.slot,
+          borderRadius: BorderRadius.circular(AppRadius.slot),
+          border: Border.all(color: isSelected ? AppColors.accent : AppColors.line, width: isSelected ? 2 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // 누끼 이미지 (잘리지 않게 contain 적용, 패딩 10px 부여)
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Center(
+                child: Hero(
+                  tag: docId,
+                  child: Image.network(
+                    item['imageUrl'] ?? '',
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.image_not_supported,
+                      size: 24,
+                      color: AppColors.muted,
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isWashRequired) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blueAccent.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.local_laundry_service, size: 9, color: Colors.white),
-                              SizedBox(width: 2),
-                              Text(
-                                '🧼 세탁 필요',
-                                style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      if (tagCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.bookmark, size: 9, color: Colors.white),
-                              const SizedBox(width: 2),
-                              Text(
-                                '$tagCount',
-                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (_isEditMode)
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white70,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                        color: isSelected ? Colors.black : Colors.black45,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-          ),
-        ],
+            // 즐겨찾기 - 우상단 붉은 삼각 노치
+            if (isFavorite)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: CustomPaint(
+                  size: const Size(12, 12),
+                  painter: CornerNotch(),
+                ),
+              ),
+            // 세탁 필요 - 좌하단 붉은 도트 (기존 파란 배지 대체)
+            if (isWashRequired)
+              const Positioned(
+                bottom: 6,
+                left: 6,
+                child: CircleAvatar(
+                  radius: 3,
+                  backgroundColor: AppColors.accent,
+                ),
+              ),
+            // 착용 횟수 - 우하단 모노스페이스 숫자
+            if (tagCount > 0)
+              Positioned(
+                bottom: 4,
+                right: 6,
+                child: Text(
+                  '$tagCount',
+                  style: AppText.mono.copyWith(
+                    color: AppColors.muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            // 다중 편집 모드 체크 배지
+            if (_isEditMode)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white70,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    color: isSelected ? AppColors.accent : Colors.black45,
+                    size: 18,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -872,20 +871,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 날씨 맞춤형 추천 카드 빌더
   Widget _buildWeatherRecommendationCard(List<QueryDocumentSnapshot> clothes, Map<String, int> tagCounts) {
+    final bool isClothingContext = _selectedCategory == 'ALL' || CategoryData.mainCategories.contains(_selectedCategory);
+    if (!isClothingContext) return const SizedBox.shrink();
+
     if (_isWeatherLoading) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.all(16),
+        height: 42,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.line),
         ),
         child: const Center(
           child: SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+            height: 16,
+            width: 16,
+            child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.ink),
           ),
         ),
       );
@@ -893,18 +895,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_temperature == null || _weatherLevel == null) return const SizedBox.shrink();
 
-    // 추천 아이템 스코어링 및 정렬
+    final label = WeatherHelper.getLevelLabel(_weatherLevel!);
+
     final List<Map<String, dynamic>> scoredItems = [];
     for (var doc in clothes) {
       final data = doc.data() as Map<String, dynamic>;
       final String docId = doc.id;
-      
-      // 사용자 정의 커스텀 카테고리 의류는 날씨 추천에서 제외
-      if (_userCustomCategories.contains(data['category'])) {
-        continue;
-      }
-      
-      // 세탁이 필요한 의류는 추천에서 제외
+      if (_userCustomCategories.contains(data['category'])) continue;
       final int washInterval = (data['washInterval'] as num?)?.toInt() ?? 0;
       final int lastWashedCount = (data['lastWashedCount'] as num?)?.toInt() ?? 0;
       final int tagCount = tagCounts[docId] ?? 0;
@@ -913,13 +910,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (isWashRequired) continue;
 
       final List<dynamic> wornLevels = data['wornWeatherLevels'] ?? [];
-      
       int score = 0;
-      // 1. 착용 기온 레벨 빈도 가중치 (10점씩)
       final matchCount = wornLevels.where((l) => l == _weatherLevel).length;
       score += matchCount * 10;
-
-      // 2. 착용 이력이 없을 경우 기본 추천 로직 적용 (5점)
       if (wornLevels.isEmpty) {
         final suitable = WeatherHelper.getSuitableLevels(
           category: data['category'] ?? '',
@@ -930,7 +923,6 @@ class _HomeScreenState extends State<HomeScreen> {
           score += 5;
         }
       }
-
       if (score > 0) {
         scoredItems.add({
           'docId': docId,
@@ -940,274 +932,196 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
-
     scoredItems.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
 
-    final label = WeatherHelper.getLevelLabel(_weatherLevel!);
-    
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      height: 42,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey[900]!, Colors.grey[800]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.line),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isWeatherExpanded = !_isWeatherExpanded;
-              });
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Row(
+            children: [
+              const Icon(Icons.wb_sunny_rounded, color: AppColors.accent, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                '${_temperature!.toStringAsFixed(1)}°',
+                style: AppText.mono.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
+              ),
+              Text(
+                ' · $label',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          if (scoredItems.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                _showSmartRecommendationDialog(scoredItems);
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            '오늘의 기온: ${_temperature!.toStringAsFixed(1)}°C',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '지금 날씨는 $label',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '스마트 추천',
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          '스마트 추천 💡',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isWeatherExpanded
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ],
-                  ),
+                  SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.accent, size: 12),
                 ],
               ),
             ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: !_isWeatherExpanded
-                ? const SizedBox.shrink()
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Divider(height: 1, color: Colors.white10),
-                      if (scoredItems.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-                          child: Center(
-                            child: Text(
-                              '이 날씨에 추천할 수 있는 의류가 아직 없습니다.\n새로운 옷과 OOTD를 더 등록해 보세요!',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          height: 145,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: scoredItems.length,
-                            itemBuilder: (context, index) {
-                              final item = scoredItems[index];
-                              final data = item['data'] as Map<String, dynamic>;
-                              final String docId = item['docId'];
-                              final int score = item['score'];
-
-                              String color = data['color'] ?? '';
-                              String pattern = data['pattern'] ?? '';
-                              String title = '$color $pattern'.trim();
-                              if (title.isEmpty) title = data['brand'] ?? '';
-                              if (title.isEmpty) title = data['category'] ?? '옷';
-
-                              final isBest = score >= 10;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ClothingDetailScreen(docId: docId, item: data),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  width: 90,
-                                  margin: const EdgeInsets.only(right: 12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Stack(
-                                          children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(10),
-                                                image: DecorationImage(
-                                                  image: NetworkImage(data['imageUrl'] ?? ''),
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              top: 4,
-                                              left: 4,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: isBest ? Colors.redAccent : Colors.blueAccent,
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  isBest ? 'Best 🔥' : '추천 ⭐',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 8,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        data['category'] ?? '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 9,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
         ],
       ),
     );
   }
 
-  // ==== 옷장 폴더 UI 로직 추가 ====
-
-  Widget _buildFolderBar() {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _firebaseService.getClosetFoldersStream(),
-      builder: (context, snapshot) {
-        final folders = snapshot.data ?? [];
-        
+  void _showSmartRecommendationDialog(List<Map<String, dynamic>> scoredItems) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
+      ),
+      builder: (context) {
         return Container(
-          height: 60,
-          color: Colors.white,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFolderChip(id: 'all', name: '전체'),
-              const SizedBox(width: 8),
-              _buildFolderChip(id: 'unclassified', name: '미분류'),
-              const SizedBox(width: 8),
-              ...folders.map((folder) => Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: _buildFolderChip(
-                  id: folder['id'] as String,
-                  name: folder['name'] as String,
-                  isDeletable: true,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '스마트 날씨 추천 💡',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.muted, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 160,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: scoredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = scoredItems[index];
+                    final data = item['data'] as Map<String, dynamic>;
+                    final String docId = item['docId'];
+                    final int score = item['score'];
+
+                    String color = data['color'] ?? '';
+                    String pattern = data['pattern'] ?? '';
+                    String title = '$color $pattern'.trim();
+                    if (title.isEmpty) title = data['brand'] ?? '';
+                    if (title.isEmpty) title = data['category'] ?? '아이템';
+
+                    final isBest = score >= 10;
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ClothingDetailScreen(docId: docId, item: data),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.slot,
+                                      borderRadius: BorderRadius.circular(AppRadius.slot),
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: Center(
+                                      child: Image.network(
+                                        data['imageUrl'] ?? '',
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    left: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isBest ? AppColors.accent : AppColors.ink,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        isBest ? 'BEST 🔥' : '추천 ⭐',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 7,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              )),
-              IconButton(
-                icon: const Icon(
-                  Icons.create_new_folder_outlined,
-                  color: Colors.black54,
-                  size: 20,
-                ),
-                onPressed: _showCreateFolderDialog,
-                tooltip: '폴더 만들기',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
               ),
             ],
           ),
@@ -1215,6 +1129,8 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+
+  // ==== 옷장 폴더 UI 로직 추가 ====
 
   Widget _buildFolderChip({required String id, required String name, bool isDeletable = false}) {
     final isSelected = _selectedFolderId == id;
@@ -1227,12 +1143,12 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.ink : AppColors.surface,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isSelected ? Colors.black : Colors.grey[300]!,
+            color: isSelected ? AppColors.ink : AppColors.line,
             width: 1,
           ),
         ),
@@ -1240,25 +1156,25 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isDeletable)
-              Icon(Icons.folder_outlined, size: 14, color: isSelected ? Colors.white70 : Colors.grey),
+              Icon(Icons.folder_outlined, size: 13, color: isSelected ? AppColors.surface : AppColors.muted),
             if (isDeletable)
               const SizedBox(width: 4),
             Text(
               name,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? AppColors.surface : AppColors.ink,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
+                fontSize: 12,
               ),
             ),
             if (isDeletable && isSelected) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: () => _showFolderManageOptions(id, name),
                 child: Icon(
                   Icons.settings_outlined,
-                  size: 14,
-                  color: isSelected ? Colors.white : Colors.black54,
+                  size: 13,
+                  color: isSelected ? AppColors.surface : AppColors.muted,
                 ),
               ),
             ],
@@ -1544,4 +1460,75 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+}
+class _EmptySlot extends StatelessWidget {
+  const _EmptySlot();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const UploadScreen()),
+        );
+      },
+      child: CustomPaint(
+        painter: DashedSlotPainter(),
+        child: const Center(
+          child: Icon(
+            Icons.add_rounded,
+            color: AppColors.muted,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class DashedSlotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.line
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        const Radius.circular(AppRadius.slot),
+      ));
+
+    double dashWidth = 6, dashSpace = 4, distance = 0;
+    for (ui.PathMetric pathMetric in path.computeMetrics()) {
+      while (distance < pathMetric.length) {
+        ui.Path extractPath = pathMetric.extractPath(distance, distance + dashWidth);
+        canvas.drawPath(extractPath, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class CornerNotch extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.accent
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(0, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -789,10 +789,20 @@ class FirebaseService {
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     if (query.isEmpty) return [];
     
-    // 단순화를 위해 병렬 쿼리 후 병합
-    final byEmail = await _firestore.collection('users').where('email', isEqualTo: query).get();
-    final byPhone = await _firestore.collection('users').where('phoneNumber', isEqualTo: query).get();
-    final byNickname = await _firestore.collection('users').where('nickname', isEqualTo: query).get();
+    // Future.wait를 사용하여 3개의 Firestore 쿼리를 병렬로 실행하여 RTT 레이턴시를 1/3로 극감
+    // 닉네임의 경우 앞자리만 입력해도 검색이 가능하도록 Prefix(범위) 쿼리로 고도화
+    final resultsList = await Future.wait([
+      _firestore.collection('users').where('email', isEqualTo: query).get(),
+      _firestore.collection('users').where('phoneNumber', isEqualTo: query).get(),
+      _firestore.collection('users')
+          .where('nickname', isGreaterThanOrEqualTo: query)
+          .where('nickname', isLessThanOrEqualTo: query + '\uf8ff')
+          .get(),
+    ]);
+
+    final byEmail = resultsList[0];
+    final byPhone = resultsList[1];
+    final byNickname = resultsList[2];
 
     final Map<String, Map<String, dynamic>> results = {};
     for (var doc in [...byEmail.docs, ...byPhone.docs, ...byNickname.docs]) {
