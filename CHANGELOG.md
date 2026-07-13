@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v6.2.1] - 2026-07-14
+
+### Changed
+- **신규 공식 앱 아이콘 적용 및 배포 (컨셉 C · 오픈 박스)**:
+  - 마이벤토리의 핵심 리브랜딩 가이드라인에 맞추어, 미니멀리즘과 게임 슬롯 메타포를 담은 **컨셉 C (오픈 박스)** 디자인 시안을 앱의 공식 아이콘으로 지정.
+  - 모바일(iOS/Android) 런처 아이콘 에셋 동기화 및 웹(Web)의 파비콘(favicon) 및 매니페스트 아이콘(192px/512px, maskable) 이미지 일괄 렌더링 및 적용 완료.
+
 ## [v6.2.0] - 2026-07-14
+
 
 ### Added
 - **듀얼 인벤토리(의류 vs 일반 아이템) 분할 개편 및 5분할 네비게이션 적용**:

@@ -13,6 +13,10 @@ PNG 렌더링은 render.sh(qlmanage)가 담당.
 """
 
 from pathlib import Path
+import subprocess
+import shutil
+import tempfile
+
 
 # ── 팔레트 (docs/BRANDING_IDEAS.md 디자인 토큰과 동일) ──────────────────
 BONE = "#F2F1ED"   # 라이트 배경
@@ -163,16 +167,22 @@ MARKS = {
 
 # ── 내보내기 ─────────────────────────────────────────────────────────────
 
-def app_icon(fragment, bg, size=1024):
-    """배경이 꽉 찬 앱 아이콘. iOS는 투명도를 허용하지 않고, 둥근 모서리도 OS가 씌운다."""
-    s = size * MARK_RATIO / 128
+def app_icon_scaled(fragment, bg, scale_ratio, size=1024):
+    """지정된 스케일 비율에 따라 마크를 스케일링하여 SVG를 생성합니다. 배경색 bg가 None이면 투명 배경."""
+    s = size * scale_ratio / 128
     off = (size - 128 * s) / 2
+    bg_rect = f'<rect width="{size}" height="{size}" fill="{bg}"/>' if bg else ""
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">
-  <rect width="{size}" height="{size}" fill="{bg}"/>
+  {bg_rect}
   <g transform="translate({off:.1f} {off:.1f}) scale({s:.4f})">
 {fragment}  </g>
 </svg>
 """
+
+
+def app_icon(fragment, bg, size=1024):
+    """배경이 꽉 찬 앱 아이콘. iOS는 투명도를 허용하지 않고, 둥근 모서리도 OS가 씌운다."""
+    return app_icon_scaled(fragment, bg, MARK_RATIO, size)
 
 
 def mark_only(fragment):
@@ -180,6 +190,78 @@ def mark_only(fragment):
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
 {fragment}</svg>
 """
+
+
+def generate_launcher_icons(active_key="c-open-box"):
+    print(f"\n⚙ Generating launcher icons for active concept: {active_key}")
+    PROJECT_ROOT = OUT.parent.parent
+    ASSETS_ICON = PROJECT_ROOT / "assets" / "icon"
+    ASSETS_ICON.mkdir(parents=True, exist_ok=True)
+    
+    WEB_DIR = PROJECT_ROOT / "web"
+    WEB_ICONS_DIR = WEB_DIR / "icons"
+    WEB_ICONS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if active_key not in MARKS:
+        print(f"Error: {active_key} not in MARKS")
+        return
+    fn, label = MARKS[active_key]
+    
+    # 5종의 모바일/네이티브 타겟 SVG 에셋 정의
+    targets = {
+        "icon-light": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), "icon-light.png", "icon-light.svg"),
+        "icon-dark": (app_icon_scaled(fn(LITE, ACC_D), DARK, 0.62), "icon-dark.png", "icon-dark.svg"),
+        "icon-dark-transparent": (app_icon_scaled(fn(LITE, ACC_D), None, 0.62), "icon-dark-transparent.png", "ios-dark-transparent.svg"),
+        "adaptive-fg": (app_icon_scaled(fn(INK, ACC_L), None, 0.55), "adaptive-fg.png", "adaptive-fg.svg"),
+        "monochrome": (app_icon_scaled(fn("#000000", "#000000"), None, 0.55), "monochrome.png", "monochrome.svg"),
+    }
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        
+        # 1. 모바일/네이티브 아이콘 렌더링
+        for name, (svg_content, out_png_name, backup_svg_name) in targets.items():
+            svg_file = tmp_path / f"{name}.svg"
+            svg_file.write_text(svg_content)
+            
+            # app_icons/myventory/svg 에도 원본 svg를 저장
+            (SVG / backup_svg_name).write_text(svg_content)
+            
+            # qlmanage로 PNG 렌더링
+            cmd = ["qlmanage", "-t", "-s", "1024", "-o", str(tmp_path), str(svg_file)]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # qlmanage 출력물 복사
+            generated_png = tmp_path / f"{name}.svg.png"
+            if generated_png.exists():
+                shutil.copy(generated_png, ASSETS_ICON / out_png_name)
+                print(f"  ✓ Rendered and copied to assets/icon/{out_png_name}")
+            else:
+                print(f"  ✗ Failed to render {name}.svg")
+
+        # 2. 웹 전용 아이콘 렌더링 (Icon-192, Icon-512, Icon-maskable-192, Icon-maskable-512, favicon)
+        web_targets = {
+            "Icon-192": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), 192, WEB_ICONS_DIR / "Icon-192.png"),
+            "Icon-512": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), 512, WEB_ICONS_DIR / "Icon-512.png"),
+            "Icon-maskable-192": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), 192, WEB_ICONS_DIR / "Icon-maskable-192.png"),
+            "Icon-maskable-512": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), 512, WEB_ICONS_DIR / "Icon-maskable-512.png"),
+            "favicon": (app_icon_scaled(fn(INK, ACC_L), BONE, 0.62), 32, WEB_DIR / "favicon.png"),
+        }
+        
+        for name, (svg_content, size, dest_path) in web_targets.items():
+            svg_file = tmp_path / f"{name}.svg"
+            svg_file.write_text(svg_content)
+            
+            cmd = ["qlmanage", "-t", "-s", str(size), "-o", str(tmp_path), str(svg_file)]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            generated_png = tmp_path / f"{name}.svg.png"
+            if generated_png.exists():
+                shutil.copy(generated_png, dest_path)
+                print(f"  ✓ Rendered and copied web icon to {dest_path.relative_to(PROJECT_ROOT)}")
+            else:
+                print(f"  ✗ Failed to render web icon {name}")
+
 
 
 def main():
@@ -192,7 +274,11 @@ def main():
         n += 3
         print(f"  {key:20s} {label}")
     print(f"\n✓ SVG {n}개 → {SVG}")
+    
+    # 컨셉 C (c-open-box) 기준으로 런처 아이콘 최종 덮어쓰기 컴파일 진행
+    generate_launcher_icons("c-open-box")
 
 
 if __name__ == "__main__":
     main()
+

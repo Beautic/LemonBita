@@ -78,12 +78,14 @@ flutter_launcher_icons:
 
   web:
     generated: true
+    image_path: "assets/icon/icon-light.png"
     background_color: "#F2F1ED"
     theme_color: "#121213"
 
   macos:
     generated: true
     image_path: "assets/icon/icon-light.png"
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
