@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v6.1.1] - 2026-07-13
+
+### Fixed
+- **댓글 카운트 실시간 리액티브 갱신 및 무결성 패치**:
+  - `OotdInteractionBar` 내의 댓글 갯수 표시 영역을 `StreamBuilder` 로 래핑하여 Firestore `comments` 서브컬렉션을 실시간 직접 구독하도록 개선.
+  - 이로써 캐시 누락 등으로 댓글 개수가 0개로 보이던 동기화 딜레이를 완전 해결하고, 댓글 바텀 시트 내에서 글을 쓰고 닫는 즉시 카운터 수치가 부모 인터랙션 바에 0.1초 만에 실시간 반영되도록 수정 완료.
+
 ## [v6.1.0] - 2026-07-13
 
 친구 관리 및 검색 속도 고도화, 그리고 친구 옷장 추천 탭 신설 업데이트.

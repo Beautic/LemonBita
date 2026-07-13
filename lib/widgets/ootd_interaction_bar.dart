@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
 import 'ootd_post_widget.dart';
 
@@ -119,32 +120,39 @@ class _OotdInteractionBarState extends State<OotdInteractionBar> {
           ),
           const SizedBox(width: 16),
           // 댓글 영역
-          InkWell(
-            onTap: _showCommentsSheet,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.mode_comment_outlined,
-                    color: Colors.black,
-                    size: 24,
-                  ),
-                  if (widget.commentCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      '${widget.commentCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.black87,
+          StreamBuilder<QuerySnapshot>(
+            stream: widget.firebaseService.getCommentsStream(widget.collectionName, widget.ootdId),
+            builder: (context, snapshot) {
+              final int count = snapshot.hasData ? snapshot.data!.docs.length : widget.commentCount;
+
+              return InkWell(
+                onTap: _showCommentsSheet,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.mode_comment_outlined,
+                        color: Colors.black,
+                        size: 24,
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+                      if (count > 0) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '$count',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           const Spacer(),
         ],

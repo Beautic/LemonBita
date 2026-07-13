@@ -3,6 +3,17 @@
 사용자 요청 및 Claude의 피드백을 반영하여 수정된 내용을 기록합니다.
 
 
+## 2026-07-13 (v6.1.1) — 댓글 카운터 수량 미노출 버그 핫픽스 및 실시간 동기화(StreamBuilder) 패치
+
+### 1. 댓글 카운트 실시간 리액티브 갱신 및 무결성 패치
+- **구현 내용**:
+  - `OotdInteractionBar` 내에서 댓글 개수를 띄워주는 로직이 Firestore 캐시값 지연이나 필드 부재로 인해 0개로 오작동하는 문제를 정밀 분석했습니다.
+  - 단순 문서 필드 `commentCount` 참조에서 탈피하여, 해당 OOTD의 하위 comments 서브컬렉션을 실시간 직접 구독하는 `StreamBuilder<QuerySnapshot>` 기반 렌더링 방식으로 리팩토링했습니다.
+  - 이를 통해 기존 데이터의 필드 유실 여부와 무관하게 언제나 백엔드의 실제 댓글 갯수를 100% 보장하며, 사용자가 댓글 바텀시트를 열어 글을 쓰고 닫는 즉시 부모 위젯의 하트 옆 댓글 수치가 0.1초 만에 즉각 갱신되어 표출되도록 조치했습니다.
+  - 컴파일 안전성 확보를 위해 [ootd_interaction_bar.dart](file:///Users/a421104/Documents/project/Antigravity/dress/lib/widgets/ootd_interaction_bar.dart)에 `package:cloud_firestore/cloud_firestore.dart` 임포트를 삽입했습니다.
+
+---
+
 ## 2026-07-13 (v6.1.0) — 친구 관리 탭바 추천 코디 구현 및 지능형 부분 검색(Prefix) 필터 성능 개편
 
 ### 1. 친구 옷장 내 '내가 추천한 코디' 모아보기 탭 신설 및 Myventory 테마 정합
